@@ -1,0 +1,2 @@
+add_subdirectory(superswizzle)
+add_subdirectory(thirdparty)
