@@ -5,6 +5,8 @@
 
 #include <png.h>
 
+#include "tables.inl"
+
 #define verify(cond, msg) if(!(cond)) { printf(msg "\n"); exit(1); }
 #define check_fread(num) if((num) != 1) { printf("error: fread failed (line %d)\n", __LINE__); exit(1); }
 
@@ -40,8 +42,8 @@ static void write_rgba_png(const char* path, uint8_t* data, int32_t width, int32
 
 void decode_init();
 void decode_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
-void unswizzle_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
+void unswizzle(uint8_t* dest, uint8_t* src, int32_t width, int32_t height, const int* swizzle_table);
 
 int main(int argc, char** argv)
 {
@@ -58,11 +60,18 @@ int main(int argc, char** argv)
 		return 0;
 	}
 	
+	// Parse the arguments, determine the paths of the input and output files.
 	const char* texture_file = argv[1];
-	const char* stream_file = malloc(strlen(texture_file) + strlen(".stream") + 1);
+	
+	char* stream_file = malloc(strlen(texture_file) + strlen(".stream") + 1);
 	strcpy(stream_file, texture_file);
 	memcpy(stream_file + strlen(texture_file), ".stream", strlen(".stream") + 1);
 	
+	char* output_file = malloc(strlen(texture_file) + strlen(".png") + 1);
+	strcpy(output_file, texture_file);
+	memcpy(output_file + strlen(output_file), ".png", strlen(".png") + 1);
+	
+	// Parse the container format.
 	DatFile dat = parse_dat_file(texture_file);
 	
 	printf("asset type %x\n", dat.asset_type_hash);
@@ -73,6 +82,9 @@ int main(int argc, char** argv)
 	
 	verify(dat.section_count > 0 && dat.sections[0].type_hash == 0x4ede3593, "Bad sections.");
 	TextureHeader* tex_header = (TextureHeader*) dat.sections[0].data;
+	
+	verify(tex_header->width % 256 == 0, "error: Texture width not a multiple of 256.");
+	verify(tex_header->height % 256 == 0, "error: Texture height not a multiple of 256.");
 	
 	printf("width: %hd\n", tex_header->width);
 	printf("height: %hd\n", tex_header->height);
@@ -101,27 +113,35 @@ int main(int argc, char** argv)
 		}
 	}
 	
+	// Read the highest mip from disk.
 	uint8_t* compressed = load_last_n_bytes(stream_file, texture_size);
-	uint8_t* unswizzled = malloc(tex_header->width * tex_header->height * 4);
-	uint8_t* decompressed = malloc(tex_header->width * tex_header->height * 4);
 	
+	// Allocate memory for decompression and unswizzling.
+	uint8_t* decompressed = malloc(tex_header->width * tex_header->height * 4);
+	uint8_t* unswizzled = malloc(tex_header->width * tex_header->height * 4);
+	
+	// Decompress and unswizzle the textures.
 	decode_init();
 	switch(tex_header->type) {
 		case TEX_BC1: {
 			decode_bc1(decompressed, compressed, tex_header->width, tex_header->height);
-			unswizzle_bc1(unswizzled, decompressed, tex_header->width, tex_header->height);
+			unswizzle(unswizzled, decompressed, tex_header->width, tex_header->height, BC1_SWIZZLE_TABLE);
 			break;
 		}
 		case TEX_BC7: {
 			decode_bc7(decompressed, compressed, tex_header->width, tex_header->height);
-			texture_size = pixel_count;
+			unswizzle(unswizzled, decompressed, tex_header->width, tex_header->height, BC7_SWIZZLE_TABLE);
 			break;
 		}
 	}
 	
-	write_rgba_png("output.png", unswizzled, tex_header->width, tex_header->height);
-	
 	free(compressed);
+	free(decompressed);
+	
+	// Write the output file.
+	write_rgba_png(output_file, unswizzled, tex_header->width, tex_header->height);
+	
+	free(unswizzled);
 	
 	return 0;
 }
@@ -168,7 +188,10 @@ static DatFile parse_dat_file(const char* path) {
 
 static uint8_t* load_last_n_bytes(const char* path, int32_t n) {
 	FILE* file = fopen(path, "rb");
-	verify(file, "Failed to open file.");
+	if(!file) {
+		fprintf(stderr, "error: Failed to open file '%s'.", path);
+		exit(1);
+	}
 	fseek(file, 0, SEEK_END);
 	fseek(file, -n, SEEK_CUR);
 	printf("mip @ %lx\n", ftell(file));
