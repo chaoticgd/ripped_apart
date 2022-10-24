@@ -122,7 +122,7 @@ int main(int argc, char** argv)
 	
 	// Decompress and unswizzle the textures.
 	decode_init();
-	switch(tex_header->type) {
+	switch(tex_type) {
 		case TEX_BC1: {
 			decode_bc1(decompressed, compressed, tex_header->width, tex_header->height);
 			unswizzle(unswizzled, decompressed, tex_header->width, tex_header->height, BC1_SWIZZLE_TABLE);
