@@ -43,7 +43,7 @@ static void write_rgba_png(const char* path, uint8_t* data, int32_t width, int32
 void decode_init();
 void decode_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
-void unswizzle(uint8_t* dest, uint8_t* src, int32_t width, int32_t height, const int* swizzle_table);
+void unswizzle(uint8_t* dest, uint8_t* src, int32_t width, int32_t height, const int32_t* swizzle_table);
 
 int main(int argc, char** argv)
 {

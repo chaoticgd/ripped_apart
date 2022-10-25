@@ -58,27 +58,27 @@ void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
 	}
 }
 
-void unswizzle(uint8_t* dest, uint8_t* src, int32_t width, int32_t height, const int* swizzle_table) {
-	for(int32_t mega_y = 0; mega_y < height; mega_y += 256) {
-		for(int32_t mega_x = 0; mega_x < width; mega_x += 256) {
+void unswizzle(uint8_t* dest, uint8_t* src, int32_t width, int32_t height, const int32_t* swizzle_table) {
+	int32_t src_mega_index = 0;
+	for(int32_t mega_y = 0; mega_y < height / 4; mega_y += 64) {
+		for(int32_t mega_x = 0; mega_x < width / 4; mega_x += 64) {
 			for(int32_t block_y = 0; block_y < 64; block_y++) {
 				for(int32_t block_x = 0; block_x < 64; block_x++) {
+					int32_t dest_x = mega_x + block_x;
+					int32_t dest_y = mega_y + block_y;
+					
 					int32_t dest_index = block_y * 64 + block_x;
 					int32_t src_index = swizzle_table[dest_index] - 1;
-					int32_t src_block_x = src_index % 64;
-					int32_t src_block_y = src_index / 64;
 					
-					int32_t src_x = mega_x / 4 + src_block_x;
-					int32_t src_y = mega_y / 4 + src_block_y;
-					
-					int32_t dest_x = mega_x / 4 + block_x;
-					int32_t dest_y = mega_y / 4 + block_y;
+					int32_t src_x = (src_mega_index + src_index) % (width / 4);
+					int32_t src_y = (src_mega_index + src_index) / (width / 4);
 					
 					uint8_t block[64];
 					get_block(block, src, src_x, src_y, 4, 4, width, height);
 					set_block(dest, block, dest_x, dest_y, 4, 4, width, height);
 				}
 			}
+			src_mega_index += 4096;
 		}
 	}
 }
