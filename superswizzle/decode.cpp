@@ -29,14 +29,14 @@ static void set_block(uint8_t* dest, uint8_t* src, int32_t bx, int32_t by, int32
 extern "C" {
 
 void decode_init() {
-	rgbcx::init(rgbcx::bc1_approx_mode::cBC1Ideal);
+	rgbcx::init(rgbcx::bc1_approx_mode::cBC1IdealRound4);
 }
 
 void decode_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
 	for(int32_t y = 0; y < height / 4; y++) {
 		for(int32_t x = 0; x < width / 4; x++) {
 			uint8_t block[64];
-			rgbcx::unpack_bc1(&src[(y * (width / 4) + x) * 8], block, true, rgbcx::bc1_approx_mode::cBC1Ideal);
+			rgbcx::unpack_bc1(&src[(y * (width / 4) + x) * 8], block, true, rgbcx::bc1_approx_mode::cBC1IdealRound4);
 			set_block(dest, block, x, y, 4, 4, width, height);
 		}
 	}
