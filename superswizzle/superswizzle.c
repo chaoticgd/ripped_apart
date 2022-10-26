@@ -46,7 +46,7 @@ void write_png(const char* filename, const unsigned char* image, unsigned w, uns
 int main(int argc, char** argv)
 {
 	if(argc != 2 && argc != 4) {
-		printf("superswizzle -- part of https://github.com/chaoticgd/ripped_apart\n");
+		printf("superswizzle -- https://github.com/chaoticgd/ripped_apart\n");
 		printf("usage: %s <.texture input path>\n", argv[0]);
 		printf("       %s <.texture input path> <.stream input path> <.png output path>\n", argv[0]);
 		return 1;
