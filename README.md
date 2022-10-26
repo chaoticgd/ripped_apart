@@ -1,5 +1,11 @@
 # Ripped Apart
 
+Ratchet & Clank: Rift Apart modding stuff.
+
+## Downloads
+
+See the [Releases](https://github.com/chaoticgd/ripped_apart/releases) page.
+
 ## superswizzle
 
 Converts .texture files to .png, automatically handling BC1/BC7 decompression and unswizzling. Only works for textures where the width and height are multiples of 256. Can be used by dragging a texture onto the .exe file from within Windows explorer.
