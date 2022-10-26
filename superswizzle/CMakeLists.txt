@@ -5,3 +5,11 @@ add_executable(superswizzle
 	../thirdparty/bc7enc/lodepng.cpp
 )
 include_directories(superswizzle ../thirdparty/zlib ../thirdparty/libpng)
+
+if(UNIX)
+	set(GCC_FLAGS -Wall -Wno-sign-compare -g)
+	target_compile_options(superswizzle PRIVATE ${GCC_FLAGS} -O3)
+endif()
+if(MSVC)
+	target_compile_options(wrenchcore PRIVATE ${__MSVC_BUILD_OPTIONS__})
+endif()
