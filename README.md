@@ -2,7 +2,7 @@
 
 ## superswizzle
 
-Converts .texture files to .png, automatically handling BC1/BC7 decompression and unswizzling. Only works for textures where the width and height are multiples of 256. Can be used by dragging a texture on the .exe file from within Windows explorer.
+Converts .texture files to .png, automatically handling BC1/BC7 decompression and unswizzling. Only works for textures where the width and height are multiples of 256. Can be used by dragging a texture onto the .exe file from within Windows explorer.
 
 Command line options:
 

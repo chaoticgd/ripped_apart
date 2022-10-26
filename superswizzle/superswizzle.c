@@ -52,14 +52,6 @@ int main(int argc, char** argv)
 		return 1;
 	}
 	
-	if(strcmp(argv[1], "run_bc1_test") == 0) {
-		uint8_t* test = load_last_n_bytes("data/test.dds", (512*512)/2);
-		uint8_t* dec = malloc(512 * 512 * 4);
-		decode_bc1(dec, test, 512, 512);
-		write_png("test_output.png", dec, 512, 512);
-		return 0;
-	}
-	
 	// Parse the arguments, determine the paths of the input and output files.
 	const char* texture_file = argv[1];
 	const char* stream_file;
@@ -124,9 +116,13 @@ int main(int argc, char** argv)
 	
 	// Read the highest mip from disk.
 	uint8_t* compressed = load_last_n_bytes(stream_file, texture_size);
+	if(compressed == NULL) {
+		compressed = load_last_n_bytes(texture_file, texture_size);
+		verify(compressed != NULL, "error: Failed to read texture data.\n");
+	}
 	
 	// Allocate memory for decompression and unswizzling.
-	uint8_t* decompressed = malloc(tex_header->width * tex_header->height * 4);
+	uint8_t* decompressed = malloc(tex_header->width * tex_header->height * 4 + 256 * 245);
 	uint8_t* unswizzled = malloc(tex_header->width * tex_header->height * 4);
 	
 	// Decompress and unswizzle the textures.
@@ -202,11 +198,9 @@ static DatFile parse_dat_file(const char* path) {
 static uint8_t* load_last_n_bytes(const char* path, int32_t n) {
 	FILE* file = fopen(path, "rb");
 	if(!file) {
-		fprintf(stderr, "error: Failed to open '%s' for reading.", path);
-		exit(1);
+		return NULL;
 	}
-	fseek(file, 0, SEEK_END);
-	fseek(file, -n, SEEK_CUR);
+	fseek(file, -n, SEEK_END);
 	printf("mip @ %lx\n", ftell(file));
 	uint8_t* buffer = malloc(n);
 	check_fread(fread(buffer, n, 1, file));
