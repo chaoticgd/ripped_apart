@@ -9,11 +9,12 @@
 #include "../thirdparty/bc7enc/bc7decomp.h"
 #include "../thirdparty/bc7enc/lodepng.h"
 
-static void get_block(uint8_t* dest, uint8_t* src, int32_t bx, int32_t by, int32_t bwidth, int32_t bheight, int32_t iwidth, int32_t iheight) {
-	int32_t origin_x = bx * bwidth;
-	int32_t origin_y = by * bheight;
-	for(int32_t y = 0; y < bheight; y++) {
-		memcpy(&dest[(y * bwidth) * 4], &src[((origin_y + y) * iwidth + origin_x) * 4], bwidth * 4);
+static void copy_block(uint8_t* dest, int32_t dx, int32_t dy, uint8_t* src, int32_t sx, int32_t sy, int32_t block_width, int32_t block_height, int32_t image_width) {
+	for(int32_t y = 0; y < block_height; y++) {
+		memcpy(
+			&dest[((dy * block_height + y) * image_width + dx * block_width) * 4],
+			&src[((sy * block_height + y) * image_width + sx * block_width) * 4],
+			block_width * 4);
 	}
 }
 
@@ -32,29 +33,21 @@ void decode_init() {
 }
 
 void decode_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
-	int32_t blocks_x = width / 4;
-	int32_t blocks_y = height / 4;
-	
-	for(int32_t y = 0; y < blocks_y; y++) {
-		for(int32_t x = 0; x < blocks_x; x++) {
-			uint8_t unpacked[64];
-			rgbcx::unpack_bc1(&src[(y * blocks_x + x) * 8], unpacked, true, rgbcx::bc1_approx_mode::cBC1Ideal);
-			
-			set_block(dest, unpacked, x, y, 4, 4, width, height);
+	for(int32_t y = 0; y < height / 4; y++) {
+		for(int32_t x = 0; x < width / 4; x++) {
+			uint8_t block[64];
+			rgbcx::unpack_bc1(&src[(y * (width / 4) + x) * 8], block, true, rgbcx::bc1_approx_mode::cBC1Ideal);
+			set_block(dest, block, x, y, 4, 4, width, height);
 		}
 	}
 }
 
 void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
-	int32_t blocks_x = width / 4;
-	int32_t blocks_y = height / 4;
-	
-	for(int32_t y = 0; y < blocks_y; y++) {
-		for(int32_t x = 0; x < blocks_x; x++) {
-			uint8_t unpacked[64];
-			bc7decomp::unpack_bc7(&src[(y * blocks_x + x) * 16], (bc7decomp::color_rgba*) unpacked);
-			
-			set_block(dest, unpacked, x, y, 4, 4, width, height);
+	for(int32_t y = 0; y < height / 4; y++) {
+		for(int32_t x = 0; x < width / 4; x++) {
+			uint8_t block[64];
+			bc7decomp::unpack_bc7(&src[(y * (width / 4) + x) * 16], (bc7decomp::color_rgba*) block);
+			set_block(dest, block, x, y, 4, 4, width, height);
 		}
 	}
 }
@@ -74,9 +67,7 @@ void unswizzle(uint8_t* dest, uint8_t* src, int32_t width, int32_t height, const
 					int32_t src_x = (src_mega_index + src_index) % (width / 4);
 					int32_t src_y = (src_mega_index + src_index) / (width / 4);
 					
-					uint8_t block[64];
-					get_block(block, src, src_x, src_y, 4, 4, width, height);
-					set_block(dest, block, dest_x, dest_y, 4, 4, width, height);
+					copy_block(dest, dest_x, dest_y, src, src_x, src_y, 4, 4, width);
 				}
 			}
 			src_mega_index += 4096;
