@@ -8,4 +8,3 @@ if(BUILD_STATIC)
 endif()
 
 add_subdirectory(superswizzle)
-add_subdirectory(thirdparty)
