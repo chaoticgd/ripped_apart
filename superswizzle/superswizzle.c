@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <png.h>
-
 #include "tables.inl"
 
 #define verify(cond, msg) if(!(cond)) { printf(msg "\n"); exit(1); }
@@ -38,12 +36,12 @@ typedef struct {
 
 static DatFile parse_dat_file(const char* path);
 static uint8_t* load_last_n_bytes(const char* path, int32_t n);
-static void write_rgba_png(const char* path, uint8_t* data, int32_t width, int32_t height);
 
 void decode_init();
 void decode_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void unswizzle(uint8_t* dest, uint8_t* src, int32_t width, int32_t height, const int32_t* swizzle_table);
+void write_png(const char* filename, const unsigned char* image, unsigned w, unsigned h);
 
 int main(int argc, char** argv)
 {
@@ -56,7 +54,7 @@ int main(int argc, char** argv)
 		uint8_t* test = load_last_n_bytes("data/test.dds", (512*512)/2);
 		uint8_t* dec = malloc(512 * 512 * 4);
 		decode_bc1(dec, test, 512, 512);
-		write_rgba_png("test_output.png", dec, 512, 512);
+		write_png("test_output.png", dec, 512, 512);
 		return 0;
 	}
 	
@@ -139,7 +137,7 @@ int main(int argc, char** argv)
 	free(decompressed);
 	
 	// Write the output file.
-	write_rgba_png(output_file, unswizzled, tex_header->width, tex_header->height);
+	write_png(output_file, unswizzled, tex_header->width, tex_header->height);
 	
 	free(unswizzled);
 	
@@ -163,6 +161,10 @@ typedef struct {
 static DatFile parse_dat_file(const char* path) {
 	DatFile dat;
 	FILE* file = fopen(path, "rb");
+	if(!file) {
+		printf("error: Failed to open '%s' for reading.\n", path);
+		exit(1);
+	}
 	DatHeader header;
 	check_fread(fread(&header, sizeof(DatHeader), 1, file));
 	dat.asset_type_hash = header.asset_type_hash;
@@ -189,7 +191,7 @@ static DatFile parse_dat_file(const char* path) {
 static uint8_t* load_last_n_bytes(const char* path, int32_t n) {
 	FILE* file = fopen(path, "rb");
 	if(!file) {
-		fprintf(stderr, "error: Failed to open file '%s'.", path);
+		fprintf(stderr, "error: Failed to open '%s' for reading.", path);
 		exit(1);
 	}
 	fseek(file, 0, SEEK_END);
@@ -199,47 +201,4 @@ static uint8_t* load_last_n_bytes(const char* path, int32_t n) {
 	check_fread(fread(buffer, n, 1, file));
 	fclose(file);
 	return buffer;
-}
-
-static void write_rgba_png(const char* path, uint8_t* data, int32_t width, int32_t height) {
-	FILE* file = fopen(path, "wb");
-	verify(file, "error: Bad output file.");
-	
-	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	verify(png_ptr, "error: png_create_write_struct failed.");
-	
-	png_infop info_ptr = png_create_info_struct(png_ptr);
-	verify(info_ptr, "error: png_create_info_struct failed.");
-	
-	verify(setjmp(png_jmpbuf(png_ptr)) == 0, "error: png_init_io failed.");
-	
-	png_init_io(png_ptr, file);
-	
-	verify(setjmp(png_jmpbuf(png_ptr)) == 0, "error: png_set_IHDR failed.");
-	
-	png_set_IHDR(png_ptr, info_ptr,
-		width, height, 8,
-		PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE,
-		PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
-	
-	verify(setjmp(png_jmpbuf(png_ptr)) == 0, "error: png_write_info failed.");
-	
-	png_write_info(png_ptr, info_ptr);
-	
-	verify(setjmp(png_jmpbuf(png_ptr)) == 0, "error: png_write_image failed.");
-	
-	png_bytep* row_pointers = malloc(height * sizeof(png_bytep));
-	for(int32_t i = 0; i < height; i++) {
-		row_pointers[i] = &data[i * width * 4];
-	}
-	
-	png_write_image(png_ptr, row_pointers);
-	free(row_pointers);
-	
-	verify(setjmp(png_jmpbuf(png_ptr)) == 0, "error: png_write_end failed.");
-	
-	png_write_end(png_ptr, info_ptr);
-	png_destroy_write_struct(&png_ptr, &info_ptr);
-	
-	fclose(file);
 }

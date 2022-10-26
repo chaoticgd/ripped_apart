@@ -1,9 +1,3 @@
 [submodule "thirdparty/bc7enc"]
 	path = thirdparty/bc7enc
 	url = https://github.com/richgel999/bc7enc
-[submodule "thirdparty/libpng"]
-	path = thirdparty/libpng
-	url = git://git.code.sf.net/p/libpng/code
-[submodule "thirdparty/zlib"]
-	path = thirdparty/zlib
-	url = https://github.com/madler/zlib

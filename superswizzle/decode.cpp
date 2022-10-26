@@ -7,6 +7,7 @@
 #define RGBCX_IMPLEMENTATION
 #include "../thirdparty/bc7enc/rgbcx.h"
 #include "../thirdparty/bc7enc/bc7decomp.h"
+#include "../thirdparty/bc7enc/lodepng.h"
 
 static void get_block(uint8_t* dest, uint8_t* src, int32_t bx, int32_t by, int32_t bwidth, int32_t bheight, int32_t iwidth, int32_t iheight) {
 	int32_t origin_x = bx * bwidth;
@@ -81,6 +82,10 @@ void unswizzle(uint8_t* dest, uint8_t* src, int32_t width, int32_t height, const
 			src_mega_index += 4096;
 		}
 	}
+}
+
+void write_png(const char* filename, const unsigned char* image, unsigned w, unsigned h) {
+	lodepng_encode32_file(filename, image, w, h);
 }
 
 }
