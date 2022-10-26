@@ -45,8 +45,10 @@ void write_png(const char* filename, const unsigned char* image, unsigned w, uns
 
 int main(int argc, char** argv)
 {
-	if(argc < 2) {
-		fprintf(stderr, "usage: %s <.texture file>\n", argv[0]);
+	if(argc != 2 && argc != 4) {
+		printf("superswizzle -- part of https://github.com/chaoticgd/ripped_apart\n");
+		printf("usage: %s <.texture input path>\n", argv[0]);
+		printf("       %s <.texture input path> <.stream input path> <.png output path>\n", argv[0]);
 		return 1;
 	}
 	
@@ -60,14 +62,23 @@ int main(int argc, char** argv)
 	
 	// Parse the arguments, determine the paths of the input and output files.
 	const char* texture_file = argv[1];
+	const char* stream_file;
+	const char* output_file;
 	
-	char* stream_file = malloc(strlen(texture_file) + strlen(".stream") + 1);
-	strcpy(stream_file, texture_file);
-	memcpy(stream_file + strlen(texture_file), ".stream", strlen(".stream") + 1);
-	
-	char* output_file = malloc(strlen(texture_file) + strlen(".png") + 1);
-	strcpy(output_file, texture_file);
-	memcpy(output_file + strlen(output_file), ".png", strlen(".png") + 1);
+	if(argc == 2) {
+		char* stream_file_auto = malloc(strlen(texture_file) + strlen(".stream") + 1);
+		strcpy(stream_file_auto, texture_file);
+		memcpy(stream_file_auto + strlen(stream_file_auto), ".stream", strlen(".stream") + 1);
+		stream_file = stream_file_auto;
+		
+		char* output_file_auto = malloc(strlen(texture_file) + strlen(".png") + 1);
+		strcpy(output_file_auto, texture_file);
+		memcpy(output_file_auto + strlen(output_file_auto), ".png", strlen(".png") + 1);
+		output_file = output_file_auto;
+	} else if(argc == 4) {
+		stream_file = argv[2];
+		output_file = argv[3];
+	}
 	
 	// Parse the container format.
 	DatFile dat = parse_dat_file(texture_file);
