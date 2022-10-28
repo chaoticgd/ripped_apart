@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "tables.inl"
+#include "dxgi_format.inl"
 
 #define verify(cond, msg) if(!(cond)) { printf(msg "\n"); exit(1); }
 #define check_fread(num) if((num) != 1) { printf("error: fread failed (line %d)\n", __LINE__); exit(1); }
@@ -28,17 +29,15 @@ typedef struct {
 	int16_t height;
 	uint32_t unk_c;
 	uint32_t unk_10;
-	uint8_t type;
+	uint8_t format;
 } TextureHeader;
-
-#define TEX_BC1 0x48
-#define TEX_BC7 0x63
 
 static DatFile parse_dat_file(const char* path);
 static uint8_t* load_last_n_bytes(const char* path, int32_t n);
 
 void decode_init();
 void decode_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
+void decode_bc4(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void unswizzle(uint8_t* dest, uint8_t* src, int32_t width, int32_t height, const int32_t* swizzle_table);
 void write_png(const char* filename, const unsigned char* image, unsigned w, unsigned h);
@@ -89,27 +88,49 @@ int main(int argc, char** argv)
 	
 	printf("width: %hd\n", tex_header->width);
 	printf("height: %hd\n", tex_header->height);
-	printf("type: %hhx\n", tex_header->type);
+	printf("format: %hhd\n", tex_header->format);
 	
 	int32_t pixel_count = tex_header->width * tex_header->height;
 	
 	int32_t texture_size;
-	int tex_type;
-	switch(tex_header->type) {
-		case 0x47:
-		case 0x48: {
+	switch(tex_header->format) {
+		//case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+		//case DXGI_FORMAT_R8G8B8A8_UNORM:
+		//case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+		//case DXGI_FORMAT_R8G8B8A8_UINT:
+		//case DXGI_FORMAT_R8G8B8A8_SNORM:
+		//case DXGI_FORMAT_R8G8B8A8_SINT: {
+		//	texture_size = pixel_count * 4;
+		//	break;
+		//}
+		//case DXGI_FORMAT_R8G8_TYPELESS:
+		//case DXGI_FORMAT_R8G8_UNORM:
+		//case DXGI_FORMAT_R8G8_UINT:
+		//case DXGI_FORMAT_R8G8_SNORM:
+		//case DXGI_FORMAT_R8G8_SINT: {
+		//	texture_size = pixel_count * 2;
+		//	break;
+		//}
+		case DXGI_FORMAT_BC1_TYPELESS:
+		case DXGI_FORMAT_BC1_UNORM:
+		case DXGI_FORMAT_BC1_UNORM_SRGB: {
 			texture_size = pixel_count / 2;
-			tex_type = TEX_BC1;
 			break;
 		}
-		case 0x62:
-		case 0x63: {
+		case DXGI_FORMAT_BC4_TYPELESS:
+		case DXGI_FORMAT_BC4_UNORM:
+		case DXGI_FORMAT_BC4_SNORM: {
+			texture_size = pixel_count / 2;
+			break;
+		}
+		case DXGI_FORMAT_BC7_TYPELESS:
+		case DXGI_FORMAT_BC7_UNORM:
+		case DXGI_FORMAT_BC7_UNORM_SRGB: {
 			texture_size = pixel_count;
-			tex_type = TEX_BC7;
 			break;
 		}
 		default: {
-			printf("error: Bad texture type!\n");
+			printf("error: Unsupported texture format!\n");
 			exit(1);
 		}
 	}
@@ -127,15 +148,53 @@ int main(int argc, char** argv)
 	
 	// Decompress and unswizzle the textures.
 	decode_init();
-	switch(tex_type) {
-		case TEX_BC1: {
-			decode_bc1(decompressed, compressed, tex_header->width, tex_header->height);
-			unswizzle(unswizzled, decompressed, tex_header->width, tex_header->height, BC1_SWIZZLE_TABLE);
+	switch(tex_header->format) {
+		case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+		case DXGI_FORMAT_R8G8B8A8_UNORM:
+		case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+		case DXGI_FORMAT_R8G8B8A8_UINT:
+		case DXGI_FORMAT_R8G8B8A8_SNORM:
+		case DXGI_FORMAT_R8G8B8A8_SINT: {
+			memcpy(unswizzled, compressed, pixel_count * 4);
+			//unswizzle(unswizzled, compressed, tex_header->width, tex_header->height, SWIZZLE_TABLE_2);
 			break;
 		}
-		case TEX_BC7: {
+		case DXGI_FORMAT_R8G8_TYPELESS:
+		case DXGI_FORMAT_R8G8_UNORM:
+		case DXGI_FORMAT_R8G8_UINT:
+		case DXGI_FORMAT_R8G8_SNORM:
+		case DXGI_FORMAT_R8G8_SINT: {
+			for(int32_t i = 0; i < tex_header->width * tex_header->height; i++) {
+				unswizzled[i * 4 + 0] = compressed[i * 2 + 0];
+				unswizzled[i * 4 + 1] = compressed[i * 2 + 1];
+				unswizzled[i * 4 + 2] = 0x00;
+				unswizzled[i * 4 + 3] = 0xff;
+			}
+			//unswizzle(unswizzled, decompressed, tex_header->width, tex_header->height, SWIZZLE_TABLE_1);
+			break;
+		}
+		case DXGI_FORMAT_BC1_TYPELESS:
+		case DXGI_FORMAT_BC1_UNORM:
+		case DXGI_FORMAT_BC1_UNORM_SRGB: {
+			decode_bc1(decompressed, compressed, tex_header->width, tex_header->height);
+			unswizzle(unswizzled, decompressed, tex_header->width, tex_header->height, SWIZZLE_TABLE_1);
+			break;
+		}
+		case DXGI_FORMAT_BC4_TYPELESS:
+		case DXGI_FORMAT_BC4_UNORM:
+		case DXGI_FORMAT_BC4_SNORM: {
+			decode_bc4(decompressed, compressed, tex_header->width, tex_header->height);
+			unswizzle(unswizzled, decompressed, tex_header->width, tex_header->height, SWIZZLE_TABLE_1);
+			break;
+		}
+		//case DXGI_FORMAT_BC6H_UF16: {
+		//	break;
+		//}
+		case DXGI_FORMAT_BC7_TYPELESS:
+		case DXGI_FORMAT_BC7_UNORM:
+		case DXGI_FORMAT_BC7_UNORM_SRGB: {
 			decode_bc7(decompressed, compressed, tex_header->width, tex_header->height);
-			unswizzle(unswizzled, decompressed, tex_header->width, tex_header->height, BC7_SWIZZLE_TABLE);
+			unswizzle(unswizzled, decompressed, tex_header->width, tex_header->height, SWIZZLE_TABLE_2);
 			break;
 		}
 	}

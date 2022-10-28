@@ -42,6 +42,21 @@ void decode_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
 	}
 }
 
+void decode_bc4(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
+	for(int32_t y = 0; y < height / 4; y++) {
+		for(int32_t x = 0; x < width / 4; x++) {
+			uint8_t block[64];
+			rgbcx::unpack_bc4(&src[(y * (width / 4) + x) * 8], block, 4);
+			for(int32_t i = 0; i < 64; i += 4) {
+				block[i + 1] = block[i];
+				block[i + 2] = block[i];
+				block[i + 3] = 0xff;
+			}
+			set_block(dest, block, x, y, 4, 4, width, height);
+		}
+	}
+}
+
 void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
 	for(int32_t y = 0; y < height / 4; y++) {
 		for(int32_t x = 0; x < width / 4; x++) {
