@@ -1,7 +1,9 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "tables.inl"
 #include "dxgi_format.inl"
@@ -34,6 +36,7 @@ typedef struct {
 
 static DatFile parse_dat_file(const char* path);
 static uint8_t* load_last_n_bytes(const char* path, int32_t n);
+static void crop_image_in_place(uint8_t* image, int32_t new_width, int32_t new_height, int32_t old_width, int32_t old_height);
 
 void decode_init();
 void decode_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
@@ -83,14 +86,17 @@ int main(int argc, char** argv)
 	verify(dat.section_count > 0 && dat.sections[0].type_hash == 0x4ede3593, "Bad sections.");
 	TextureHeader* tex_header = (TextureHeader*) dat.sections[0].data;
 	
-	verify(tex_header->width % 256 == 0, "error: Texture width not a multiple of 256.");
-	verify(tex_header->height % 256 == 0, "error: Texture height not a multiple of 256.");
+	int32_t real_width = (int32_t) pow(2, ceilf(log2(tex_header->width)));
+	int32_t real_height = (int32_t) pow(2, ceilf(log2(tex_header->height)));
+	
+	verify(real_width % 256 == 0, "error: Texture size not supported.");
+	verify(real_height % 256 == 0, "error: Texture size not supported.");
 	
 	printf("width: %hd\n", tex_header->width);
 	printf("height: %hd\n", tex_header->height);
 	printf("format: %hhd\n", tex_header->format);
 	
-	int32_t pixel_count = tex_header->width * tex_header->height;
+	int32_t pixel_count = real_width * real_height;
 	
 	int32_t texture_size;
 	switch(tex_header->format) {
@@ -143,8 +149,8 @@ int main(int argc, char** argv)
 	}
 	
 	// Allocate memory for decompression and unswizzling.
-	uint8_t* decompressed = malloc(tex_header->width * tex_header->height * 4 + 256 * 245);
-	uint8_t* unswizzled = malloc(tex_header->width * tex_header->height * 4);
+	uint8_t* decompressed = malloc(real_width * real_height * 4 + 256 * 245);
+	uint8_t* unswizzled = malloc(real_width * real_height * 4);
 	
 	// Decompress and unswizzle the textures.
 	decode_init();
@@ -156,7 +162,7 @@ int main(int argc, char** argv)
 		case DXGI_FORMAT_R8G8B8A8_SNORM:
 		case DXGI_FORMAT_R8G8B8A8_SINT: {
 			memcpy(unswizzled, compressed, pixel_count * 4);
-			//unswizzle(unswizzled, compressed, tex_header->width, tex_header->height, SWIZZLE_TABLE_2);
+			//unswizzle(unswizzled, compressed, real_width, real_height, SWIZZLE_TABLE_2);
 			break;
 		}
 		case DXGI_FORMAT_R8G8_TYPELESS:
@@ -164,27 +170,27 @@ int main(int argc, char** argv)
 		case DXGI_FORMAT_R8G8_UINT:
 		case DXGI_FORMAT_R8G8_SNORM:
 		case DXGI_FORMAT_R8G8_SINT: {
-			for(int32_t i = 0; i < tex_header->width * tex_header->height; i++) {
+			for(int32_t i = 0; i < real_width * real_height; i++) {
 				unswizzled[i * 4 + 0] = compressed[i * 2 + 0];
 				unswizzled[i * 4 + 1] = compressed[i * 2 + 1];
 				unswizzled[i * 4 + 2] = 0x00;
 				unswizzled[i * 4 + 3] = 0xff;
 			}
-			//unswizzle(unswizzled, decompressed, tex_header->width, tex_header->height, SWIZZLE_TABLE_1);
+			//unswizzle(unswizzled, decompressed, real_width, real_height, SWIZZLE_TABLE_1);
 			break;
 		}
 		case DXGI_FORMAT_BC1_TYPELESS:
 		case DXGI_FORMAT_BC1_UNORM:
 		case DXGI_FORMAT_BC1_UNORM_SRGB: {
-			decode_bc1(decompressed, compressed, tex_header->width, tex_header->height);
-			unswizzle(unswizzled, decompressed, tex_header->width, tex_header->height, SWIZZLE_TABLE_1);
+			decode_bc1(decompressed, compressed, real_width, real_height);
+			unswizzle(unswizzled, decompressed, real_width, real_height, SWIZZLE_TABLE_1);
 			break;
 		}
 		case DXGI_FORMAT_BC4_TYPELESS:
 		case DXGI_FORMAT_BC4_UNORM:
 		case DXGI_FORMAT_BC4_SNORM: {
-			decode_bc4(decompressed, compressed, tex_header->width, tex_header->height);
-			unswizzle(unswizzled, decompressed, tex_header->width, tex_header->height, SWIZZLE_TABLE_1);
+			decode_bc4(decompressed, compressed, real_width, real_height);
+			unswizzle(unswizzled, decompressed, real_width, real_height, SWIZZLE_TABLE_1);
 			break;
 		}
 		//case DXGI_FORMAT_BC6H_UF16: {
@@ -193,14 +199,19 @@ int main(int argc, char** argv)
 		case DXGI_FORMAT_BC7_TYPELESS:
 		case DXGI_FORMAT_BC7_UNORM:
 		case DXGI_FORMAT_BC7_UNORM_SRGB: {
-			decode_bc7(decompressed, compressed, tex_header->width, tex_header->height);
-			unswizzle(unswizzled, decompressed, tex_header->width, tex_header->height, SWIZZLE_TABLE_2);
+			decode_bc7(decompressed, compressed, real_width, real_height);
+			unswizzle(unswizzled, decompressed, real_width, real_height, SWIZZLE_TABLE_2);
 			break;
 		}
 	}
 	
 	free(compressed);
 	free(decompressed);
+	
+	if(real_width != tex_header->width || real_height != tex_header->height) {
+		assert(real_width >= tex_header->width && real_height >= tex_header->height);
+		crop_image_in_place(unswizzled, tex_header->width, tex_header->height, real_width, real_height);
+	}
 	
 	// Write the output file.
 	write_png(output_file, unswizzled, tex_header->width, tex_header->height);
@@ -265,4 +276,15 @@ static uint8_t* load_last_n_bytes(const char* path, int32_t n) {
 	check_fread(fread(buffer, n, 1, file));
 	fclose(file);
 	return buffer;
+}
+
+static void crop_image_in_place(uint8_t* image, int32_t new_width, int32_t new_height, int32_t old_width, int32_t old_height) {
+	for(int32_t y = 0; y < new_height; y++) {
+		for(int32_t x = 0; x < new_width; x++) {
+			image[(y * new_width + x) * 4 + 0] = image[(y * old_width + x) * 4 + 0];
+			image[(y * new_width + x) * 4 + 1] = image[(y * old_width + x) * 4 + 1];
+			image[(y * new_width + x) * 4 + 2] = image[(y * old_width + x) * 4 + 2];
+			image[(y * new_width + x) * 4 + 3] = image[(y * old_width + x) * 4 + 3];
+		}
+	}
 }
