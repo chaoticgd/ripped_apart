@@ -137,11 +137,14 @@ int main(int argc, char** argv) {
 	if(tex_header->width == tex_header->width_in_texture_file
 		&& tex_header->height == tex_header->height_in_texture_file) {
 		compressed = load_last_n_bytes(texture_file, texture_size);
+		if(compressed == NULL) {
+			verify(compressed != NULL, "error: Failed to read texture data (from .texture file).");
+		}
 	} else {
 		compressed = load_last_n_bytes(stream_file, texture_size);
-	}
-	if(compressed == NULL) {
-		verify(compressed != NULL, "error: Failed to read texture data.\n");
+		if(compressed == NULL) {
+			verify(compressed != NULL, "error: Failed to read texture data. Missing or corrupted .stream file?");
+		}
 	}
 	
 	decode_and_write_png(output_file, compressed, tex_header->width, tex_header->height, real_width, real_height, tex_header->format, texture_size, NULL);
