@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
 		exit(1);
 	}
 	
-	printf("asset type %x\n", dat.asset_type_hash);
+	verify(dat.asset_type_hash == RA_ASSET_TYPE_TEXTURE, "Asset is not a texture");
 	
 	for(int32_t i = 0; i < dat.lump_count; i++) {
 		printf("lump of type %x @ %x\n", dat.lumps[i].type_hash, dat.lumps[i].offset);
@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
 	
 	printf("width: %hd\n", tex_header->width);
 	printf("height: %hd\n", tex_header->height);
-	printf("format: %hs\n", RA_texture_format_to_string(tex_header->format));
+	printf("format: %s\n", RA_texture_format_to_string(tex_header->format));
 	
 	int32_t pixel_count = real_width * real_height;
 	

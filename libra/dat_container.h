@@ -21,7 +21,7 @@ typedef struct {
 } RA_DatFile;
 
 typedef enum {
-	ASSET_TYPE_TEXTURE = 0x8f53a199
+	RA_ASSET_TYPE_TEXTURE = 0x8f53a199
 } RA_AssetType;
 
 RA_Result RA_parse_dat_file(RA_DatFile* dat, const char* path);

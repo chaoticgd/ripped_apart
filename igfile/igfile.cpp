@@ -38,7 +38,7 @@ static RA_Result process_file(const char* path) {
 	
 	printf("%s ", path);
 	
-	if(dat.asset_type_hash == ASSET_TYPE_TEXTURE) {
+	if(dat.asset_type_hash == RA_ASSET_TYPE_TEXTURE) {
 		verify(dat.lump_count > 0 && dat.lumps[0].type_hash == 0x4ede3593, "error: Bad lumps.");
 		RA_TextureHeader* tex_header = (RA_TextureHeader*) dat.lumps[0].data;
 		const char* format = RA_texture_format_to_string(tex_header->format);
