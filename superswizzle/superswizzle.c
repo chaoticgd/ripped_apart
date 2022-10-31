@@ -261,7 +261,7 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 		case DXGI_FORMAT_R8G8B8A8_UINT:
 		case DXGI_FORMAT_R8G8B8A8_SNORM:
 		case DXGI_FORMAT_R8G8B8A8_SINT: {
-			unswizzle(unswizzled, src, real_width, real_height, 2048, "XZ2N2N2N2N2N4Z");
+			unswizzle(unswizzled, src, real_width, real_height, 128, "2N2N2N2N2N4Z");
 			break;
 		}
 		//case DXGI_FORMAT_R8G8_TYPELESS:
