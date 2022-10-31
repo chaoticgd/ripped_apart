@@ -392,10 +392,6 @@ static void unswizzle(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih,
 }
 
 static void unswizzle_block(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih, int32_t bx, int32_t by, int32_t bs, int32_t* si, const char* pattern) {
-	static const float QRTR = 1.f / 4.f;
-	static const float HALF = 1.f / 2.f;
-	static const float TQRT = 3.f / 4.f;
-	
 	if(pattern[0] == '\0') {
 		// Base case: copy a block.
 		int32_t sx = (*si % (iw / bs)) * bs;
@@ -422,20 +418,6 @@ static void unswizzle_block(uint8_t* dest, const uint8_t* src, int32_t iw, int32
 		} else if(pattern[1] == 'Z') {
 			for(int32_t y = 0; y < factor; y++) {
 				for(int32_t x = 0; x < factor; x++) {
-					unswizzle_block(dest, src, iw, ih, bx + bs * (x / (float)factor), by + bs * (y / (float)factor), bs / factor, si, pattern + 2);
-				}
-			}
-			return;
-		} else if(pattern[1] == 'n') {
-			for(int32_t x = factor - 1; x >= 0; x--) {
-				for(int32_t y = factor - 1; y >= 0; y--) {
-					unswizzle_block(dest, src, iw, ih, bx + bs * (x / (float)factor), by + bs * (y / (float)factor), bs / factor, si, pattern + 2);
-				}
-			}
-			return;
-		} else if(pattern[1] == 'z') {
-			for(int32_t y = factor - 1; y >= 0; y--) {
-				for(int32_t x = factor - 1; x >= 0; x--) {
 					unswizzle_block(dest, src, iw, ih, bx + bs * (x / (float)factor), by + bs * (y / (float)factor), bs / factor, si, pattern + 2);
 				}
 			}
