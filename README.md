@@ -10,6 +10,14 @@ See the [Releases](https://github.com/chaoticgd/ripped_apart/releases) page.
 
 Converts .texture files to .png, automatically handling decompression and unswizzling. Can be used by dragging a texture onto the .exe file from within Windows explorer.
 
+Supported textures formats:
+
+- R8G8B8A8
+- R8
+- BC1
+- BC4
+- BC7
+
 Command line usage:
 
 	./superswizzle <.texture input path>

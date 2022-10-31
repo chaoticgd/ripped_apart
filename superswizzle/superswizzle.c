@@ -92,14 +92,14 @@ int main(int argc, char** argv) {
 			texture_size = pixel_count * 4;
 			break;
 		}
-		case DXGI_FORMAT_R8G8_TYPELESS:
-		case DXGI_FORMAT_R8G8_UNORM:
-		case DXGI_FORMAT_R8G8_UINT:
-		case DXGI_FORMAT_R8G8_SNORM:
-		case DXGI_FORMAT_R8G8_SINT: {
-			texture_size = pixel_count * 2;
-			break;
-		}
+		//case DXGI_FORMAT_R8G8_TYPELESS:
+		//case DXGI_FORMAT_R8G8_UNORM:
+		//case DXGI_FORMAT_R8G8_UINT:
+		//case DXGI_FORMAT_R8G8_SNORM:
+		//case DXGI_FORMAT_R8G8_SINT: {
+		//	texture_size = pixel_count * 2;
+		//	break;
+		//}
 		case DXGI_FORMAT_R8_TYPELESS:
 		case DXGI_FORMAT_R8_UNORM:
 		case DXGI_FORMAT_R8_UINT:
@@ -264,20 +264,20 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 			unswizzle(unswizzled, src, real_width, real_height, 2048, "XZ2N2N2N2N2N4Z");
 			break;
 		}
-		case DXGI_FORMAT_R8G8_TYPELESS:
-		case DXGI_FORMAT_R8G8_UNORM:
-		case DXGI_FORMAT_R8G8_UINT:
-		case DXGI_FORMAT_R8G8_SNORM:
-		case DXGI_FORMAT_R8G8_SINT: {
-			for(int32_t i = 0; i < real_width * real_height; i++) {
-				unswizzled[i * 4 + 0] = src[i * 2 + 0];
-				unswizzled[i * 4 + 1] = src[i * 2 + 1];
-				unswizzled[i * 4 + 2] = 0x00;
-				unswizzled[i * 4 + 3] = 0xff;
-			}
-			unswizzle(unswizzled, decompressed, real_width, real_height, 256, "2Z2Z2Z2Z2N2Z");
-			break;
-		}
+		//case DXGI_FORMAT_R8G8_TYPELESS:
+		//case DXGI_FORMAT_R8G8_UNORM:
+		//case DXGI_FORMAT_R8G8_UINT:
+		//case DXGI_FORMAT_R8G8_SNORM:
+		//case DXGI_FORMAT_R8G8_SINT: {
+		//	for(int32_t i = 0; i < real_width * real_height; i++) {
+		//		decompressed[i * 4 + 0] = src[i * 2 + 0];
+		//		decompressed[i * 4 + 1] = src[i * 2 + 1];
+		//		decompressed[i * 4 + 2] = 0x00;
+		//		decompressed[i * 4 + 3] = 0xff;
+		//	}
+		//	unswizzle(unswizzled, decompressed, real_width, real_height, 256, "???");
+		//	break;
+		//}
 		case DXGI_FORMAT_R8_TYPELESS:
 		case DXGI_FORMAT_R8_UNORM:
 		case DXGI_FORMAT_R8_UINT:
