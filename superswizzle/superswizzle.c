@@ -5,23 +5,9 @@
 #include <string.h>
 #include <assert.h>
 
+#include <libra/dat_container.h>
+#include <libra/util.h>
 #include "dxgi_format.inl"
-
-#define verify(cond, msg) if(!(cond)) { printf(msg "\n"); exit(1); }
-#define check_fread(num) if((num) != 1) { printf("error: fread failed (line %d)\n", __LINE__); exit(1); }
-
-typedef struct {
-	int32_t type_hash;
-	int32_t offset;
-	int32_t size;
-	uint8_t* data;
-} Section;
-
-typedef struct {
-	int32_t asset_type_hash;
-	int32_t section_count;
-	Section* sections;
-} DatFile;
 
 typedef struct {
 	uint32_t unk_0;
@@ -33,7 +19,6 @@ typedef struct {
 	uint8_t format;
 } TextureHeader;
 
-static DatFile parse_dat_file(const char* path);
 static uint8_t* load_last_n_bytes(const char* path, int32_t n);
 static void test_all_possible_swizzle_patterns(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size);
 static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size, const char* test_pattern);
@@ -47,8 +32,7 @@ void decode_bc4(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void write_png(const char* filename, const unsigned char* image, unsigned w, unsigned h);
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
 	if(argc != 2 && argc != 4) {
 		printf("superswizzle -- https://github.com/chaoticgd/ripped_apart\n");
 		printf("usage: %s <.texture input path>\n", argv[0]);
@@ -77,7 +61,7 @@ int main(int argc, char** argv)
 	}
 	
 	// Parse the container format.
-	DatFile dat = parse_dat_file(texture_file);
+	RA_DatFile dat = parse_dat_file(texture_file);
 	
 	printf("asset type %x\n", dat.asset_type_hash);
 	
@@ -165,50 +149,6 @@ int main(int argc, char** argv)
 	free(compressed);
 	
 	return 0;
-}
-
-typedef struct {
-	int32_t type_hash;
-	int32_t offset;
-	int32_t size;
-} SectionHeader;
-
-typedef struct {
-	char magic[4];
-	int32_t asset_type_hash;
-	int32_t file_size;
-	int16_t section_count;
-	int16_t shader_count;
-} DatHeader;
-
-static DatFile parse_dat_file(const char* path) {
-	DatFile dat;
-	FILE* file = fopen(path, "rb");
-	if(!file) {
-		printf("error: Failed to open '%s' for reading.\n", path);
-		exit(1);
-	}
-	DatHeader header;
-	check_fread(fread(&header, sizeof(DatHeader), 1, file));
-	dat.asset_type_hash = header.asset_type_hash;
-	dat.section_count = header.section_count;
-	verify(dat.section_count > 0, "error: No sections!");
-	verify(dat.section_count < 1000, "error: Too many sections!");
-	dat.sections = malloc(sizeof(Section) * header.section_count);
-	SectionHeader* headers = malloc(sizeof(SectionHeader) * header.section_count);
-	check_fread(fread(headers, dat.section_count * sizeof(SectionHeader), 1, file));
-	for(int32_t i = 0; i < header.section_count; i++) {
-		dat.sections[i].type_hash = headers[i].type_hash;
-		dat.sections[i].offset = headers[i].offset;
-		dat.sections[i].size = headers[i].size;
-		verify(headers[i].size < 1024 * 1024 * 1024, "error: Section too big!");
-		dat.sections[i].data = malloc(headers[i].size);
-		fseek(file, headers[i].offset, SEEK_SET);
-		check_fread(fread(dat.sections[i].data, headers[i].size, 1, file));
-	}
-	free(headers);
-	fclose(file);
-	return dat;
 }
 
 static uint8_t* load_last_n_bytes(const char* path, int32_t n) {
