@@ -6,17 +6,7 @@
 #include <assert.h>
 
 #include <libra/dat_container.h>
-#include "dxgi_format.inl"
-
-typedef struct {
-	uint32_t unk_0;
-	uint32_t unk_4;
-	int16_t width;
-	int16_t height;
-	uint32_t unk_c;
-	uint32_t unk_10;
-	uint8_t format;
-} TextureHeader;
+#include <libra/texture.h>
 
 static uint8_t* load_last_n_bytes(const char* path, int32_t n);
 static void test_all_possible_swizzle_patterns(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size);
@@ -62,7 +52,7 @@ int main(int argc, char** argv) {
 	// Parse the container format.
 	RA_Result result;
 	RA_DatFile dat;
-	result = parse_dat_file(&dat, texture_file);
+	result = RA_parse_dat_file(&dat, texture_file);
 	if(result != NULL) {
 		fprintf(stderr, "error: %s\n", result);
 		exit(1);
@@ -75,7 +65,7 @@ int main(int argc, char** argv) {
 	}
 	
 	verify(dat.lump_count > 0 && dat.lumps[0].type_hash == 0x4ede3593, "error: Bad lumps.");
-	TextureHeader* tex_header = (TextureHeader*) dat.lumps[0].data;
+	RA_TextureHeader* tex_header = (RA_TextureHeader*) dat.lumps[0].data;
 	
 	int32_t real_width = (int32_t) pow(2, ceilf(log2(tex_header->width)));
 	int32_t real_height = (int32_t) pow(2, ceilf(log2(tex_header->height)));

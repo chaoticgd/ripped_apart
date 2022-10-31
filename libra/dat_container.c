@@ -2,8 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "util.h"
+#include <string.h>
 
 typedef struct {
 	int32_t type_hash;
@@ -19,11 +18,12 @@ typedef struct {
 	int16_t shader_count;
 } DatHeader;
 
-RA_Result parse_dat_file(RA_DatFile* dat, const char* path) {
+RA_Result RA_parse_dat_file(RA_DatFile* dat, const char* path) {
 	FILE* file = fopen(path, "rb");
 	if(!file) return "Failed to open file for reading.";
 	DatHeader header;
 	if(fread(&header, sizeof(DatHeader), 1, file) != 1) return "Failed to read DAT header.";
+	if(memcmp(header.magic, "1TAD", 4) != 0) return "Bad magic bytes.";
 	dat->asset_type_hash = header.asset_type_hash;
 	dat->lump_count = header.lump_count;
 	if(dat->lump_count <= 0) return "Lump count is zero.";

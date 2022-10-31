@@ -1,4 +1,23 @@
-enum DXGI_FORMAT {
+#ifndef LIBRA_TEXTURE_H
+#define LIBRA_TEXTURE_H
+
+#include "util.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct {
+	uint32_t unknown_0;
+	uint32_t unknown_4;
+	int16_t width;
+	int16_t height;
+	uint32_t unknown_c;
+	uint32_t unknown_10;
+	uint8_t format;
+} RA_TextureHeader;
+
+typedef enum {
 	DXGI_FORMAT_UNKNOWN = 0,
 	DXGI_FORMAT_R32G32B32A32_TYPELESS = 1,
 	DXGI_FORMAT_R32G32B32A32_FLOAT = 2,
@@ -121,4 +140,12 @@ enum DXGI_FORMAT {
 	DXGI_FORMAT_SAMPLER_FEEDBACK_MIN_MIP_OPAQUE,
 	DXGI_FORMAT_SAMPLER_FEEDBACK_MIP_REGION_USED_OPAQUE,
 	DXGI_FORMAT_FORCE_UINT = 0xffffffff
-};
+} DXGI_FORMAT;
+
+const char* RA_texture_format_to_string(uint32_t format);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
