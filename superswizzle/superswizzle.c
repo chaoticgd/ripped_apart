@@ -261,8 +261,6 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 		case DXGI_FORMAT_R8G8B8A8_UINT:
 		case DXGI_FORMAT_R8G8B8A8_SNORM:
 		case DXGI_FORMAT_R8G8B8A8_SINT: {
-			//verify(real_width >= 2048 && real_width >= 2048, "Texture too small, not sure how to unswizzle for now.");
-			//memcpy(unswizzled, src, real_width*real_height*4);
 			unswizzle(unswizzled, src, real_width, real_height, 2048, "XZ2N2N2N2N2N4Z");
 			break;
 		}
