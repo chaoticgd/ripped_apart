@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
 	
 	printf("width: %hd\n", tex_header->width);
 	printf("height: %hd\n", tex_header->height);
-	printf("format: %hhd\n", tex_header->format);
+	printf("format: %hs\n", RA_texture_format_to_string(tex_header->format));
 	
 	int32_t pixel_count = real_width * real_height;
 	
