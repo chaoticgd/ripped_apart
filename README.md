@@ -10,7 +10,7 @@ See the [Releases](https://github.com/chaoticgd/ripped_apart/releases) page.
 
 Converts .texture files to .png, automatically handling decompression and unswizzling. Can be used by dragging a texture onto the .exe file from within Windows explorer.
 
-Supported textures formats:
+Supported texture formats:
 
 - R8G8B8A8
 - R8
