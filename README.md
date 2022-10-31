@@ -38,3 +38,5 @@ Library containing some common code such as a DAT1 file parser and texture stuff
 ## Credit
 
 Some of the swizzle tables were originally reverse engineered by Slipsy.
+
+The [bc7enc](https://github.com/richgel999/bc7enc/) library is used for texture decompression.
