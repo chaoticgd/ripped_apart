@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "util.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -12,15 +14,15 @@ typedef struct {
 	int32_t offset;
 	int32_t size;
 	uint8_t* data;
-} RA_DatSection;
+} RA_DatLump;
 
 typedef struct {
 	int32_t asset_type_hash;
-	int32_t section_count;
-	RA_DatSection* sections;
+	int32_t lump_count;
+	RA_DatLump* lumps;
 } RA_DatFile;
 
-RA_DatFile parse_dat_file(const char* path);
+RA_Result parse_dat_file(RA_DatFile* dat, const char* path);
 
 #ifdef __cplusplus
 }

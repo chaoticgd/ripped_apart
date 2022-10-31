@@ -6,7 +6,6 @@
 #include <assert.h>
 
 #include <libra/dat_container.h>
-#include <libra/util.h>
 #include "dxgi_format.inl"
 
 typedef struct {
@@ -61,16 +60,22 @@ int main(int argc, char** argv) {
 	}
 	
 	// Parse the container format.
-	RA_DatFile dat = parse_dat_file(texture_file);
+	RA_Result result;
+	RA_DatFile dat;
+	result = parse_dat_file(&dat, texture_file);
+	if(result != NULL) {
+		fprintf(stderr, "error: %s\n", result);
+		exit(1);
+	}
 	
 	printf("asset type %x\n", dat.asset_type_hash);
 	
-	for(int32_t i = 0; i < dat.section_count; i++) {
-		printf("section of type %x @ %x\n", dat.sections[i].type_hash, dat.sections[i].offset);
+	for(int32_t i = 0; i < dat.lump_count; i++) {
+		printf("lump of type %x @ %x\n", dat.lumps[i].type_hash, dat.lumps[i].offset);
 	}
 	
-	verify(dat.section_count > 0 && dat.sections[0].type_hash == 0x4ede3593, "error: Bad sections.");
-	TextureHeader* tex_header = (TextureHeader*) dat.sections[0].data;
+	verify(dat.lump_count > 0 && dat.lumps[0].type_hash == 0x4ede3593, "error: Bad lumps.");
+	TextureHeader* tex_header = (TextureHeader*) dat.lumps[0].data;
 	
 	int32_t real_width = (int32_t) pow(2, ceilf(log2(tex_header->width)));
 	int32_t real_height = (int32_t) pow(2, ceilf(log2(tex_header->height)));

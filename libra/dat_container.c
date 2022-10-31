@@ -9,42 +9,38 @@ typedef struct {
 	int32_t type_hash;
 	int32_t offset;
 	int32_t size;
-} SectionHeader;
+} LumpHeader;
 
 typedef struct {
 	char magic[4];
 	int32_t asset_type_hash;
 	int32_t file_size;
-	int16_t section_count;
+	int16_t lump_count;
 	int16_t shader_count;
 } DatHeader;
 
-RA_DatFile parse_dat_file(const char* path) {
-	RA_DatFile dat;
+RA_Result parse_dat_file(RA_DatFile* dat, const char* path) {
 	FILE* file = fopen(path, "rb");
-	if(!file) {
-		printf("error: Failed to open '%s' for reading.\n", path);
-		exit(1);
-	}
+	if(!file) return "Failed to open file for reading.";
 	DatHeader header;
-	check_fread(fread(&header, sizeof(DatHeader), 1, file));
-	dat.asset_type_hash = header.asset_type_hash;
-	dat.section_count = header.section_count;
-	verify(dat.section_count > 0, "error: No sections!");
-	verify(dat.section_count < 1000, "error: Too many sections!");
-	dat.sections = malloc(sizeof(RA_DatSection) * header.section_count);
-	SectionHeader* headers = malloc(sizeof(SectionHeader) * header.section_count);
-	check_fread(fread(headers, dat.section_count * sizeof(SectionHeader), 1, file));
-	for(int32_t i = 0; i < header.section_count; i++) {
-		dat.sections[i].type_hash = headers[i].type_hash;
-		dat.sections[i].offset = headers[i].offset;
-		dat.sections[i].size = headers[i].size;
-		verify(headers[i].size < 1024 * 1024 * 1024, "error: Section too big!");
-		dat.sections[i].data = malloc(headers[i].size);
+	if(fread(&header, sizeof(DatHeader), 1, file) != 1) return "Failed to read DAT header.";
+	dat->asset_type_hash = header.asset_type_hash;
+	dat->lump_count = header.lump_count;
+	if(dat->lump_count <= 0) return "Lump count is zero.";
+	if(dat->lump_count > 1000) return "Lump count is too high!";
+	dat->lumps = malloc(sizeof(RA_DatLump) * header.lump_count);
+	LumpHeader* headers = malloc(sizeof(LumpHeader) * header.lump_count);
+	if(fread(headers, dat->lump_count * sizeof(LumpHeader), 1, file) != 1) return "Failed to read lump header.";
+	for(int32_t i = 0; i < header.lump_count; i++) {
+		dat->lumps[i].type_hash = headers[i].type_hash;
+		dat->lumps[i].offset = headers[i].offset;
+		dat->lumps[i].size = headers[i].size;
+		if(headers[i].size > 1024 * 1024 * 1024) return "Lump too big!";
+		dat->lumps[i].data = malloc(headers[i].size);
 		fseek(file, headers[i].offset, SEEK_SET);
-		check_fread(fread(dat.sections[i].data, headers[i].size, 1, file));
+		if(fread(dat->lumps[i].data, headers[i].size, 1, file) != 1) return "Failed to read lump.";
 	}
 	free(headers);
 	fclose(file);
-	return dat;
+	return NULL;
 }

@@ -19,3 +19,4 @@ include_directories(.)
 
 add_subdirectory(libra)
 add_subdirectory(superswizzle)
+add_subdirectory(igfile)
