@@ -11,7 +11,7 @@
 static uint8_t* load_last_n_bytes(const char* path, int32_t n);
 static void test_all_possible_swizzle_patterns(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size);
 static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size, const char* test_pattern);
-static void unswizzle(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih, int32_t bs, const char* pattern);
+static void unswizzle(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih, int32_t bs, const char* pattern_str);
 static void unswizzle_block(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih, int32_t bx, int32_t by, int32_t bs, int32_t* si, const char* pattern);
 static void crop_image_in_place(uint8_t* image, int32_t new_width, int32_t new_height, int32_t old_width, int32_t old_height);
 
@@ -169,6 +169,9 @@ static uint8_t* load_last_n_bytes(const char* path, int32_t n) {
 	return buffer;
 }
 
+// This is how I originally found the swizzle patterns. It's kept here in case
+// it ends up being useful in the future.
+#if 0
 static void test_all_possible_swizzle_patterns(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size) {
 	static char pattern[128] = {0};
 	static int32_t bs = 256;
@@ -240,6 +243,7 @@ static void test_all_possible_swizzle_patterns(const char* output_file, uint8_t*
 	
 	return;
 }
+#endif
 
 static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size, const char* test_pattern) {
 	// Allocate memory for decompression and unswizzling.
@@ -257,7 +261,8 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 		case DXGI_FORMAT_R8G8B8A8_UINT:
 		case DXGI_FORMAT_R8G8B8A8_SNORM:
 		case DXGI_FORMAT_R8G8B8A8_SINT: {
-			verify(real_width >= 2048 && real_width >= 2048, "Texture too small, not sure how to unswizzle for now.");
+			//verify(real_width >= 2048 && real_width >= 2048, "Texture too small, not sure how to unswizzle for now.");
+			//memcpy(unswizzled, src, real_width*real_height*4);
 			unswizzle(unswizzled, src, real_width, real_height, 2048, "XZ2N2N2N2N2N4Z");
 			break;
 		}
@@ -327,7 +332,31 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 	free(unswizzled);
 }
 
-static void unswizzle(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih, int32_t bs, const char* pattern) {
+static void unswizzle(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih, int32_t bs, const char* pattern_str) {
+	char pattern_bytes[128];
+	strcpy(pattern_bytes, pattern_str);
+	char* pattern = &pattern_bytes[0];
+	
+	// If the texture is smaller than the block size, we must peel the swizzle
+	// pattern until we get one that's small enough.
+	while(iw < bs || ih < bs) {
+		verify(pattern[0] != '\0', "Texture too small.");
+		if(pattern[0] == 'X') {
+			pattern[0] = '8';
+			bs /= 2;
+		} else if(pattern[0] == '8') {
+			pattern[0] = '4';
+			bs /= 2;
+		} else if(pattern[0] == '4') {
+			pattern[0] = '2';
+			bs /= 2;
+		} else {
+			pattern = pattern + 2;
+			bs /= 2;
+		}
+	}
+	
+	// Do the unswizzling.
 	int32_t si = 0;
 	for(int32_t by = 0; by < ih; by += bs) {
 		for(int32_t bx = 0; bx < iw; bx += bs) {
