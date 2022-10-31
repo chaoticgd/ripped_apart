@@ -162,7 +162,7 @@ int main(int argc, char** argv)
 	
 	//test_all_possible_swizzle_patterns(output_file, compressed, tex_header->width, tex_header->height, real_width, real_height, tex_header->format, texture_size);
 	
-	//free(unswizzled);
+	free(compressed);
 	
 	return 0;
 }
@@ -370,7 +370,6 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 		}
 	}
 	
-	//free(compressed);
 	free(decompressed);
 	
 	if(real_width != width || real_height != height) {
