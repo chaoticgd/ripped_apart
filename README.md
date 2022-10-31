@@ -28,7 +28,7 @@ Command line usage:
 
 Prints out metadata about the specified asset or all the assets in a directory.
 
-Commane line usage:
+Command line usage:
 
 	./igfile <input paths>
 
