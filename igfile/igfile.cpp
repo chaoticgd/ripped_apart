@@ -9,21 +9,22 @@ namespace fs = std::filesystem;
 static RA_Result process_file(const char* name);
 
 int main(int argc, char** argv) {
-	if(argc != 2) {
-		printf("igfile -- https://github.com/chaoticgd/ripped_apart\n");
-		printf("usage: %s <path to input asset file>\n", argv[0]);
-		printf("       %s <path to input directory>\n", argv[0]);
+	if(argc < 2) {
+		fprintf(stderr, "igfile -- https://github.com/chaoticgd/ripped_apart\n");
+		fprintf(stderr, "usage: %s <input paths>\n", argv[0]);
 		return 1;
 	}
 	
-	if(fs::is_directory(argv[1])) {
-		for(const auto& dir_entry : fs::recursive_directory_iterator(argv[1])) {
-			process_file(dir_entry.path().string().c_str());
-		}
-	} else {
-		RA_Result result = process_file(argv[1]);
-		if(result != NULL) {
-			fprintf(stderr, "error: %s\n", result);
+	for(int i = 1; i < argc; i++) {
+		if(fs::is_directory(argv[i])) {
+			for(const auto& dir_entry : fs::recursive_directory_iterator(argv[i])) {
+				process_file(dir_entry.path().string().c_str());
+			}
+		} else {
+			RA_Result result = process_file(argv[i]);
+			if(result != NULL) {
+				fprintf(stderr, "error: %s\n", result);
+			}
 		}
 	}
 }

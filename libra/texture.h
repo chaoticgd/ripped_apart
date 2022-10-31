@@ -12,7 +12,8 @@ typedef struct {
 	uint32_t unknown_4;
 	int16_t width;
 	int16_t height;
-	uint32_t unknown_c;
+	uint16_t width_in_texture_file;
+	uint16_t height_in_texture_file;
 	uint32_t unknown_10;
 	uint8_t format;
 } RA_TextureHeader;

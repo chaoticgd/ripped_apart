@@ -22,10 +22,11 @@ void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void write_png(const char* filename, const unsigned char* image, unsigned w, unsigned h);
 
 int main(int argc, char** argv) {
-	if(argc != 2 && argc != 4) {
-		printf("superswizzle -- https://github.com/chaoticgd/ripped_apart\n");
-		printf("usage: %s <.texture input path>\n", argv[0]);
-		printf("       %s <.texture input path> <.stream input path> <.png output path>\n", argv[0]);
+	if(argc != 2 && argc != 3 && argc != 4) {
+		fprintf(stderr, "superswizzle -- https://github.com/chaoticgd/ripped_apart\n");
+		fprintf(stderr, "usage: %s <.texture input path>\n", argv[0]);
+		fprintf(stderr, "       %s <.texture input path> <.png output path>\n", argv[0]);
+		fprintf(stderr, "       %s <.texture input path> <.stream input path> <.png output path>\n", argv[0]);
 		return 1;
 	}
 	
@@ -34,16 +35,20 @@ int main(int argc, char** argv) {
 	const char* stream_file;
 	const char* output_file;
 	
-	if(argc == 2) {
+	if(argc == 2 || argc == 3) {
 		char* stream_file_auto = malloc(strlen(texture_file) + strlen(".stream") + 1);
 		strcpy(stream_file_auto, texture_file);
 		memcpy(stream_file_auto + strlen(stream_file_auto), ".stream", strlen(".stream") + 1);
 		stream_file = stream_file_auto;
 		
-		char* output_file_auto = malloc(strlen(texture_file) + strlen(".png") + 1);
-		strcpy(output_file_auto, texture_file);
-		memcpy(output_file_auto + strlen(output_file_auto), ".png", strlen(".png") + 1);
-		output_file = output_file_auto;
+		if(argc == 2) {
+			char* output_file_auto = malloc(strlen(texture_file) + strlen(".png") + 1);
+			strcpy(output_file_auto, texture_file);
+			memcpy(output_file_auto + strlen(output_file_auto), ".png", strlen(".png") + 1);
+			output_file = output_file_auto;
+		} else {
+			output_file = argv[2];
+		}
 	} else if(argc == 4) {
 		stream_file = argv[2];
 		output_file = argv[3];
@@ -131,9 +136,14 @@ int main(int argc, char** argv) {
 	}
 	
 	// Read the highest mip from disk.
-	uint8_t* compressed = load_last_n_bytes(stream_file, texture_size);
-	if(compressed == NULL) {
+	uint8_t* compressed = NULL;
+	if(tex_header->width == tex_header->width_in_texture_file
+		&& tex_header->height == tex_header->height_in_texture_file) {
 		compressed = load_last_n_bytes(texture_file, texture_size);
+	} else {
+		compressed = load_last_n_bytes(stream_file, texture_size);
+	}
+	if(compressed == NULL) {
 		verify(compressed != NULL, "error: Failed to read texture data.\n");
 	}
 	
