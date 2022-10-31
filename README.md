@@ -24,4 +24,4 @@ Command line options:
 
 ## Credit
 
-The swizzle tables were reverse engineered by Slipsy.
+Some of the swizzle tables were originally reverse engineered by Slipsy.

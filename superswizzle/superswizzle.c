@@ -5,7 +5,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include "tables.inl"
 #include "dxgi_format.inl"
 
 #define verify(cond, msg) if(!(cond)) { printf(msg "\n"); exit(1); }
@@ -36,13 +35,16 @@ typedef struct {
 
 static DatFile parse_dat_file(const char* path);
 static uint8_t* load_last_n_bytes(const char* path, int32_t n);
+static void test_all_possible_swizzle_patterns(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size);
+static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size, const char* test_pattern);
+static void unswizzle(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih, int32_t bs, const char* pattern);
+static void unswizzle_block(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih, int32_t bx, int32_t by, int32_t bs, int32_t* si, const char* pattern);
 static void crop_image_in_place(uint8_t* image, int32_t new_width, int32_t new_height, int32_t old_width, int32_t old_height);
 
 void decode_init();
 void decode_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void decode_bc4(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
-void unswizzle(uint8_t* dest, uint8_t* src, int32_t width, int32_t height, const int32_t* swizzle_table);
 void write_png(const char* filename, const unsigned char* image, unsigned w, unsigned h);
 
 int main(int argc, char** argv)
@@ -83,7 +85,7 @@ int main(int argc, char** argv)
 		printf("section of type %x @ %x\n", dat.sections[i].type_hash, dat.sections[i].offset);
 	}
 	
-	verify(dat.section_count > 0 && dat.sections[0].type_hash == 0x4ede3593, "Bad sections.");
+	verify(dat.section_count > 0 && dat.sections[0].type_hash == 0x4ede3593, "error: Bad sections.");
 	TextureHeader* tex_header = (TextureHeader*) dat.sections[0].data;
 	
 	int32_t real_width = (int32_t) pow(2, ceilf(log2(tex_header->width)));
@@ -100,23 +102,31 @@ int main(int argc, char** argv)
 	
 	int32_t texture_size;
 	switch(tex_header->format) {
-		//case DXGI_FORMAT_R8G8B8A8_TYPELESS:
-		//case DXGI_FORMAT_R8G8B8A8_UNORM:
-		//case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-		//case DXGI_FORMAT_R8G8B8A8_UINT:
-		//case DXGI_FORMAT_R8G8B8A8_SNORM:
-		//case DXGI_FORMAT_R8G8B8A8_SINT: {
-		//	texture_size = pixel_count * 4;
-		//	break;
-		//}
-		//case DXGI_FORMAT_R8G8_TYPELESS:
-		//case DXGI_FORMAT_R8G8_UNORM:
-		//case DXGI_FORMAT_R8G8_UINT:
-		//case DXGI_FORMAT_R8G8_SNORM:
-		//case DXGI_FORMAT_R8G8_SINT: {
-		//	texture_size = pixel_count * 2;
-		//	break;
-		//}
+		case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+		case DXGI_FORMAT_R8G8B8A8_UNORM:
+		case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+		case DXGI_FORMAT_R8G8B8A8_UINT:
+		case DXGI_FORMAT_R8G8B8A8_SNORM:
+		case DXGI_FORMAT_R8G8B8A8_SINT: {
+			texture_size = pixel_count * 4;
+			break;
+		}
+		case DXGI_FORMAT_R8G8_TYPELESS:
+		case DXGI_FORMAT_R8G8_UNORM:
+		case DXGI_FORMAT_R8G8_UINT:
+		case DXGI_FORMAT_R8G8_SNORM:
+		case DXGI_FORMAT_R8G8_SINT: {
+			texture_size = pixel_count * 2;
+			break;
+		}
+		case DXGI_FORMAT_R8_TYPELESS:
+		case DXGI_FORMAT_R8_UNORM:
+		case DXGI_FORMAT_R8_UINT:
+		case DXGI_FORMAT_R8_SNORM:
+		case DXGI_FORMAT_R8_SINT: {
+			texture_size = pixel_count;
+			break;
+		}
 		case DXGI_FORMAT_BC1_TYPELESS:
 		case DXGI_FORMAT_BC1_UNORM:
 		case DXGI_FORMAT_BC1_UNORM_SRGB: {
@@ -148,75 +158,11 @@ int main(int argc, char** argv)
 		verify(compressed != NULL, "error: Failed to read texture data.\n");
 	}
 	
-	// Allocate memory for decompression and unswizzling.
-	uint8_t* decompressed = malloc(real_width * real_height * 4 + 256 * 245);
-	uint8_t* unswizzled = malloc(real_width * real_height * 4);
+	decode_and_write_png(output_file, compressed, tex_header->width, tex_header->height, real_width, real_height, tex_header->format, texture_size, NULL);
 	
-	// Decompress and unswizzle the textures.
-	decode_init();
-	switch(tex_header->format) {
-		case DXGI_FORMAT_R8G8B8A8_TYPELESS:
-		case DXGI_FORMAT_R8G8B8A8_UNORM:
-		case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-		case DXGI_FORMAT_R8G8B8A8_UINT:
-		case DXGI_FORMAT_R8G8B8A8_SNORM:
-		case DXGI_FORMAT_R8G8B8A8_SINT: {
-			memcpy(unswizzled, compressed, pixel_count * 4);
-			//unswizzle(unswizzled, compressed, real_width, real_height, SWIZZLE_TABLE_2);
-			break;
-		}
-		case DXGI_FORMAT_R8G8_TYPELESS:
-		case DXGI_FORMAT_R8G8_UNORM:
-		case DXGI_FORMAT_R8G8_UINT:
-		case DXGI_FORMAT_R8G8_SNORM:
-		case DXGI_FORMAT_R8G8_SINT: {
-			for(int32_t i = 0; i < real_width * real_height; i++) {
-				unswizzled[i * 4 + 0] = compressed[i * 2 + 0];
-				unswizzled[i * 4 + 1] = compressed[i * 2 + 1];
-				unswizzled[i * 4 + 2] = 0x00;
-				unswizzled[i * 4 + 3] = 0xff;
-			}
-			//unswizzle(unswizzled, decompressed, real_width, real_height, SWIZZLE_TABLE_1);
-			break;
-		}
-		case DXGI_FORMAT_BC1_TYPELESS:
-		case DXGI_FORMAT_BC1_UNORM:
-		case DXGI_FORMAT_BC1_UNORM_SRGB: {
-			decode_bc1(decompressed, compressed, real_width, real_height);
-			unswizzle(unswizzled, decompressed, real_width, real_height, SWIZZLE_TABLE_1);
-			break;
-		}
-		case DXGI_FORMAT_BC4_TYPELESS:
-		case DXGI_FORMAT_BC4_UNORM:
-		case DXGI_FORMAT_BC4_SNORM: {
-			decode_bc4(decompressed, compressed, real_width, real_height);
-			unswizzle(unswizzled, decompressed, real_width, real_height, SWIZZLE_TABLE_1);
-			break;
-		}
-		//case DXGI_FORMAT_BC6H_UF16: {
-		//	break;
-		//}
-		case DXGI_FORMAT_BC7_TYPELESS:
-		case DXGI_FORMAT_BC7_UNORM:
-		case DXGI_FORMAT_BC7_UNORM_SRGB: {
-			decode_bc7(decompressed, compressed, real_width, real_height);
-			unswizzle(unswizzled, decompressed, real_width, real_height, SWIZZLE_TABLE_2);
-			break;
-		}
-	}
+	//test_all_possible_swizzle_patterns(output_file, compressed, tex_header->width, tex_header->height, real_width, real_height, tex_header->format, texture_size);
 	
-	free(compressed);
-	free(decompressed);
-	
-	if(real_width != tex_header->width || real_height != tex_header->height) {
-		assert(real_width >= tex_header->width && real_height >= tex_header->height);
-		crop_image_in_place(unswizzled, tex_header->width, tex_header->height, real_width, real_height);
-	}
-	
-	// Write the output file.
-	write_png(output_file, unswizzled, tex_header->width, tex_header->height);
-	
-	free(unswizzled);
+	//free(unswizzled);
 	
 	return 0;
 }
@@ -276,6 +222,229 @@ static uint8_t* load_last_n_bytes(const char* path, int32_t n) {
 	check_fread(fread(buffer, n, 1, file));
 	fclose(file);
 	return buffer;
+}
+
+static void test_all_possible_swizzle_patterns(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size) {
+	static char pattern[128] = {0};
+	static int32_t bs = 256;
+	static int32_t ofs = 0;
+	
+	if(bs < 1) {
+		return;
+	} else if(bs == 1) {
+		// R8
+		if(pattern[0] != '2')return;
+		if(pattern[0+1] != 'N')return;
+		if(pattern[0+2] != '2')return;
+		if(pattern[0+3] != 'N')return;
+		if(pattern[0+4] != '2')return;
+		if(pattern[0+5] != 'N')return;
+		
+		pattern[ofs] = '\0';
+		char* testout = malloc(strlen(output_file)+sizeof(pattern)+4+1);
+		memcpy(testout, output_file, strlen(output_file));
+		memcpy(testout+strlen(output_file), pattern, strlen(pattern));
+		memcpy(testout+strlen(output_file)+strlen(pattern), ".png", 5);
+		decode_and_write_png(testout, src, width, height, real_width, real_height, format, texture_size, pattern);
+	} else {
+		// Try subdiv 2.
+		int32_t before_bs = bs;
+		bs /= 2;
+		ofs += 2;
+		
+		pattern[ofs - 2] = '2';
+		
+		pattern[ofs - 1] = 'Z';
+		test_all_possible_swizzle_patterns(output_file, src, width, height, real_width, real_height, format, texture_size);
+		pattern[ofs - 1] = 'N';
+		test_all_possible_swizzle_patterns(output_file, src, width, height, real_width, real_height, format, texture_size);
+		
+		// Try subdiv 4.
+		bs /= 2;
+		
+		pattern[ofs - 2] = '4';
+		
+		pattern[ofs - 1] = 'Z';
+		test_all_possible_swizzle_patterns(output_file, src, width, height, real_width, real_height, format, texture_size);
+		pattern[ofs - 1] = 'N';
+		test_all_possible_swizzle_patterns(output_file, src, width, height, real_width, real_height, format, texture_size);
+		
+		// Try subdiv 8.
+		bs /= 2;
+		
+		pattern[ofs - 2] = '8';
+		
+		pattern[ofs - 1] = 'Z';
+		test_all_possible_swizzle_patterns(output_file, src, width, height, real_width, real_height, format, texture_size);
+		pattern[ofs - 1] = 'N';
+		test_all_possible_swizzle_patterns(output_file, src, width, height, real_width, real_height, format, texture_size);
+		
+		// Try subdiv 16.
+		bs /= 2;
+		
+		pattern[ofs - 2] = 'X';
+		
+		pattern[ofs - 1] = 'Z';
+		test_all_possible_swizzle_patterns(output_file, src, width, height, real_width, real_height, format, texture_size);
+		pattern[ofs - 1] = 'N';
+		test_all_possible_swizzle_patterns(output_file, src, width, height, real_width, real_height, format, texture_size);
+		
+		ofs -= 2;
+		bs = before_bs;
+	}
+	
+	return;
+}
+
+static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size, const char* test_pattern) {
+	// Allocate memory for decompression and unswizzling.
+	uint8_t* decompressed = malloc(real_width * real_height * 4);
+	uint8_t* unswizzled = malloc(real_width * real_height * 4);
+	
+	int32_t pixel_count = real_width * real_height;
+	
+	// Decompress and unswizzle the textures.
+	decode_init();
+	switch(format) {
+		case DXGI_FORMAT_R8G8B8A8_TYPELESS:
+		case DXGI_FORMAT_R8G8B8A8_UNORM:
+		case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+		case DXGI_FORMAT_R8G8B8A8_UINT:
+		case DXGI_FORMAT_R8G8B8A8_SNORM:
+		case DXGI_FORMAT_R8G8B8A8_SINT: {
+			verify(real_width >= 2048 && real_width >= 2048, "Texture too small, not sure how to unswizzle for now.");
+			unswizzle(unswizzled, src, real_width, real_height, 2048, "XZ2N2N2N2N2N4Z");
+			break;
+		}
+		case DXGI_FORMAT_R8G8_TYPELESS:
+		case DXGI_FORMAT_R8G8_UNORM:
+		case DXGI_FORMAT_R8G8_UINT:
+		case DXGI_FORMAT_R8G8_SNORM:
+		case DXGI_FORMAT_R8G8_SINT: {
+			for(int32_t i = 0; i < real_width * real_height; i++) {
+				unswizzled[i * 4 + 0] = src[i * 2 + 0];
+				unswizzled[i * 4 + 1] = src[i * 2 + 1];
+				unswizzled[i * 4 + 2] = 0x00;
+				unswizzled[i * 4 + 3] = 0xff;
+			}
+			unswizzle(unswizzled, decompressed, real_width, real_height, 256, "2Z2Z2Z2Z2N2Z");
+			break;
+		}
+		case DXGI_FORMAT_R8_TYPELESS:
+		case DXGI_FORMAT_R8_UNORM:
+		case DXGI_FORMAT_R8_UINT:
+		case DXGI_FORMAT_R8_SNORM:
+		case DXGI_FORMAT_R8_SINT: {
+			for(int32_t i = 0; i < real_width * real_height; i++) {
+				decompressed[i * 4 + 0] = src[i];
+				decompressed[i * 4 + 1] = src[i];
+				decompressed[i * 4 + 2] = src[i];
+				decompressed[i * 4 + 3] = 0xff;
+			}
+			unswizzle(unswizzled, decompressed, real_width, real_height, 256, "2N2N2N2NXZ");
+			break;
+		}
+		case DXGI_FORMAT_BC1_TYPELESS:
+		case DXGI_FORMAT_BC1_UNORM:
+		case DXGI_FORMAT_BC1_UNORM_SRGB: {
+			decode_bc1(decompressed, src, real_width, real_height);
+			unswizzle(unswizzled, decompressed, real_width, real_height, 256, "2Z2Z2Z2Z2N2Z");
+			break;
+		}
+		case DXGI_FORMAT_BC4_TYPELESS:
+		case DXGI_FORMAT_BC4_UNORM:
+		case DXGI_FORMAT_BC4_SNORM: {
+			decode_bc4(decompressed, src, real_width, real_height);
+			unswizzle(unswizzled, decompressed, real_width, real_height, 256, "2Z2Z2Z2Z2N2Z");
+			break;
+		}
+		//case DXGI_FORMAT_BC6H_UF16: {
+		//	break;
+		//}
+		case DXGI_FORMAT_BC7_TYPELESS:
+		case DXGI_FORMAT_BC7_UNORM:
+		case DXGI_FORMAT_BC7_UNORM_SRGB: {
+			decode_bc7(decompressed, src, real_width, real_height);
+			unswizzle(unswizzled, decompressed, real_width, real_height, 256, "2N2N2N2N4N");
+			break;
+		}
+	}
+	
+	//free(compressed);
+	free(decompressed);
+	
+	if(real_width != width || real_height != height) {
+		assert(real_width >= width && real_height >= height);
+		crop_image_in_place(unswizzled, width, height, real_width, real_height);
+	}
+	
+	// Write the output file.
+	write_png(output_file, unswizzled, width, height);
+	free(unswizzled);
+}
+
+static void unswizzle(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih, int32_t bs, const char* pattern) {
+	int32_t si = 0;
+	for(int32_t by = 0; by < ih; by += bs) {
+		for(int32_t bx = 0; bx < iw; bx += bs) {
+			unswizzle_block(dest, src, iw, ih, bx, by, bs, &si, pattern);
+		}
+	}
+}
+
+static void unswizzle_block(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih, int32_t bx, int32_t by, int32_t bs, int32_t* si, const char* pattern) {
+	static const float QRTR = 1.f / 4.f;
+	static const float HALF = 1.f / 2.f;
+	static const float TQRT = 3.f / 4.f;
+	
+	if(pattern[0] == '\0') {
+		// Base case: copy a block.
+		int32_t sx = (*si % (iw / bs)) * bs;
+		int32_t sy = (*si / (iw / bs)) * bs;
+		for(int32_t y = 0; y < bs; y++) {
+			memcpy(
+				&dest[((by + y) * iw + bx) * 4],
+				&src[((sy + y) * iw + sx) * 4],
+				bs * 4);
+		}
+		*si += 1;
+		return;
+	} else {
+		// Recursive case: subdivide factor*factor times.
+		int32_t factor = pattern[0] - '0';
+		if(pattern[0] == 'X') factor = 16;
+		if(pattern[1] == 'N') {
+			for(int32_t x = 0; x < factor; x++) {
+				for(int32_t y = 0; y < factor; y++) {
+					unswizzle_block(dest, src, iw, ih, bx + bs * (x / (float)factor), by + bs * (y / (float)factor), bs / factor, si, pattern + 2);
+				}
+			}
+			return;
+		} else if(pattern[1] == 'Z') {
+			for(int32_t y = 0; y < factor; y++) {
+				for(int32_t x = 0; x < factor; x++) {
+					unswizzle_block(dest, src, iw, ih, bx + bs * (x / (float)factor), by + bs * (y / (float)factor), bs / factor, si, pattern + 2);
+				}
+			}
+			return;
+		} else if(pattern[1] == 'n') {
+			for(int32_t x = factor - 1; x >= 0; x--) {
+				for(int32_t y = factor - 1; y >= 0; y--) {
+					unswizzle_block(dest, src, iw, ih, bx + bs * (x / (float)factor), by + bs * (y / (float)factor), bs / factor, si, pattern + 2);
+				}
+			}
+			return;
+		} else if(pattern[1] == 'z') {
+			for(int32_t y = factor - 1; y >= 0; y--) {
+				for(int32_t x = factor - 1; x >= 0; x--) {
+					unswizzle_block(dest, src, iw, ih, bx + bs * (x / (float)factor), by + bs * (y / (float)factor), bs / factor, si, pattern + 2);
+				}
+			}
+			return;
+		}
+	}
+	fprintf(stderr, "error: Bad swizzle format string specified! This should never happen!");
+	exit(1);
 }
 
 static void crop_image_in_place(uint8_t* image, int32_t new_width, int32_t new_height, int32_t old_width, int32_t old_height) {
