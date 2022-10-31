@@ -75,9 +75,6 @@ int main(int argc, char** argv) {
 	int32_t real_width = (int32_t) pow(2, ceilf(log2(tex_header->width)));
 	int32_t real_height = (int32_t) pow(2, ceilf(log2(tex_header->height)));
 	
-	verify(real_width % 256 == 0, "error: Texture size not supported.");
-	verify(real_height % 256 == 0, "error: Texture size not supported.");
-	
 	printf("width: %hd\n", tex_header->width);
 	printf("height: %hd\n", tex_header->height);
 	printf("format: %hhd\n", tex_header->format);
