@@ -13,7 +13,9 @@ Converts .texture files to .png, automatically handling decompression and unswiz
 Supported texture formats:
 
 - BC1
+- BC3 (since v1.3)
 - BC4 (since v1.1)
+- BC5 (since v1.3)
 - BC7
 - R8 (since v1.1)
 - R8G8 (since v1.2)

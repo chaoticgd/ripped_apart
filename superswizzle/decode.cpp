@@ -33,6 +33,16 @@ void decode_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
 	}
 }
 
+void decode_bc3(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
+	for(int32_t y = 0; y < height / 4; y++) {
+		for(int32_t x = 0; x < width / 4; x++) {
+			uint8_t block[64];
+			rgbcx::unpack_bc3(&src[(y * (width / 4) + x) * 16], block, rgbcx::bc1_approx_mode::cBC1IdealRound4);
+			set_block(dest, block, x, y, 4, 4, width, height);
+		}
+	}
+}
+
 void decode_bc4(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
 	for(int32_t y = 0; y < height / 4; y++) {
 		for(int32_t x = 0; x < width / 4; x++) {
@@ -43,6 +53,20 @@ void decode_bc4(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
 				block[i + 2] = block[i];
 				block[i + 3] = 0xff;
 			}
+			set_block(dest, block, x, y, 4, 4, width, height);
+		}
+	}
+}
+
+void decode_bc5(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
+	uint8_t block[64];
+	for(int32_t i = 0; i < 64; i += 4) {
+		block[i + 2] = 0;
+		block[i + 3] = 0xff;
+	}
+	for(int32_t y = 0; y < height / 4; y++) {
+		for(int32_t x = 0; x < width / 4; x++) {
+			rgbcx::unpack_bc5(&src[(y * (width / 4) + x) * 16], block, 0, 1, 4);
 			set_block(dest, block, x, y, 4, 4, width, height);
 		}
 	}

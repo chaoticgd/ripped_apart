@@ -18,7 +18,9 @@ static void test_all_possible_swizzle_patterns(const char* output_file, uint8_t*
 
 void decode_init();
 void decode_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
+void decode_bc3(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void decode_bc4(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
+void decode_bc5(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void write_png(const char* filename, const unsigned char* image, unsigned w, unsigned h);
 
@@ -153,12 +155,28 @@ static void get_texture_properties(int32_t* block_size, const char** swizzle_pat
 			*bits_per_pixel = 4;
 			break;
 		}
+		case DXGI_FORMAT_BC3_TYPELESS:
+		case DXGI_FORMAT_BC3_UNORM:
+		case DXGI_FORMAT_BC3_UNORM_SRGB: {
+			*block_size = 256;
+			*swizzle_pattern = "2N2N2N2N4N";
+			*bits_per_pixel = 8;
+			break;
+		}
 		case DXGI_FORMAT_BC4_TYPELESS:
 		case DXGI_FORMAT_BC4_UNORM:
 		case DXGI_FORMAT_BC4_SNORM: {
 			*block_size = 256;
 			*swizzle_pattern = "2Z2Z2Z2Z2N2Z";
 			*bits_per_pixel = 4;
+			break;
+		}
+		case DXGI_FORMAT_BC5_TYPELESS:
+		case DXGI_FORMAT_BC5_UNORM:
+		case DXGI_FORMAT_BC5_SNORM: {
+			*block_size = 256;
+			*swizzle_pattern = "2N2N2N2N4N";
+			*bits_per_pixel = 8;
 			break;
 		}
 		case DXGI_FORMAT_BC7_TYPELESS:
@@ -243,6 +261,13 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 			unswizzle(unswizzled, decompressed, real_width, real_height, block_size, pattern);
 			break;
 		}
+		case DXGI_FORMAT_BC3_TYPELESS:
+		case DXGI_FORMAT_BC3_UNORM:
+		case DXGI_FORMAT_BC3_UNORM_SRGB: {
+			decode_bc3(decompressed, src, real_width, real_height);
+			unswizzle(unswizzled, decompressed, real_width, real_height, block_size, pattern);
+			break;
+		}
 		case DXGI_FORMAT_BC4_TYPELESS:
 		case DXGI_FORMAT_BC4_UNORM:
 		case DXGI_FORMAT_BC4_SNORM: {
@@ -250,9 +275,13 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 			unswizzle(unswizzled, decompressed, real_width, real_height, block_size, pattern);
 			break;
 		}
-		//case DXGI_FORMAT_BC6H_UF16: {
-		//	break;
-		//}
+		case DXGI_FORMAT_BC5_TYPELESS:
+		case DXGI_FORMAT_BC5_UNORM:
+		case DXGI_FORMAT_BC5_SNORM: {
+			decode_bc5(decompressed, src, real_width, real_height);
+			unswizzle(unswizzled, decompressed, real_width, real_height, block_size, pattern);
+			break;
+		}
 		case DXGI_FORMAT_BC7_TYPELESS:
 		case DXGI_FORMAT_BC7_UNORM:
 		case DXGI_FORMAT_BC7_UNORM_SRGB: {
