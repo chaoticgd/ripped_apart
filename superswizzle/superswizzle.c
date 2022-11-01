@@ -125,16 +125,16 @@ static void get_texture_properties(int32_t* block_size, const char** swizzle_pat
 			*bits_per_pixel = 32;
 			break;
 		}
-		//case DXGI_FORMAT_R8G8_TYPELESS:
-		//case DXGI_FORMAT_R8G8_UNORM:
-		//case DXGI_FORMAT_R8G8_UINT:
-		//case DXGI_FORMAT_R8G8_SNORM:
-		//case DXGI_FORMAT_R8G8_SINT: {
-		//	*block_size = 128;
-		//	*swizzle_pattern = "???";
-		//	*bits_per_pixel = 16;
-		//	break;
-		//}
+		case DXGI_FORMAT_R8G8_TYPELESS:
+		case DXGI_FORMAT_R8G8_UNORM:
+		case DXGI_FORMAT_R8G8_UINT:
+		case DXGI_FORMAT_R8G8_SNORM:
+		case DXGI_FORMAT_R8G8_SINT: {
+			*block_size = 128;
+			*swizzle_pattern = "2Z2Z2Z2Z8Z";
+			*bits_per_pixel = 16;
+			break;
+		}
 		case DXGI_FORMAT_R8_TYPELESS:
 		case DXGI_FORMAT_R8_UNORM:
 		case DXGI_FORMAT_R8_UINT:
@@ -165,7 +165,7 @@ static void get_texture_properties(int32_t* block_size, const char** swizzle_pat
 		case DXGI_FORMAT_BC7_UNORM:
 		case DXGI_FORMAT_BC7_UNORM_SRGB: {
 			*block_size = 256;
-			*swizzle_pattern = "2Z2Z2Z2Z2N2Z";
+			*swizzle_pattern = "2N2N2N2N4N";
 			*bits_per_pixel = 8;
 			break;
 		}
@@ -208,20 +208,20 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 			unswizzle(unswizzled, src, real_width, real_height, block_size, pattern);
 			break;
 		}
-		//case DXGI_FORMAT_R8G8_TYPELESS:
-		//case DXGI_FORMAT_R8G8_UNORM:
-		//case DXGI_FORMAT_R8G8_UINT:
-		//case DXGI_FORMAT_R8G8_SNORM:
-		//case DXGI_FORMAT_R8G8_SINT: {
-		//	for(int32_t i = 0; i < real_width * real_height; i++) {
-		//		decompressed[i * 4 + 0] = src[i * 2 + 0];
-		//		decompressed[i * 4 + 1] = src[i * 2 + 1];
-		//		decompressed[i * 4 + 2] = 0x00;
-		//		decompressed[i * 4 + 3] = 0xff;
-		//	}
-		//	unswizzle(unswizzled, decompressed, real_width, real_height, 256, "???");
-		//	break;
-		//}
+		case DXGI_FORMAT_R8G8_TYPELESS:
+		case DXGI_FORMAT_R8G8_UNORM:
+		case DXGI_FORMAT_R8G8_UINT:
+		case DXGI_FORMAT_R8G8_SNORM:
+		case DXGI_FORMAT_R8G8_SINT: {
+			for(int32_t i = 0; i < real_width * real_height; i++) {
+				decompressed[i * 4 + 0] = src[i * 2 + 0];
+				decompressed[i * 4 + 1] = src[i * 2 + 1];
+				decompressed[i * 4 + 2] = 0x00;
+				decompressed[i * 4 + 3] = 0xff;
+			}
+			unswizzle(unswizzled, decompressed, real_width, real_height, block_size, pattern);
+			break;
+		}
 		case DXGI_FORMAT_R8_TYPELESS:
 		case DXGI_FORMAT_R8_UNORM:
 		case DXGI_FORMAT_R8_UINT:
@@ -343,20 +343,16 @@ static void test_all_possible_swizzle_patterns(const char* output_file, uint8_t*
 	if(bs < 1) {
 		return;
 	} else if(bs == 1) {
-		// R8
-		if(pattern[0] != '2')return;
-		if(pattern[0+1] != 'N')return;
-		if(pattern[0+2] != '2')return;
-		if(pattern[0+3] != 'N')return;
-		if(pattern[0+4] != '2')return;
-		if(pattern[0+5] != 'N')return;
+		// R8R8
+		if(pattern[ofs-2] != '8')return;
+		if(pattern[ofs-1] != 'Z')return;
 		
 		pattern[ofs] = '\0';
 		char* testout = malloc(strlen(output_file)+sizeof(pattern)+4+1);
 		memcpy(testout, output_file, strlen(output_file));
 		memcpy(testout+strlen(output_file), pattern, strlen(pattern));
 		memcpy(testout+strlen(output_file)+strlen(pattern), ".png", 5);
-		decode_and_write_png(testout, src, width, height, real_width, real_height, format, texture_size, pattern);
+		decode_and_write_png(testout, src, width, height, real_width, real_height, format, texture_size, 128, pattern);
 	} else {
 		// Try subdiv 2.
 		int32_t before_bs = bs;

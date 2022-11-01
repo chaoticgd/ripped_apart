@@ -12,11 +12,12 @@ Converts .texture files to .png, automatically handling decompression and unswiz
 
 Supported texture formats:
 
-- R8G8B8A8
-- R8
 - BC1
-- BC4
+- BC4 (since v1.1)
 - BC7
+- R8 (since v1.1)
+- R8G8 (since v1.2)
+- R8G8B8A8 (since v1.1)
 
 Command line usage:
 
