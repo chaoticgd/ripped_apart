@@ -9,11 +9,12 @@
 #include <libra/texture.h>
 
 static uint8_t* load_last_n_bytes(const char* path, int32_t n);
-static void get_texture_properties(int32_t* block_size, const char** swizzle_pattern, int32_t* bits_per_pixel, uint8_t format);
+static void get_texture_properties(int32_t* block_size, const char** swizzle_pattern, int32_t* bits_per_pixel, int8_t* is_hdr, uint8_t format);
 static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size, int32_t block_size, const char* pattern);
 static void unswizzle(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih, int32_t bs, const char* pattern);
 static void unswizzle_block(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih, int32_t bx, int32_t by, int32_t bs, int32_t* si, const char* pattern);
 static void crop_image_in_place(uint8_t* image, int32_t new_width, int32_t new_height, int32_t old_width, int32_t old_height);
+static void write_exr(const char* output_path, const float* src, int32_t width, int32_t height);
 static void test_all_possible_swizzle_patterns(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size);
 
 void decode_init();
@@ -22,7 +23,7 @@ void decode_bc3(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void decode_bc4(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void decode_bc5(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
 void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
-void write_png(const char* filename, const unsigned char* image, unsigned w, unsigned h);
+void write_png(const char* output_path, const uint8_t* src, int32_t width, int32_t height);
 
 int main(int argc, char** argv) {
 	if(argc != 2 && argc != 3 && argc != 4) {
@@ -33,29 +34,7 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	
-	// Parse the arguments, determine the paths of the input and output files.
 	const char* texture_file = argv[1];
-	const char* stream_file;
-	const char* output_file;
-	
-	if(argc == 2 || argc == 3) {
-		char* stream_file_auto = malloc(strlen(texture_file) + strlen(".stream") + 1);
-		strcpy(stream_file_auto, texture_file);
-		memcpy(stream_file_auto + strlen(stream_file_auto), ".stream", strlen(".stream") + 1);
-		stream_file = stream_file_auto;
-		
-		if(argc == 2) {
-			char* output_file_auto = malloc(strlen(texture_file) + strlen(".png") + 1);
-			strcpy(output_file_auto, texture_file);
-			memcpy(output_file_auto + strlen(output_file_auto), ".png", strlen(".png") + 1);
-			output_file = output_file_auto;
-		} else {
-			output_file = argv[2];
-		}
-	} else if(argc == 4) {
-		stream_file = argv[2];
-		output_file = argv[3];
-	}
 	
 	// Parse the container format.
 	RA_Result result;
@@ -82,13 +61,40 @@ int main(int argc, char** argv) {
 	int32_t block_size;
 	const char* swizzle_pattern;
 	int32_t bits_per_pixel;
-	get_texture_properties(&block_size, &swizzle_pattern, &bits_per_pixel, tex_header->format);
+	int8_t is_hdr;
+	get_texture_properties(&block_size, &swizzle_pattern, &bits_per_pixel, &is_hdr, tex_header->format);
 	
 	int32_t real_width = tex_header->width;
 	int32_t real_height = tex_header->height;
 	if(real_width % block_size != 0) real_width += block_size - (real_width % block_size);
 	if(real_height % block_size != 0) real_height += block_size - (real_height % block_size);
 	int32_t texture_size = (real_width * real_height * bits_per_pixel) / 8;
+	
+	// Parse the rest of the arguments, determine the paths of the input and
+	// output files.
+	const char* stream_file;
+	const char* output_file;
+	
+	const char* extension = is_hdr ? ".exr" : ".png";
+	
+	if(argc == 2 || argc == 3) {
+		char* stream_file_auto = malloc(strlen(texture_file) + strlen(".stream") + 1);
+		strcpy(stream_file_auto, texture_file);
+		memcpy(stream_file_auto + strlen(stream_file_auto), ".stream", strlen(".stream") + 1);
+		stream_file = stream_file_auto;
+		
+		if(argc == 2) {
+			char* output_file_auto = malloc(strlen(texture_file) + strlen(extension) + 1);
+			strcpy(output_file_auto, texture_file);
+			memcpy(output_file_auto + strlen(output_file_auto), extension, strlen(extension) + 1);
+			output_file = output_file_auto;
+		} else {
+			output_file = argv[2];
+		}
+	} else if(argc == 4) {
+		stream_file = argv[2];
+		output_file = argv[3];
+	}
 	
 	// Read the highest mip from disk.
 	uint8_t* compressed = NULL;
@@ -114,8 +120,18 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
-static void get_texture_properties(int32_t* block_size, const char** swizzle_pattern, int32_t* bits_per_pixel, uint8_t format) {
+static void get_texture_properties(int32_t* block_size, const char** swizzle_pattern, int32_t* bits_per_pixel, int8_t* is_hdr, uint8_t format) {
 	switch(format) {
+		case DXGI_FORMAT_R32G32B32A32_TYPELESS:
+		case DXGI_FORMAT_R32G32B32A32_FLOAT:
+		case DXGI_FORMAT_R32G32B32A32_UINT:
+		case DXGI_FORMAT_R32G32B32A32_SINT: {
+			*block_size = 128;
+			*swizzle_pattern = "2N2N2N2N2N4Z";
+			*bits_per_pixel = 128;
+			*is_hdr = 1;
+			break;
+		}
 		case DXGI_FORMAT_R8G8B8A8_TYPELESS:
 		case DXGI_FORMAT_R8G8B8A8_UNORM:
 		case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
@@ -125,6 +141,7 @@ static void get_texture_properties(int32_t* block_size, const char** swizzle_pat
 			*block_size = 128;
 			*swizzle_pattern = "2N2N2N2N2N4Z";
 			*bits_per_pixel = 32;
+			*is_hdr = 0;
 			break;
 		}
 		case DXGI_FORMAT_R8G8_TYPELESS:
@@ -135,6 +152,7 @@ static void get_texture_properties(int32_t* block_size, const char** swizzle_pat
 			*block_size = 128;
 			*swizzle_pattern = "2Z2Z2Z2Z8Z";
 			*bits_per_pixel = 16;
+			*is_hdr = 0;
 			break;
 		}
 		case DXGI_FORMAT_R8_TYPELESS:
@@ -145,6 +163,7 @@ static void get_texture_properties(int32_t* block_size, const char** swizzle_pat
 			*block_size = 256;
 			*swizzle_pattern = "2N2N2N2NXZ";
 			*bits_per_pixel = 8;
+			*is_hdr = 0;
 			break;
 		}
 		case DXGI_FORMAT_BC1_TYPELESS:
@@ -153,6 +172,7 @@ static void get_texture_properties(int32_t* block_size, const char** swizzle_pat
 			*block_size = 256;
 			*swizzle_pattern = "2Z2Z2Z2Z2N2Z";
 			*bits_per_pixel = 4;
+			*is_hdr = 0;
 			break;
 		}
 		case DXGI_FORMAT_BC3_TYPELESS:
@@ -161,6 +181,7 @@ static void get_texture_properties(int32_t* block_size, const char** swizzle_pat
 			*block_size = 256;
 			*swizzle_pattern = "2N2N2N2N4N";
 			*bits_per_pixel = 8;
+			*is_hdr = 0;
 			break;
 		}
 		case DXGI_FORMAT_BC4_TYPELESS:
@@ -169,6 +190,7 @@ static void get_texture_properties(int32_t* block_size, const char** swizzle_pat
 			*block_size = 256;
 			*swizzle_pattern = "2Z2Z2Z2Z2N2Z";
 			*bits_per_pixel = 4;
+			*is_hdr = 0;
 			break;
 		}
 		case DXGI_FORMAT_BC5_TYPELESS:
@@ -177,6 +199,7 @@ static void get_texture_properties(int32_t* block_size, const char** swizzle_pat
 			*block_size = 256;
 			*swizzle_pattern = "2N2N2N2N4N";
 			*bits_per_pixel = 8;
+			*is_hdr = 0;
 			break;
 		}
 		case DXGI_FORMAT_BC7_TYPELESS:
@@ -185,6 +208,7 @@ static void get_texture_properties(int32_t* block_size, const char** swizzle_pat
 			*block_size = 256;
 			*swizzle_pattern = "2N2N2N2N4N";
 			*bits_per_pixel = 8;
+			*is_hdr = 0;
 			break;
 		}
 		default: {
@@ -359,6 +383,127 @@ static void crop_image_in_place(uint8_t* image, int32_t new_width, int32_t new_h
 			image[(y * new_width + x) * 4 + 3] = image[(y * old_width + x) * 4 + 3];
 		}
 	}
+}
+
+typedef struct {
+	char name[2];
+	char type[4];
+#define EXR_CHANNEL_TYPE_UINT 0
+#define EXR_CHANNEL_TYPE_HALF 1
+#define EXR_CHANNEL_TYPE_FLOAT 2
+	char linear;
+	char reserved[3];
+	char x_sampling;
+	char y_sampling;
+} ExrChannel;
+
+typedef struct {
+	int32_t x_min;
+	int32_t y_min;
+	int32_t x_max;
+	int32_t y_max;
+} ExrBox2i;
+
+typedef struct {
+	float x;
+	float y;
+} ExrV2f;
+
+static void write_exr(const char* output_path, const float* src, int32_t width, int32_t height) {
+	FILE* file = fopen(output_path, "wb");
+	verify(file, "Failed to write output file.");
+	
+	// magic
+	check_fputc(fputc('\x76', file));
+	check_fputc(fputc('\x2f', file));
+	check_fputc(fputc('\x31', file));
+	check_fputc(fputc('\x01', file));
+	
+	// version
+	check_fputc(fputc('\x02', file));
+	check_fputc(fputc('\x00', file));
+	check_fputc(fputc('\x00', file));
+	check_fputc(fputc('\x00', file));
+	
+	//
+	// header
+	//
+	
+	check_fputs(fputs("channels", file));
+	check_fputc(fputc('\x00', file));
+	check_fputs(fputs("chlist", file));
+	check_fputc(fputc('\x00', file));
+	
+	ExrChannel channel = {};
+	channel.type[0] = EXR_CHANNEL_TYPE_FLOAT;
+	channel.linear = 0;
+	memcpy(channel.name, "R", 2);
+	check_fwrite(fwrite(&channel, sizeof(channel), 1, file));
+	memcpy(channel.name, "G", 2);
+	check_fwrite(fwrite(&channel, sizeof(channel), 1, file));
+	memcpy(channel.name, "B", 2);
+	check_fwrite(fwrite(&channel, sizeof(channel), 1, file));
+	memcpy(channel.name, "A", 2);
+	check_fwrite(fwrite(&channel, sizeof(channel), 1, file));
+	fputc('\x00', file);
+	
+	check_fputs(fputs("compression", file));
+	check_fputc(fputc('\x00', file));
+	check_fputs(fputs("compression", file));
+	check_fputc(fputc('\x00', file));
+	
+	check_fputc(fputc('\x00', file)); // no compression
+	
+	check_fputs(fputs("dataWindow", file));
+	check_fputc(fputc('\x00', file));
+	check_fputs(fputs("box2i", file));
+	check_fputc(fputc('\x00', file));
+	
+	ExrBox2i data_window = {0, 0, width, height};
+	check_fwrite(fwrite(&data_window, sizeof(data_window), 1, file));
+	
+	check_fputs(fputs("displayWindow", file));
+	check_fputc(fputc('\x00', file));
+	check_fputs(fputs("box2i", file));
+	check_fputc(fputc('\x00', file));
+	
+	ExrBox2i display_window = {0, 0, width, height};
+	check_fwrite(fwrite(&display_window, sizeof(data_window), 1, file));
+	
+	check_fputs(fputs("lineOrder", file));
+	check_fputc(fputc('\x00', file));
+	check_fputs(fputs("lineOrder", file));
+	check_fputc(fputc('\x00', file));
+	check_fputc(fputc('\x01', file)); // decreasing y
+	
+	check_fputs(fputs("pixelAspectRatio", file));
+	check_fputc(fputc('\x00', file));
+	check_fputs(fputs("float", file));
+	check_fputc(fputc('\x00', file));
+	
+	float pixel_aspect_ratio = 1.f;
+	check_fwrite(fwrite(&pixel_aspect_ratio, sizeof(pixel_aspect_ratio), 1, file));
+	
+	check_fputs(fputs("screenWindowCenter", file));
+	check_fputc(fputc('\x00', file));
+	check_fputs(fputs("v2f", file));
+	check_fputc(fputc('\x00', file));
+	
+	ExrV2f screen_window_center = {0.f, 0.f};
+	check_fwrite(fwrite(&screen_window_center, sizeof(screen_window_center), 1, file));
+	
+	check_fputs(fputs("screenWindowWidth", file));
+	check_fputc(fputc('\x00', file));
+	check_fputs(fputs("float", file));
+	check_fputc(fputc('\x00', file));
+	
+	float screen_window_width = 1.f;
+	check_fwrite(fwrite(&screen_window_width, sizeof(screen_window_width), 1, file));
+	
+	// end of header
+	check_fputc(fputc('\x00', file));
+	
+	fclose(file);
 }
 
 // This is how I originally found the swizzle patterns. It's kept here in case
