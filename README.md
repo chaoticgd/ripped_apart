@@ -50,4 +50,4 @@ Library containing some common code such as a DAT1 file parser and texture stuff
 
 Some of the swizzle tables were originally reverse engineered by Slipsy.
 
-The [bc7enc](https://github.com/richgel999/bc7enc/) library is used for texture decompression.
+The [bcdec](https://github.com/iOrange/bcdec) library is used for texture decompression and the [lodepng](https://github.com/lvandeve/lodepng) library is used for PNG encoding.

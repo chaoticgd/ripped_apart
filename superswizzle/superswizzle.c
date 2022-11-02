@@ -5,6 +5,10 @@
 #include <string.h>
 #include <assert.h>
 
+#define BCDEC_IMPLEMENTATION
+#include "../thirdparty/bcdec/bcdec.h"
+#include "../thirdparty/lodepng/lodepng.h"
+
 #include <libra/dat_container.h>
 #include <libra/texture.h>
 
@@ -15,15 +19,13 @@ static void unswizzle(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih,
 static void unswizzle_block(uint8_t* dest, const uint8_t* src, int32_t iw, int32_t ih, int32_t bx, int32_t by, int32_t bs, int32_t* si, const char* pattern);
 static void crop_image_in_place(uint8_t* image, int32_t new_width, int32_t new_height, int32_t old_width, int32_t old_height);
 static void write_exr(const char* output_path, const float* src, int32_t width, int32_t height);
+static void decode_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
+static void decode_bc3(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
+static void decode_bc4(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
+static void decode_bc5(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
+static void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
+static void set_block(uint8_t* dest, uint8_t* src, int32_t bx, int32_t by, int32_t bwidth, int32_t bheight, int32_t iwidth, int32_t iheight);
 static void test_all_possible_swizzle_patterns(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size);
-
-void decode_init();
-void decode_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
-void decode_bc3(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
-void decode_bc4(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
-void decode_bc5(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
-void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height);
-void write_png(const char* output_path, const uint8_t* src, int32_t width, int32_t height);
 
 int main(int argc, char** argv) {
 	if(argc != 2 && argc != 3 && argc != 4) {
@@ -236,10 +238,7 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 	uint8_t* decompressed = malloc(real_width * real_height * 4);
 	uint8_t* unswizzled = malloc(real_width * real_height * 4);
 	
-	int32_t pixel_count = real_width * real_height;
-	
 	// Decompress and unswizzle the textures.
-	decode_init();
 	switch(format) {
 		case DXGI_FORMAT_R8G8B8A8_TYPELESS:
 		case DXGI_FORMAT_R8G8B8A8_UNORM:
@@ -323,7 +322,7 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 	}
 	
 	// Write the output file.
-	write_png(output_file, unswizzled, width, height);
+	lodepng_encode32_file(output_file, unswizzled, width, height);
 	free(unswizzled);
 }
 
@@ -504,6 +503,73 @@ static void write_exr(const char* output_path, const float* src, int32_t width, 
 	check_fputc(fputc('\x00', file));
 	
 	fclose(file);
+}
+
+static void decode_bc1(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
+	for(int32_t y = 0; y < height / 4; y++) {
+		for(int32_t x = 0; x < width / 4; x++) {
+			uint8_t block[64];
+			bcdec_bc1(&src[(y * (width / 4) + x) * 8], block, 16);
+			set_block(dest, block, x, y, 4, 4, width, height);
+		}
+	}
+}
+
+static void decode_bc3(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
+	for(int32_t y = 0; y < height / 4; y++) {
+		for(int32_t x = 0; x < width / 4; x++) {
+			uint8_t block[64];
+			bcdec_bc3(&src[(y * (width / 4) + x) * 16], block, 16);
+			set_block(dest, block, x, y, 4, 4, width, height);
+		}
+	}
+}
+
+static void decode_bc4(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
+	for(int32_t y = 0; y < height / 4; y++) {
+		for(int32_t x = 0; x < width / 4; x++) {
+			uint8_t block[64];
+			bcdec_bc4(&src[(y * (width / 4) + x) * 8], block, 16);
+			for(int32_t i = 0; i < 64; i += 4) {
+				block[i + 1] = block[i];
+				block[i + 2] = block[i];
+				block[i + 3] = 0xff;
+			}
+			set_block(dest, block, x, y, 4, 4, width, height);
+		}
+	}
+}
+
+static void decode_bc5(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
+	uint8_t block[64];
+	for(int32_t i = 0; i < 64; i += 4) {
+		block[i + 2] = 0;
+		block[i + 3] = 0xff;
+	}
+	for(int32_t y = 0; y < height / 4; y++) {
+		for(int32_t x = 0; x < width / 4; x++) {
+			bcdec_bc5(&src[(y * (width / 4) + x) * 16], block, 16);
+			set_block(dest, block, x, y, 4, 4, width, height);
+		}
+	}
+}
+
+static void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
+	for(int32_t y = 0; y < height / 4; y++) {
+		for(int32_t x = 0; x < width / 4; x++) {
+			uint8_t block[64];
+			bcdec_bc7(&src[(y * (width / 4) + x) * 16], block, 16);
+			set_block(dest, block, x, y, 4, 4, width, height);
+		}
+	}
+}
+
+static void set_block(uint8_t* dest, uint8_t* src, int32_t bx, int32_t by, int32_t bwidth, int32_t bheight, int32_t iwidth, int32_t iheight) {
+	int32_t origin_x = bx * bwidth;
+	int32_t origin_y = by * bheight;
+	for(int32_t y = 0; y < bheight; y++) {
+		memcpy(&dest[((origin_y + y) * iwidth + origin_x) * 4], &src[(y * bwidth) * 4], bwidth * 4);
+	}
 }
 
 // This is how I originally found the swizzle patterns. It's kept here in case

@@ -1,8 +1,6 @@
 add_executable(superswizzle
 	superswizzle.c
-	decode.cpp
-	../thirdparty/bc7enc/bc7decomp.cpp
-	../thirdparty/bc7enc/lodepng.cpp
+	../thirdparty/lodepng/lodepng.c
 )
 target_link_libraries(superswizzle libra)
 
