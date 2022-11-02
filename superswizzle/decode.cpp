@@ -76,7 +76,9 @@ void decode_bc7(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
 	for(int32_t y = 0; y < height / 4; y++) {
 		for(int32_t x = 0; x < width / 4; x++) {
 			uint8_t block[64];
-			bc7decomp::unpack_bc7(&src[(y * (width / 4) + x) * 16], (bc7decomp::color_rgba*) block);
+			if(!bc7decomp::unpack_bc7(&src[(y * (width / 4) + x) * 16], (bc7decomp::color_rgba*) block)) {
+				memset(block, 0, sizeof(block));
+			}
 			set_block(dest, block, x, y, 4, 4, width, height);
 		}
 	}
