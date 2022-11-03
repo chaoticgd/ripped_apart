@@ -81,8 +81,15 @@ int main(int argc, char** argv) {
 	
 	int32_t real_width = tex_header->width;
 	int32_t real_height = tex_header->height;
-	if(real_width % block_size != 0) real_width += block_size - (real_width % block_size);
-	if(real_height % block_size != 0) real_height += block_size - (real_height % block_size);
+	if(tex_header->format == DXGI_FORMAT_BC4_TYPELESS
+		|| tex_header->format == DXGI_FORMAT_BC4_UNORM
+		|| tex_header->format == DXGI_FORMAT_BC4_SNORM) {
+		if(real_width % 512 != 0) real_width += 512 - (real_width % 512);
+		if(real_height % 512 != 0) real_height += 512 - (real_height % 512);
+	} else {
+		if(real_width % block_size != 0) real_width += block_size - (real_width % block_size);
+		if(real_height % block_size != 0) real_height += block_size - (real_height % block_size);
+	}
 	int32_t texture_size = (real_width * real_height * bits_per_pixel) / 8;
 	
 	// Parse the rest of the arguments, determine the paths of the input and
@@ -428,13 +435,15 @@ static void decode_bc3(uint8_t* dest, uint8_t* src, int32_t width, int32_t heigh
 static void decode_bc4(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
 	for(int32_t y = 0; y < height / 4; y++) {
 		for(int32_t x = 0; x < width / 4; x++) {
+			uint8_t r_block[16];
+			bcdec_bc4(&src[(y * (width / 4) + x) * 8], r_block, 4);
 			uint8_t block[64];
-			bcdec_bc4(&src[(y * (width / 4) + x) * 8], block, 16);
 			// R???? -> RRR1
-			for(int32_t i = 0; i < 64; i += 4) {
-				block[i + 1] = block[i];
-				block[i + 2] = block[i];
-				block[i + 3] = 0xff;
+			for(int32_t i = 0; i < 16; i++) {
+				block[i * 4 + 0] = r_block[i];
+				block[i * 4 + 1] = r_block[i];
+				block[i * 4 + 2] = r_block[i];
+				block[i * 4 + 3] = 0xff;
 			}
 			set_block(dest, block, x, y, 4, 4, width, height, 4);
 		}
@@ -640,19 +649,17 @@ static void write_exr(const char* output_path, const uint8_t* src, int32_t width
 	int32_t row_size = width * bytes_per_pixel;
 	int32_t chunk_data_size = row_size * max_rows_per_chunk;
 	uint8_t* chunk_data = malloc(row_size * max_rows_per_chunk);
-	LodePNGCompressSettings compression_settings;
-	lodepng_compress_settings_init(&compression_settings);
 	for(int32_t chunk = 0; chunk < chunk_count; chunk++) {
 		int32_t base_y = chunk * max_rows_per_chunk;
 		
-		// RGBARGBA -> AABBGGRR
+		// RGBARGBARGBARGBA -> AABBGGRRAABBGGRR
 		int32_t chunk_height = height - base_y;
 		if(chunk_height > max_rows_per_chunk) chunk_height = max_rows_per_chunk;
 		for(int32_t y = 0; y < chunk_height; y++) {
 			for(int32_t x = 0; x < width; x++) {
 				for(int32_t channel = 0; channel < 4; channel++) {
 					memcpy(
-						&chunk_data[(channel * width * chunk_height + y * width + x) * bytes_per_channel],
+						&chunk_data[y * row_size + (channel * width + x) * bytes_per_channel],
 						&src[((base_y + y) * width + x) * bytes_per_pixel + (3 - channel) * bytes_per_channel],
 						bytes_per_channel);
 				}
@@ -663,6 +670,8 @@ static void write_exr(const char* output_path, const uint8_t* src, int32_t width
 		
 		check_fwrite(fwrite(&base_y, sizeof(base_y), 1, file));
 		if(deflate) {
+			LodePNGCompressSettings compression_settings;
+			lodepng_compress_settings_init(&compression_settings);
 			uint8_t* compressed_chunk_data;
 			size_t compressed_chunk_data_size;
 			lodepng_zlib_compress(&compressed_chunk_data, &compressed_chunk_data_size, chunk_data, chunk_data_size, &compression_settings);
