@@ -594,7 +594,8 @@ static void write_exr(const char* output_path, const uint8_t* src, int32_t width
 	check_fputc(fputc('\x00', file));
 	
 	// header
-	ExrChannel channels[5] = {};
+	ExrChannel channels[5];
+	memset(channels, 0, sizeof(channels));
 	static const char CHANNEL_NAMES[4] = {'A', 'B', 'G', 'R'};
 	for(int32_t i = 0; i < 4; i++) {
 		channels[i].name[0] = CHANNEL_NAMES[i];
