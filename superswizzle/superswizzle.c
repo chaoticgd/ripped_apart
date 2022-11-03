@@ -150,16 +150,6 @@ int main(int argc, char** argv) {
 
 static void get_texture_properties(int32_t* block_size, const char** swizzle_pattern, int32_t* bits_per_pixel, int8_t* is_hdr, uint8_t format) {
 	switch(format) {
-		case DXGI_FORMAT_R32G32B32A32_TYPELESS:
-		case DXGI_FORMAT_R32G32B32A32_FLOAT:
-		case DXGI_FORMAT_R32G32B32A32_UINT:
-		case DXGI_FORMAT_R32G32B32A32_SINT: {
-			*block_size = 128;
-			*swizzle_pattern = "2N2N2N2N2N4Z";
-			*bits_per_pixel = 128;
-			*is_hdr = 1;
-			break;
-		}
 		case DXGI_FORMAT_R8G8B8A8_TYPELESS:
 		case DXGI_FORMAT_R8G8B8A8_UNORM:
 		case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
