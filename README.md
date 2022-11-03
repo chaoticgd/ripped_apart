@@ -8,7 +8,7 @@ See the [Releases](https://github.com/chaoticgd/ripped_apart/releases) page.
 
 ## superswizzle
 
-Converts .texture files to .png, automatically handling decompression and unswizzling. Can be used by dragging a texture onto the .exe file from within Windows explorer.
+Converts .texture files to .png (or .exr in the case of HDR textures), automatically handling decompression and unswizzling. Can be used by dragging a texture onto the .exe file from within Windows explorer.
 
 Supported texture formats:
 
@@ -16,6 +16,7 @@ Supported texture formats:
 - BC3 (since v1.3)
 - BC4 (since v1.1)
 - BC5 (since v1.3)
+- BC6 (since v1.4)
 - BC7
 - R8 (since v1.1)
 - R8G8 (since v1.2)
@@ -41,7 +42,7 @@ Library containing some common code such as a DAT1 file parser and texture stuff
 
 ## Building from source
 	
-	git clone --recursive https://github.com/chaoticgd/ripped_apart
+	git clone https://github.com/chaoticgd/ripped_apart
 	cd ripped_apart
 	cmake -S . -B bin/
 	cmake --build bin/
