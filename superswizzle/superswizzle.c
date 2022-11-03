@@ -81,9 +81,10 @@ int main(int argc, char** argv) {
 	
 	int32_t real_width = tex_header->width;
 	int32_t real_height = tex_header->height;
-	if(tex_header->format == DXGI_FORMAT_BC4_TYPELESS
+	if((tex_header->format == DXGI_FORMAT_BC4_TYPELESS
 		|| tex_header->format == DXGI_FORMAT_BC4_UNORM
-		|| tex_header->format == DXGI_FORMAT_BC4_SNORM) {
+		|| tex_header->format == DXGI_FORMAT_BC4_SNORM)
+		&& (tex_header->width >= 512 && tex_header->height >= 512)) {
 		if(real_width % 512 != 0) real_width += 512 - (real_width % 512);
 		if(real_height % 512 != 0) real_height += 512 - (real_height % 512);
 	} else {
@@ -451,14 +452,17 @@ static void decode_bc4(uint8_t* dest, uint8_t* src, int32_t width, int32_t heigh
 }
 
 static void decode_bc5(uint8_t* dest, uint8_t* src, int32_t width, int32_t height) {
-	uint8_t block[64];
-	for(int32_t i = 0; i < 64; i += 4) {
-		block[i + 2] = 0;
-		block[i + 3] = 0xff;
-	}
 	for(int32_t y = 0; y < height / 4; y++) {
 		for(int32_t x = 0; x < width / 4; x++) {
-			bcdec_bc5(&src[(y * (width / 4) + x) * 16], block, 16);
+			uint8_t rg_block[32];
+			bcdec_bc5(&src[(y * (width / 4) + x) * 16], rg_block, 8);
+			uint8_t block[64];
+			for(int32_t i = 0; i < 16; i++) {
+				block[i * 4 + 0] = rg_block[i * 2 + 0];
+				block[i * 4 + 1] = rg_block[i * 2 + 0];
+				block[i * 4 + 2] = 0x00;
+				block[i * 4 + 3] = 0xff;
+			}
 			set_block(dest, block, x, y, 4, 4, width, height, 4);
 		}
 	}
