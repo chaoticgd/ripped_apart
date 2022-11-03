@@ -33,6 +33,7 @@ static void unswizzle_block(uint8_t* dest, const uint8_t* src, int32_t iw, int32
 // HDR image encoding
 static void write_exr(const char* output_path, const uint8_t* src, int32_t width, int32_t height, int8_t is_half);
 static void write_exr_attribute(FILE* file, const char* name, const char* type, const void* data, int32_t size);
+static void do_undocumented_exr_pixel_reorder(uint8_t* dest, const uint8_t* src, int32_t size);
 // Testing
 static void test_all_possible_swizzle_patterns(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size);
 
@@ -604,7 +605,7 @@ static void write_exr(const char* output_path, const uint8_t* src, int32_t width
 	}
 	write_exr_attribute(file, "channels", "chlist", channels, 4 * sizeof(ExrChannel) + 1);
 	
-	int8_t deflate = 0;
+	int8_t deflate = 1;
 	char compression = deflate ? 3 : 0;
 	write_exr_attribute(file, "compression", "compression", &compression, sizeof(compression));
 	
@@ -643,6 +644,9 @@ static void write_exr(const char* output_path, const uint8_t* src, int32_t width
 	int32_t row_size = width * bytes_per_pixel;
 	int32_t chunk_data_size = row_size * max_rows_per_chunk;
 	uint8_t* chunk_data = malloc(row_size * max_rows_per_chunk);
+	uint8_t* reordered_chunk_data = malloc(row_size * max_rows_per_chunk);
+	LodePNGCompressSettings compression_settings;
+	lodepng_compress_settings_init(&compression_settings);
 	for(int32_t chunk = 0; chunk < chunk_count; chunk++) {
 		int32_t base_y = chunk * max_rows_per_chunk;
 		
@@ -664,11 +668,11 @@ static void write_exr(const char* output_path, const uint8_t* src, int32_t width
 		
 		check_fwrite(fwrite(&base_y, sizeof(base_y), 1, file));
 		if(deflate) {
-			LodePNGCompressSettings compression_settings;
-			lodepng_compress_settings_init(&compression_settings);
+			do_undocumented_exr_pixel_reorder(reordered_chunk_data, chunk_data, chunk_data_size);
+			
 			uint8_t* compressed_chunk_data;
 			size_t compressed_chunk_data_size;
-			lodepng_zlib_compress(&compressed_chunk_data, &compressed_chunk_data_size, chunk_data, chunk_data_size, &compression_settings);
+			lodepng_zlib_compress(&compressed_chunk_data, &compressed_chunk_data_size, reordered_chunk_data, chunk_data_size, &compression_settings);
 			
 			check_fwrite(fwrite(&compressed_chunk_data_size, 4, 1, file));
 			check_fwrite(fwrite(compressed_chunk_data, compressed_chunk_data_size, 1, file));
@@ -679,7 +683,9 @@ static void write_exr(const char* output_path, const uint8_t* src, int32_t width
 			check_fwrite(fwrite(chunk_data, chunk_data_size, 1, file));
 		}
 	}
+	
 	free(chunk_data);
+	free(reordered_chunk_data);
 	
 	// write offset table
 	check_fseek(fseek(file, offset_table_pos, SEEK_SET));
@@ -696,6 +702,38 @@ static void write_exr_attribute(FILE* file, const char* name, const char* type, 
 	check_fputc(fputc('\x00', file));
 	check_fwrite(fwrite(&size, 4, 1, file));
 	check_fwrite(fwrite(data, size, 1, file));
+}
+
+static void do_undocumented_exr_pixel_reorder(uint8_t* dest, const uint8_t* src, int32_t size) {
+	if(size == 0) {
+		return;
+	}
+	
+	// Reorder the pixel data.
+	uint8_t* t1 = dest;
+	uint8_t* t2 = dest + (size + 1) / 2;
+	const uint8_t* src_end = src + size;
+	while(1) {
+		if(src < src_end)
+			*(t1++) = *(src++);
+		else
+			break;
+		if(src < src_end)
+			*(t2++) = *(src++);
+		else
+			break;
+	}
+	
+	// Predictor.
+	uint8_t* t = (uint8_t*) dest + 1;
+	uint8_t* dest_end = (uint8_t*) dest + size;
+	uint8_t p = t[-1];
+	while(t < dest_end) {
+		int d = t[0] - p + (128 + 256);
+		p = t[0];
+		t[0] = d;
+		++t;
+	}
 }
 
 // *****************************************************************************
