@@ -151,6 +151,13 @@ int main(int argc, char** argv) {
 
 static void get_texture_properties(int32_t* block_size, const char** swizzle_pattern, int32_t* bits_per_pixel, int8_t* is_hdr, uint8_t format) {
 	switch(format) {
+		case DXGI_FORMAT_R16G16B16A16_FLOAT: {
+			*block_size = 64;
+			*swizzle_pattern = "2Z2Z2Z2Z2N2Z";
+			*bits_per_pixel = 64;
+			*is_hdr = 1;
+			break;
+		}
 		case DXGI_FORMAT_R8G8B8A8_TYPELESS:
 		case DXGI_FORMAT_R8G8B8A8_UNORM:
 		case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
@@ -334,8 +341,8 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 		case DXGI_FORMAT_BC7_TYPELESS:
 		case DXGI_FORMAT_BC7_UNORM:
 		case DXGI_FORMAT_BC7_UNORM_SRGB: {
-			decode_bc7(decompressed, src, real_width, real_height);
-			unswizzle(unswizzled, decompressed, real_width, real_height, block_size, 4, pattern);
+			decode_bc7(unswizzled, src, real_width, real_height);
+			//unswizzle(unswizzled, decompressed, real_width, real_height, block_size, 4, pattern);
 			break;
 		}
 	}
@@ -361,6 +368,11 @@ static void decode_and_write_exr(const char* output_file, uint8_t* src, int32_t 
 	
 	// Decompress and unswizzle the textures.
 	switch(format) {
+		case DXGI_FORMAT_R16G16B16A16_FLOAT: {
+			unswizzle(unswizzled, src, real_width, real_height, block_size, 8, pattern);
+			is_half = 1;
+			break;
+		}
 		case DXGI_FORMAT_BC6H_TYPELESS:
 		case DXGI_FORMAT_BC6H_UF16: {
 			decode_bc6(decompressed, src, real_width, real_height, 0);
@@ -746,22 +758,24 @@ static void do_undocumented_exr_pixel_reorder(uint8_t* dest, const uint8_t* src,
 #if 0
 static void test_all_possible_swizzle_patterns(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size) {
 	static char pattern[128] = {0};
-	static int32_t bs = 256;
+	static int32_t bs = 64;
 	static int32_t ofs = 0;
 	
 	if(bs < 1) {
 		return;
 	} else if(bs == 1) {
-		// R8R8
-		if(pattern[ofs-2] != '8')return;
-		if(pattern[ofs-1] != 'Z')return;
+		// R16G16B16A16
+		if(pattern[0] != '2')return;
+		if(pattern[1] != 'Z')return;
+		if(pattern[2] != '2')return;
+		if(pattern[3] != 'Z')return;
 		
 		pattern[ofs] = '\0';
 		char* testout = malloc(strlen(output_file)+sizeof(pattern)+4+1);
 		memcpy(testout, output_file, strlen(output_file));
 		memcpy(testout+strlen(output_file), pattern, strlen(pattern));
-		memcpy(testout+strlen(output_file)+strlen(pattern), ".png", 5);
-		decode_and_write_png(testout, src, width, height, real_width, real_height, format, texture_size, 128, pattern);
+		memcpy(testout+strlen(output_file)+strlen(pattern), ".exr", 5);
+		decode_and_write_exr(testout, src, width, height, real_width, real_height, format, texture_size, 64, pattern);
 	} else {
 		// Try subdiv 2.
 		int32_t before_bs = bs;
