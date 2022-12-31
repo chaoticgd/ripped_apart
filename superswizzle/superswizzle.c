@@ -341,8 +341,8 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 		case DXGI_FORMAT_BC7_TYPELESS:
 		case DXGI_FORMAT_BC7_UNORM:
 		case DXGI_FORMAT_BC7_UNORM_SRGB: {
-			decode_bc7(unswizzled, src, real_width, real_height);
-			//unswizzle(unswizzled, decompressed, real_width, real_height, block_size, 4, pattern);
+			decode_bc7(decompressed, src, real_width, real_height);
+			unswizzle(unswizzled, decompressed, real_width, real_height, block_size, 4, pattern);
 			break;
 		}
 	}
