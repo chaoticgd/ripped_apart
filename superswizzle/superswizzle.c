@@ -64,10 +64,10 @@ int main(int argc, char** argv) {
 	verify(dat.asset_type_hash == RA_ASSET_TYPE_TEXTURE, "Asset is not a texture");
 	
 	for(int32_t i = 0; i < dat.lump_count; i++) {
-		printf("lump of type %x @ %x\n", dat.lumps[i].type_hash, dat.lumps[i].offset);
+		printf("lump of type %x @ %x\n", dat.lumps[i].type_crc, dat.lumps[i].offset);
 	}
 	
-	verify(dat.lump_count > 0 && dat.lumps[0].type_hash == 0x4ede3593, "error: Bad lumps.");
+	verify(dat.lump_count > 0 && dat.lumps[0].type_crc == 0x4ede3593, "error: Bad lumps.");
 	RA_TextureHeader* tex_header = (RA_TextureHeader*) dat.lumps[0].data;
 	
 	printf("width: %hd\n", tex_header->width);

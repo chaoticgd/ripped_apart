@@ -49,6 +49,6 @@ Library containing some common code such as a DAT1 file parser and texture stuff
 
 ## Credit
 
-Some of the swizzle tables were originally reverse engineered by Slipsy.
+A lot of the lump names were reverse engineered by [doesthisusername](https://github.com/doesthisusername). Some of the swizzle tables were originally reverse engineered by Slipsy.
 
 The [bcdec](https://github.com/iOrange/bcdec) library is used for texture decompression and the [lodepng](https://github.com/lvandeve/lodepng) library is used for PNG encoding.
