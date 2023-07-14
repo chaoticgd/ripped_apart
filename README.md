@@ -44,8 +44,10 @@ Library containing some common code such as a DAT1 file parser and texture stuff
 	
 	git clone https://github.com/chaoticgd/ripped_apart
 	cd ripped_apart
-	cmake -S . -B bin/
-	cmake --build bin/
+	cmake -B build/
+	cmake --build build/
+
+Executable files will be written out into the bin directory.
 
 ## Credit
 
