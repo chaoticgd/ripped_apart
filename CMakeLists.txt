@@ -22,8 +22,11 @@ if(BUILD_STATIC)
 	set(CMAKE_EXE_LINKER_FLAGS "-static")
 endif()
 
+add_subdirectory(thirdparty)
+
 include_directories(.)
 
 add_subdirectory(libra)
 add_subdirectory(superswizzle)
+add_subdirectory(modeleditor)
 add_subdirectory(igfile)
