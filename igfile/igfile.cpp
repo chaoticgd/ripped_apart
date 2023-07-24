@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
 
 static RA_Result process_file(const char* path, bool print_sections) {
 	RA_DatFile dat;
-	RA_Result result = RA_parse_dat_file(&dat, path);
+	RA_Result result = RA_read_dat_file(&dat, path);
 	if(result != NULL) {
 		return result;
 	}

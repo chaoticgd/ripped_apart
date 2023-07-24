@@ -8,15 +8,15 @@ extern "C" {
 #endif
 
 typedef struct {
-	int32_t type_crc;
-	int32_t offset;
-	int32_t size;
-	uint8_t* data;
+	s32 type_crc;
+	u32 offset;
+	u32 size;
+	u8* data;
 } RA_DatLump;
 
 typedef struct {
-	int32_t asset_type_hash;
-	int32_t lump_count;
+	s32 asset_type_hash;
+	s32 lump_count;
 	RA_DatLump* lumps;
 } RA_DatFile;
 
@@ -26,15 +26,16 @@ typedef enum {
 
 typedef struct {
 	const char* name;
-	uint32_t crc;
+	u32 crc;
 } RA_LumpType;
 
 void RA_dat_init();
-RA_Result RA_parse_dat_file(RA_DatFile* dat, const char* path);
-const char* RA_lump_type_name(uint32_t type_crc);
+RA_Result RA_parse_dat_file(RA_DatFile* dat, u8* data, s32 size); // lumps point into data
+RA_Result RA_read_dat_file(RA_DatFile* dat, const char* path);    // mallocs the lumps
+const char* RA_lump_type_name(u32 type_crc);
 
 extern RA_LumpType dat_lump_types[];
-extern int32_t dat_lump_type_count;
+extern s32 dat_lump_type_count;
 
 #ifdef __cplusplus
 }

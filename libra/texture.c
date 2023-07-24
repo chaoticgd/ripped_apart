@@ -1,6 +1,6 @@
 #include "texture.h"
 
-const char* RA_texture_format_to_string(uint32_t format) {
+const char* RA_texture_format_to_string(u32 format) {
 	switch(format) {
 		case DXGI_FORMAT_UNKNOWN: return "UNKNOWN";
 		case DXGI_FORMAT_R32G32B32A32_TYPELESS: return "R32G32B32A32_TYPELESS";

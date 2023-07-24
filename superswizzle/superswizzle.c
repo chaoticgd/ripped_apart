@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
 	// Parse the container format.
 	RA_Result result;
 	RA_DatFile dat;
-	result = RA_parse_dat_file(&dat, texture_file);
+	result = RA_read_dat_file(&dat, texture_file);
 	if(result != NULL) {
 		fprintf(stderr, "error: %s\n", result);
 		exit(1);

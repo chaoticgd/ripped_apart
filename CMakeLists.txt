@@ -23,6 +23,7 @@ if(BUILD_STATIC)
 endif()
 
 add_subdirectory(thirdparty)
+include_directories(thirdparty/linmath)
 
 include_directories(.)
 

@@ -8,14 +8,14 @@ extern "C" {
 #endif
 
 typedef struct {
-	uint32_t unknown_0;
-	uint32_t unknown_4;
-	int16_t width;
-	int16_t height;
-	uint16_t width_in_texture_file;
-	uint16_t height_in_texture_file;
-	uint32_t unknown_10;
-	uint8_t format;
+	u32 unknown_0;
+	u32 unknown_4;
+	s16 width;
+	s16 height;
+	u16 width_in_texture_file;
+	u16 height_in_texture_file;
+	u32 unknown_10;
+	u8 format;
 } RA_TextureHeader;
 
 typedef enum {
@@ -143,7 +143,7 @@ typedef enum {
 	DXGI_FORMAT_FORCE_UINT = 0xffffffff
 } DXGI_FORMAT;
 
-const char* RA_texture_format_to_string(uint32_t format);
+const char* RA_texture_format_to_string(u32 format);
 
 #ifdef __cplusplus
 }
