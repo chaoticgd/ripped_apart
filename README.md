@@ -2,9 +2,15 @@
 
 Ratchet & Clank: Rift Apart modding stuff.
 
+**The v1.x releases are not intended for use with the PC version!**
+
 ## Downloads
 
 See the [Releases](https://github.com/chaoticgd/ripped_apart/releases) page.
+
+## modeleditor
+
+Work in progress tool to load model files and in the future maybe edit them.
 
 ## superswizzle
 
