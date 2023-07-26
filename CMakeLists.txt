@@ -9,7 +9,7 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 	message(FATAL_ERROR "In-tree build detected. You should do an out-of-tree build instead:\n\tcmake -S . -B build/")
 endif()
 
-# Output all the binaries into the root of the build directory.
+# Output all the binaries into the root of the bin directory.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -27,7 +27,15 @@ include_directories(thirdparty/linmath)
 
 include_directories(.)
 
+if(UNIX)
+	add_compile_options(-Wall -Wno-sign-compare -g -O3)
+elseif(MSVC)
+	add_compile_options(/W4 /EHsc /MP)
+endif()
+
 add_subdirectory(libra)
 add_subdirectory(superswizzle)
 add_subdirectory(modeleditor)
 add_subdirectory(igfile)
+add_subdirectory(igcrc)
+add_subdirectory(test)

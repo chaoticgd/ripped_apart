@@ -12,10 +12,10 @@ typedef struct {
 
 typedef struct {
 	/* 0x0 */ char magic[4];
-	/* 0x4 */ u32 asset_type_hash;
+	/* 0x4 */ u32 asset_type_crc;
 	/* 0x8 */ u32 file_size;
-	/* 0xc */ s16 lump_count;
-	/* 0xe */ s16 shader_count;
+	/* 0xc */ u16 lump_count;
+	/* 0xe */ u16 shader_count;
 } DatHeader;
 
 void RA_dat_init() {
@@ -30,12 +30,15 @@ b8 RA_validate_magic_bytes(DatHeader* header) {
 	return memcmp(header->magic, "1TAD", 4) == 0;
 }
 
-RA_Result RA_parse_dat_file(RA_DatFile* dat, u8* data, s32 size) {
+RA_Result RA_dat_parse(RA_DatFile* dat, u8* data, u32 size) {
+	dat->file_data = data;
+	dat->file_size = size;
+	
 	DatHeader* header = (DatHeader*) data;
 	if(memcmp(header->magic, "1TAD", 4) != 0) {
 		return "bad magic bytes";
 	}
-	dat->asset_type_hash = header->asset_type_hash;
+	dat->asset_type_crc = header->asset_type_crc;
 	dat->lump_count = header->lump_count;
 	if(dat->lump_count <= 0) {
 		return "lump count is zero";
@@ -50,16 +53,10 @@ RA_Result RA_parse_dat_file(RA_DatFile* dat, u8* data, s32 size) {
 		dat->lumps[i].offset = lump_headers[i].offset;
 		dat->lumps[i].size = lump_headers[i].size;
 		if(dat->lumps[i].offset + dat->lumps[i].size > size) {
-			for(s32 j = 0; j < i; j++) {
-				free(dat->lumps[i].data);
-			}
 			free(dat->lumps);
 			return "lump past end of file";
 		}
 		if(lump_headers[i].size > 256 * 1024 * 1024) {
-			for(s32 j = 0; j < i; j++) {
-				free(dat->lumps[i].data);
-			}
 			free(dat->lumps);
 			return "lump too big";
 		}
@@ -68,7 +65,10 @@ RA_Result RA_parse_dat_file(RA_DatFile* dat, u8* data, s32 size) {
 	return RA_SUCCESS;
 }
 
-RA_Result RA_read_dat_file(RA_DatFile* dat, const char* path) {
+RA_Result RA_dat_read(RA_DatFile* dat, const char* path) {
+	dat->file_data = NULL;
+	dat->file_size = 0;
+	
 	FILE* file = fopen(path, "rb");
 	if(!file) {
 		return "failed to open file for reading";
@@ -82,7 +82,7 @@ RA_Result RA_read_dat_file(RA_DatFile* dat, const char* path) {
 		fclose(file);
 		return "bad magic bytes";
 	}
-	dat->asset_type_hash = header.asset_type_hash;
+	dat->asset_type_crc = header.asset_type_crc;
 	dat->lump_count = header.lump_count;
 	if(dat->lump_count <= 0) {
 		fclose(file);
@@ -125,7 +125,7 @@ RA_Result RA_read_dat_file(RA_DatFile* dat, const char* path) {
 	return RA_SUCCESS;
 }
 
-const char* RA_lump_type_name(u32 type_crc) {
+const char* RA_dat_lump_type_name(u32 type_crc) {
 	for(s32 i = 0; i < dat_lump_type_count; i++) {
 		if(dat_lump_types[i].crc == type_crc) {
 			return dat_lump_types[i].name;

@@ -55,13 +55,13 @@ int main(int argc, char** argv) {
 	// Parse the container format.
 	RA_Result result;
 	RA_DatFile dat;
-	result = RA_read_dat_file(&dat, texture_file);
+	result = RA_dat_read(&dat, texture_file);
 	if(result != NULL) {
 		fprintf(stderr, "error: %s\n", result);
 		exit(1);
 	}
 	
-	verify(dat.asset_type_hash == RA_ASSET_TYPE_TEXTURE, "Asset is not a texture");
+	verify(dat.asset_type_crc == RA_ASSET_TYPE_TEXTURE, "Asset is not a texture");
 	
 	for(int32_t i = 0; i < dat.lump_count; i++) {
 		printf("lump of type %x @ %x\n", dat.lumps[i].type_crc, dat.lumps[i].offset);

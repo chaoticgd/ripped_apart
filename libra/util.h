@@ -45,9 +45,9 @@ typedef char b8;
 typedef const char* RA_Result;
 #define RA_SUCCESS NULL
 
-#define MAX(x, y) (((y) > (x)) ? ((y) : (x)))
+#define MAX(x, y) (((y) > (x)) ? (y) : (x))
 
-RA_Result RA_read_entire_file(u8** data_dest, s32* size_dest, const char* path);
+RA_Result RA_read_entire_file(u8** data_dest, u32* size_dest, const char* path);
 
 void RA_crc_init();
 u32 RA_crc_update(const u8* data, s64 size);

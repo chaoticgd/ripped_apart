@@ -8,6 +8,7 @@
 #include "../libra/util.h"
 #include "../libra/dat_container.h"
 #include "../libra/model.h"
+#include "../libra/material.h"
 #include "renderer.h"
 
 typedef struct {
@@ -21,15 +22,21 @@ int window_height;
 f32 delta_time;
 ViewParams view;
 
+u8* model_file_data;
+u32 model_file_size;
+RA_Model model;
+RA_Material* materials;
+u32 selected_material = 0;
+
 static void startup();
 static void draw_gui();
-static void load_model(RA_Model* model_dest, u8** data_dest, const char* path);
+static void load_model(const char* path, const char* root_asset_dir);
 static void draw_model(RenderModel* model, ViewParams* params);
 static void shutdown();
 
 int main(int argc, char** argv) {
-	if(argc != 2) {
-		printf("usage: ./modeleditor <path to .model file>\n");
+	if(argc != 3) {
+		printf("usage: ./modeleditor <path to .model file> <root asset directory>\n");
 		return 1;
 	}
 	
@@ -37,10 +44,7 @@ int main(int argc, char** argv) {
 	startup();
 	renderer_init();
 	
-	RA_Model model;
-	u8* model_data;
-	
-	load_model(&model, &model_data, argv[Y]);
+	load_model(argv[1], argv[2]);
 	RenderModel render_model = renderer_upload_model(&model);
 	
 	view.rot[X] = 0.f;
@@ -108,36 +112,88 @@ static void startup() {
 
 static void draw_gui() {
 	ImVec2 zero = {0, 0};
+	ImVec2 eight_hundred_by_zero = {800, 0};
 	igSetNextWindowPos(zero, ImGuiCond_Always, zero);
-	ImVec2 gui_size = {200.f, window_height};
+	ImVec2 gui_size = {640.f, window_height};
 	igSetNextWindowSize(gui_size, ImGuiCond_Always);
 	igBegin("gui", NULL, ImGuiWindowFlags_NoDecoration);
 	igSliderFloat("Zoom", &view.zoom, 0.01f, 1.f, "%.2f", ImGuiSliderFlags_None);
+	if(igCollapsingHeader_BoolPtr("Materials", NULL, ImGuiTreeNodeFlags_None)) {
+		const char* preview;
+		if(selected_material < model.material_count) {
+			preview = materials[selected_material].file_path;
+		} else {
+			preview = "(no material selected)";
+		}
+		if(igBeginCombo("Material Path", preview, ImGuiComboFlags_None)) {
+			for(u32 i = 0; i < model.material_count; i++) {
+				RA_Material* material = &materials[i];
+				if(igSelectable_Bool(material->file_path ? material->file_path : "", i == selected_material, ImGuiSelectableFlags_None, eight_hundred_by_zero)) {
+					selected_material = i;
+				}
+			}
+			igEndCombo();
+		}
+		igText("Textures:");
+		if(selected_material < model.material_count) {
+			for(u32 i = 0; i < materials[selected_material].texture_count; i++) {
+				RA_MaterialTexture* texture = &materials[selected_material].textures[i];
+				if(igSelectable_Bool(texture->texture_path ? texture->texture_path : "", false, ImGuiSelectableFlags_None, eight_hundred_by_zero)) {
+					
+				}
+			}
+		}
+	}
 	igEnd();
 }
 
-static void load_model(RA_Model* model_dest, u8** data_dest, const char* path) {
+static void load_model(const char* path, const char* root_asset_dir) {
 	RA_Result result;
 	
-	u8* file_data;
-	s32 file_size;
-	if((result = RA_read_entire_file(&file_data, &file_size, path)) != RA_SUCCESS) {
-		fprintf(stderr, "Failed to read file '%s' (%s).\n", path, result);
+	if((result = RA_read_entire_file(&model_file_data, &model_file_size, path)) != RA_SUCCESS) {
+		fprintf(stderr, "Malfunction while reading model file '%s' (%s).\n", path, result);
 		abort();
 	}
 	
 	RA_DatFile dat;
-	if((result = RA_parse_dat_file(&dat, file_data, file_size)) != RA_SUCCESS) {
-		fprintf(stderr, "Failed to parse header for file '%s' (%s).\n", path, result);
+	if((result = RA_dat_parse(&dat, model_file_data, model_file_size)) != RA_SUCCESS) {
+		fprintf(stderr, "Malfunction while parsing header for model file '%s' (%s).\n", path, result);
 		abort();
 	}
 	
-	if((result = RA_parse_model(model_dest, &dat)) != RA_SUCCESS) {
-		fprintf(stderr, "Failed to parse model file '%s' (%s).\n", path, result);
+	if((result = RA_model_parse(&model, &dat)) != RA_SUCCESS) {
+		fprintf(stderr, "Malfunction while parsing model file '%s' (%s).\n", path, result);
 		abort();
 	}
 	
-	*data_dest = file_data;
+	materials = calloc(model.material_count, sizeof(RA_Material));
+	for(u32 i = 0; i < model.material_count; i++) {
+		RA_ModelMaterial* material = &model.materials[i];
+		printf("material %s: %s\n", material->name, material->path);
+		
+		if(strlen(material->path) > 0) {
+			char material_path[1024];
+			snprintf(material_path, 1024, "%s/%s", root_asset_dir, material->path);
+			
+			u8* material_data;
+			u32 material_size;
+			if((result = RA_read_entire_file(&material_data, &material_size, material_path)) != RA_SUCCESS) {
+				fprintf(stderr, "Malfunction while reading material file '%s' (%s).\n", material_path, result);
+				abort();
+			}
+			
+			RA_DatFile dat;
+			if((result = RA_dat_parse(&dat, material_data, material_size)) != RA_SUCCESS) {
+				fprintf(stderr, "Malfunction while parsing header for material file '%s' (%s).\n", material_path, result);
+				abort();
+			}
+			
+			if((result = RA_material_parse(&materials[i], &dat, material->path)) != RA_SUCCESS) {
+				fprintf(stderr, "Malfunction while parsing material file '%s' (%s).\n", material_path, result);
+				abort();
+			}
+		}
+	}
 }
 
 static void draw_model(RenderModel* model, ViewParams* params) {
@@ -178,7 +234,7 @@ static void draw_model(RenderModel* model, ViewParams* params) {
 	
 	ImVec2 pos;
 	igGetMousePos(&pos);
-	b8 image_hovered = pos.x > 200;
+	b8 image_hovered = pos.x > 640;
 	
 	if(image_hovered || is_dragging) {
 		if(igIsMouseDragging(ImGuiMouseButton_Left, 0.f)) {

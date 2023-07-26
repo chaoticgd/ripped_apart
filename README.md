@@ -57,6 +57,6 @@ Executable files will be written out into the bin directory.
 
 ## Credit
 
-A lot of the lump names were reverse engineered by [doesthisusername](https://github.com/doesthisusername). A large portion of the model format was reverse engineered by (thtrandomlurker)[https://github.com/thtrandomlurker]. Some of the swizzle tables were originally reverse engineered by Slipsy.
+A lot of the lump names were reverse engineered by [doesthisusername](https://github.com/doesthisusername). A large portion of the model format was reverse engineered by [thtrandomlurker](https://github.com/thtrandomlurker). Some of the swizzle tables were originally reverse engineered by Slipsy.
 
 The [bcdec](https://github.com/iOrange/bcdec) library is used for texture decompression and the [lodepng](https://github.com/lvandeve/lodepng) library is used for PNG encoding.

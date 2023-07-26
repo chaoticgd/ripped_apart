@@ -33,14 +33,14 @@ int main(int argc, char** argv) {
 
 static RA_Result process_file(const char* path, bool print_sections) {
 	RA_DatFile dat;
-	RA_Result result = RA_read_dat_file(&dat, path);
+	RA_Result result = RA_dat_read(&dat, path);
 	if(result != NULL) {
 		return result;
 	}
 	
 	printf("%s", path);
 	
-	if(dat.asset_type_hash == RA_ASSET_TYPE_TEXTURE) {
+	if(dat.asset_type_crc == RA_ASSET_TYPE_TEXTURE) {
 		verify(dat.lump_count > 0 && dat.lumps[0].type_crc == 0x4ede3593, "error: Bad lumps.");
 		RA_TextureHeader* tex_header = (RA_TextureHeader*) dat.lumps[0].data;
 		const char* format = RA_texture_format_to_string(tex_header->format);
@@ -55,7 +55,7 @@ static RA_Result process_file(const char* path, bool print_sections) {
 		for(int32_t i = 0; i < dat.lump_count; i++) {
 			RA_DatLump* lump = &dat.lumps[i];
 			
-			printf("%08x | %8x | %8x | %s\n", lump->type_crc, lump->offset, lump->size, RA_lump_type_name(lump->type_crc));
+			printf("%08x | %8x | %8x | %s\n", lump->type_crc, lump->offset, lump->size, RA_dat_lump_type_name(lump->type_crc));
 		}
 	}
 	

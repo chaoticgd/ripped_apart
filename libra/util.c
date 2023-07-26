@@ -1,9 +1,22 @@
 #include "util.h"
 
-RA_Result RA_read_entire_file(u8** data_dest, s32* size_dest, const char* path) {
-	FILE* file = fopen(path, "rb");
+#include <ctype.h>
+
+RA_Result RA_read_entire_file(u8** data_dest, u32* size_dest, const char* path) {
+	u64 path_size = strlen(path);
+	char* fixed_path = malloc(path_size + 1);
+	for(u64 i = 0; i < path_size; i++) {
+		if(path[i] == '\\') {
+			fixed_path[i] = '/';
+		} else {
+			fixed_path[i] = tolower(path[i]);
+		}
+	}
+	fixed_path[path_size] = '\0';
+	
+	FILE* file = fopen(fixed_path, "rb");
 	if(!file) {
-		return "Failed to open file for reading.";
+		return "failed to open file for reading";
 	}
 	
 	fseek(file, 0, SEEK_END);
@@ -11,19 +24,19 @@ RA_Result RA_read_entire_file(u8** data_dest, s32* size_dest, const char* path) 
 	fseek(file, 0, SEEK_SET);
 	if(size > 1024 * 1024 * 1024) {
 		fclose(file);
-		return "File too large.";
+		return "file too large";
 	}
-	*size_dest = (s32) size;
+	*size_dest = (u32) size;
 	
 	u8* data = malloc(size);
 	if(data == NULL) {
 		fclose(file);
-		return "Failed to allocate memory for file.";
+		return "failed to allocate memory for file contents";
 	}
 	if(fread(data, size, 1, file) != 1) {
 		free(data);
 		fclose(file);
-		return "Failed to read file.";
+		return "failed to read file";
 	}
 	*data_dest = data;
 	
