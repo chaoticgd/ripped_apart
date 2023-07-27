@@ -15,19 +15,20 @@ typedef struct {
 typedef struct {
 	/* 0x00 */ u64 unknown;
 	/* 0x08 */ u64 offset;
-	/* 0x10 */ u32 unknown_10;
-	/* 0x14 */ u32 size;
+	/* 0x10 */ u32 decompressed_size;
+	/* 0x14 */ u32 compressed_size;
 	/* 0x18 */ u8 unknown_18;
 	/* 0x19 */ u8 unknown_19[7];
 } RA_ArchiveEntry;
 
 typedef struct {
-	RA_ArchiveEntry* files;
-	u32 file_count;
+	FILE* file;
+	RA_ArchiveEntry* entries;
+	u32 entry_count;
 } RA_Archive;
 
-RA_Result RA_archive_read_entries(RA_Archive* archive, const char* path);
-RA_Result RA_archive_free(RA_Archive* archive);
-RA_Result RA_archive_read_file(RA_Archive* archive, u32 index, u8** data_dest, u32* size_dest);
+RA_Result RA_archive_open(RA_Archive* archive, const char* path);
+RA_Result RA_archive_close(RA_Archive* archive);
+RA_Result RA_archive_read(RA_Archive* archive, u32 index, u8** data_dest, u32* size_dest);
 
 #endif

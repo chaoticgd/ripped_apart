@@ -37,7 +37,7 @@ static void test_file(const char* path) {
 	printf("%s ", path);
 	u8* data;
 	u32 size;
-	RA_read_entire_file(&data, &size, path);
+	RA_file_read(&data, &size, path);
 	
 	RA_DatFile dat;
 	RA_dat_parse(&dat, data, size);

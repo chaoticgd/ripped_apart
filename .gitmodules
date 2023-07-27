@@ -4,3 +4,6 @@
 [submodule "thirdparty/cimgui"]
 	path = thirdparty/cimgui
 	url = https://github.com/cimgui/cimgui
+[submodule "thirdparty/lz4"]
+	path = thirdparty/lz4
+	url = https://github.com/lz4/lz4

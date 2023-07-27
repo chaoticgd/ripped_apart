@@ -150,7 +150,7 @@ static void draw_gui() {
 static void load_model(const char* path, const char* root_asset_dir) {
 	RA_Result result;
 	
-	if((result = RA_read_entire_file(&model_file_data, &model_file_size, path)) != RA_SUCCESS) {
+	if((result = RA_file_read(&model_file_data, &model_file_size, path)) != RA_SUCCESS) {
 		fprintf(stderr, "Malfunction while reading model file '%s' (%s).\n", path, result);
 		abort();
 	}
@@ -177,7 +177,7 @@ static void load_model(const char* path, const char* root_asset_dir) {
 			
 			u8* material_data;
 			u32 material_size;
-			if((result = RA_read_entire_file(&material_data, &material_size, material_path)) != RA_SUCCESS) {
+			if((result = RA_file_read(&material_data, &material_size, material_path)) != RA_SUCCESS) {
 				fprintf(stderr, "Malfunction while reading material file '%s' (%s).\n", material_path, result);
 				abort();
 			}

@@ -2,7 +2,7 @@
 
 #include <ctype.h>
 
-RA_Result RA_read_entire_file(u8** data_dest, u32* size_dest, const char* path) {
+RA_Result RA_file_read(u8** data_dest, u32* size_dest, const char* path) {
 	u64 path_size = strlen(path);
 	char* fixed_path = malloc(path_size + 1);
 	for(u64 i = 0; i < path_size; i++) {
@@ -15,7 +15,7 @@ RA_Result RA_read_entire_file(u8** data_dest, u32* size_dest, const char* path) 
 	fixed_path[path_size] = '\0';
 	
 	FILE* file = fopen(fixed_path, "rb");
-	if(!file) {
+	if(file == NULL) {
 		return "failed to open file for reading";
 	}
 	
@@ -42,6 +42,19 @@ RA_Result RA_read_entire_file(u8** data_dest, u32* size_dest, const char* path) 
 	
 	fclose(file);
 	
+	return RA_SUCCESS;
+}
+
+RA_Result RA_file_write(const char* path, u8* data, u32 size) {
+	FILE* file = fopen(path, "wb");
+	if(file == NULL) {
+		return "fopen";
+	}
+	if(fwrite(data, size, 1, file) != 1) {
+		fclose(file);
+		return "fwrite";
+	}
+	fclose(file);
 	return RA_SUCCESS;
 }
 
