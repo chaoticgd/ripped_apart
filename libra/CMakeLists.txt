@@ -11,4 +11,6 @@ add_library(libra STATIC
 	util.h
 	arena.c
 	arena.h
+	archive.c
+	archive.h
 )
