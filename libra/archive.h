@@ -12,12 +12,17 @@ typedef struct {
 	/* 0x18 */ char padding[8];
 } RA_ArchiveHeader;
 
+enum {
+	RA_ARCHIVE_COMPRESSION_TEXTURE = 2,
+	RA_ARCHIVE_COMPRESSION_LZ4 = 3
+};
+
 typedef struct {
 	/* 0x00 */ u64 unknown;
 	/* 0x08 */ u64 offset;
 	/* 0x10 */ u32 decompressed_size;
 	/* 0x14 */ u32 compressed_size;
-	/* 0x18 */ u8 unknown_18;
+	/* 0x18 */ u8 compression_mode;
 	/* 0x19 */ u8 unknown_19[7];
 } RA_ArchiveEntry;
 

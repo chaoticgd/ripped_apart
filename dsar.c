@@ -48,33 +48,35 @@ static void extract(const char* input_file, const char* output_dir) {
 	}
 	
 	for(u32 i = 0; i < archive.entry_count; i++) {
-		u8* compressed;
-		u32 compressed_size;
-		if((result = RA_archive_read(&archive, i, &compressed, &compressed_size)) != RA_SUCCESS) {
-			fprintf(stderr, "Failed to read file %u from archive '%s' (%s).\n", i, input_file, result);
-			exit(1);
-		}
+		if(archive.entries[i].compression_mode == RA_ARCHIVE_COMPRESSION_LZ4) {
+			u8* compressed;
+			u32 compressed_size;
+			if((result = RA_archive_read(&archive, i, &compressed, &compressed_size)) != RA_SUCCESS) {
+				fprintf(stderr, "Failed to read file %u from archive '%s' (%s).\n", i, input_file, result);
+				exit(1);
+			}
 		
-		char path[1024];
-		snprintf(path, 1024, "%s/%d.bin", output_dir, i);
+			char path[1024];
+			snprintf(path, 1024, "%s/%d.bin", output_dir, i);
+			
+			FILE* file = fopen(path, "wb");
+			if(file == NULL) {
+				fprintf(stderr, "Failed to open output file '%s'.\n", path);
+				exit(1);
+			}
 		
-		FILE* file = fopen(path, "wb");
-		if(file == NULL) {
-			fprintf(stderr, "Failed to open output file '%s'.\n", path);
-			exit(1);
-		}
-		
-		s32 max_decompressed_size = archive.entries[i].decompressed_size;
-		u8* decompressed = malloc(max_decompressed_size);
-		s32 decompressed_size = LZ4_decompress_safe((char*) compressed, (char*) decompressed, compressed_size, max_decompressed_size);
-		if(decompressed_size <= 0) {
-			fprintf(stderr, "Failed to decompress file %u from archive '%s' (LZ4_decompress_safe returned %d).\n", i, input_file, decompressed_size);
-			exit(1);
-		}
-		
-		if((result = RA_file_write(path, decompressed, decompressed_size)) != RA_SUCCESS) {
-			fprintf(stderr, "Failed to write file %d.bin to '%s' (%s).\n", i, path, result);
-			exit(1);
+			u32 decompressed_size = archive.entries[i].decompressed_size;
+			u8* decompressed = malloc(decompressed_size);
+			s32 bytes_written = LZ4_decompress_safe((char*) compressed, (char*) decompressed, compressed_size, decompressed_size);
+			if(bytes_written != decompressed_size) {
+				fprintf(stderr, "Failed to decompress file %u from archive '%s' (LZ4_decompress_safe returned %d).\n", i, input_file, decompressed_size);
+				exit(1);
+			}
+			
+			if((result = RA_file_write(path, decompressed, decompressed_size)) != RA_SUCCESS) {
+				fprintf(stderr, "Failed to write file %d.bin to '%s' (%s).\n", i, path, result);
+				exit(1);
+			}
 		}
 	}
 	
