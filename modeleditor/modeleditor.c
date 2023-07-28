@@ -223,7 +223,7 @@ static void draw_model(RenderModel* model, ViewParams* params) {
 	mat4x4_mul(view, view_yawed, trans);
 	
 	mat4x4 proj;
-	mat4x4_perspective(proj, M_PI * 0.5f, view_size[X] / view_size[Y], 0.1f, 10000.0f);
+	mat4x4_perspective(proj, RA_PI * 0.5f, view_size[X] / view_size[Y], 0.1f, 10000.0f);
 	
 	renderer_draw_model(model, view, proj);
 	

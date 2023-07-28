@@ -48,6 +48,8 @@ typedef const char* RA_Result;
 
 #define MAX(x, y) (((y) > (x)) ? (y) : (x))
 
+#define RA_PI 3.14159265358979323846
+
 RA_Result RA_file_read(u8** data_dest, u32* size_dest, const char* path);
 RA_Result RA_file_write(const char* path, u8* data, u32 size);
 
