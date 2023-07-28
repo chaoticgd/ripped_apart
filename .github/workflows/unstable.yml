@@ -2,7 +2,7 @@ name: Unstable
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
 
 env:
   BUILD_TYPE: Release
