@@ -53,4 +53,6 @@ set(RELEASE_FILES
 	$<TARGET_FILE:dsar>
 	$<TARGET_FILE:dag>
 )
+set(RELEASE_DOCS_DIRECTORY "${CMAKE_SOURCE_DIR}/docs")
+set(RELEASE_LICENSES_DIRECTORY "${CMAKE_SOURCE_DIR}/licenses")
 include(cmake/release_crafter.cmake)
