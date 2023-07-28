@@ -17,5 +17,6 @@ typedef struct {
 void RA_arena_create(RA_Arena* arena);
 void RA_arena_destroy(RA_Arena* arena);
 void* RA_arena_alloc(RA_Arena* arena, s64 size);
+void* RA_arena_calloc(RA_Arena* arena, s64 element_count, s64 element_size);
 
 #endif

@@ -7,13 +7,9 @@ static void extract(const char* input_file, const char* output_dir);
 static void print_help();
 
 int main(int argc, char** argv) {
-	if(argc < 2) {
-		print_help();
-	}
-	
-	if(strcmp(argv[1], "ls") == 0 && argc == 3) {
+	if(argc == 3 && strcmp(argv[1], "list") == 0) {
 		ls(argv[2]);
-	} else if(strcmp(argv[1], "extract") == 0 && argc == 4) {
+	} else if(argc == 4 && strcmp(argv[1], "extract") == 0) {
 		extract(argv[2], argv[3]);
 	} else {
 		print_help();
@@ -58,12 +54,6 @@ static void extract(const char* input_file, const char* output_dir) {
 		
 			char path[1024];
 			snprintf(path, 1024, "%s/%d.bin", output_dir, i);
-			
-			FILE* file = fopen(path, "wb");
-			if(file == NULL) {
-				fprintf(stderr, "Failed to open output file '%s'.\n", path);
-				exit(1);
-			}
 		
 			u32 decompressed_size = archive.entries[i].decompressed_size;
 			u8* decompressed = malloc(decompressed_size);
@@ -84,9 +74,9 @@ static void extract(const char* input_file, const char* output_dir) {
 }
 
 static void print_help() {
-	puts("Utility for working with DSAR archives, such as those used by the PC version of Rift Apart.");
+	puts("A utility for working with DSAR archives, such as those used by the PC version of Rift Apart.");
 	puts("");
 	puts("Commands:");
-	puts("  ls <input file>");
+	puts("  list <input file>");
 	puts("  extract <input file> <output dir>");
 }

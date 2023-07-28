@@ -13,4 +13,8 @@ add_library(libra STATIC
 	arena.h
 	archive.c
 	archive.h
+	dependency_dag.c
+	dependency_dag.h
+	table_of_contents.c
+	table_of_contents.h
 )
