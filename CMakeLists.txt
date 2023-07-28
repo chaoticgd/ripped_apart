@@ -30,7 +30,7 @@ include_directories(.)
 if(UNIX)
 	add_compile_options(-Wall -Wno-sign-compare -g -O3)
 elseif(MSVC)
-	include_directories(thirdparty/dirent.h)
+	include_directories(thirdparty/dirent)
 	add_compile_options(/W4 /EHsc /MP)
 endif()
 
