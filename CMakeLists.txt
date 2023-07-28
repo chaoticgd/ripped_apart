@@ -44,3 +44,13 @@ add_executable(dsar dsar.c)
 target_link_libraries(dsar libra lz4_static)
 add_executable(dag dag.c)
 target_link_libraries(dag libra)
+
+set(RELEASE_FILES
+	$<TARGET_FILE:superswizzle>
+	$<TARGET_FILE:modeleditor>
+	$<TARGET_FILE:igfile>
+	$<TARGET_FILE:igcrc>
+	$<TARGET_FILE:dsar>
+	$<TARGET_FILE:dag>
+)
+include(cmake/release_crafter.cmake)
