@@ -12,6 +12,8 @@ endif()
 # Output all the binaries into the root of the bin directory.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 
+include(cmake/version_finder.cmake)
+
 if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
 endif()
