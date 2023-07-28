@@ -136,6 +136,7 @@ RA_Result RA_dat_free(RA_DatFile* dat, b8 free_file_data) {
 	if(free_file_data && dat->file_data != NULL) {
 		free(dat->file_data);
 	}
+	return RA_SUCCESS;
 }
 
 
