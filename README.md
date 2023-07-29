@@ -8,11 +8,9 @@ Ratchet & Clank: Rift Apart modding stuff.
 
 See the [Releases](https://github.com/chaoticgd/ripped_apart/releases) page.
 
-## modeleditor
-
-Work in progress tool to load model files and in the future maybe edit them.
-
 ## superswizzle
+
+**Not for use with the PC version!**
 
 Converts .texture files to .png (or .exr in the case of HDR textures), automatically handling decompression and unswizzling. Can be used by dragging a texture onto the .exe file from within Windows explorer.
 
@@ -41,6 +39,18 @@ Prints out metadata about the specified asset or all the assets in a directory.
 Command line usage:
 
 	./igfile <input paths>
+
+# dag
+
+A tool for working with dependency DAG files.
+
+# dsar
+
+A tool for working with DSAR archives.
+
+## modeleditor
+
+Very unfinished tool to view model files.
 
 ## libra
 
