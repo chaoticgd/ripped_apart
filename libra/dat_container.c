@@ -74,7 +74,7 @@ RA_Result RA_dat_read(RA_DatFile* dat, const char* path) {
 		fclose(file);
 		return "failed to read DAT header";
 	}
-	if(memcmp(header.magic, "1TAD", 4) != 0) {
+	if(header.magic != FOURCC("1TAD")) {
 		fclose(file);
 		return "bad magic bytes";
 	}
