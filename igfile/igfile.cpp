@@ -15,8 +15,6 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	
-	RA_dat_init();
-	
 	for(int i = 1; i < argc; i++) {
 		if(fs::is_directory(argv[i])) {
 			for(const auto& dir_entry : fs::recursive_directory_iterator(argv[i])) {

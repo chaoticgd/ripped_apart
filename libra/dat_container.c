@@ -18,14 +18,6 @@ typedef struct {
 	/* 0xe */ u16 shader_count;
 } DatHeader;
 
-void RA_dat_init() {
-	RA_crc_init();
-	for(s32 i = 0; i < dat_lump_type_count; i++) {
-		const char* name = dat_lump_types[i].name;
-		dat_lump_types[i].crc = RA_crc_update((const uint8_t*) dat_lump_types[i].name, strlen(name));
-	}
-}
-
 b8 RA_validate_magic_bytes(DatHeader* header) {
 	return memcmp(header->magic, "1TAD", 4) == 0;
 }
@@ -139,19 +131,38 @@ RA_Result RA_dat_free(RA_DatFile* dat, b8 free_file_data) {
 	return RA_SUCCESS;
 }
 
-
-const char* RA_dat_lump_type_name(u32 type_crc) {
-	for(s32 i = 0; i < dat_lump_type_count; i++) {
-		if(dat_lump_types[i].crc == type_crc) {
-			return dat_lump_types[i].name;
-		}
-	}
-	return NULL;
-}
-
-RA_LumpType dat_lump_types[] = {
+static b8 lump_types_initialised = false;
+static RA_LumpType lump_types[] = {
 	#define LUMP_TYPE(string, identifier) {string},
 	#include "lump_types.h"
 	#undef LUMP_TYPE
 };
-s32 dat_lump_type_count = ARRAY_SIZE(dat_lump_types);
+static s32 lump_type_count = ARRAY_SIZE(lump_types);
+
+static void lump_types_init() {
+	for(s32 i = 0; i < lump_type_count; i++) {
+		const char* name = lump_types[i].name;
+		lump_types[i].crc = RA_crc_update((const uint8_t*) lump_types[i].name, strlen(name));
+	}
+	lump_types_initialised = true;
+}
+
+void RA_dat_get_lump_types(RA_LumpType** lump_types_dest, s32* lump_type_count_dest) {
+	if(!lump_types_initialised) {
+		lump_types_init();
+	}
+	*lump_types_dest = lump_types;
+	*lump_type_count_dest = lump_type_count;
+}
+
+const char* RA_dat_lump_type_name(u32 type_crc) {
+	RA_LumpType* types;
+	s32 count;
+	RA_dat_get_lump_types(&types, &count);
+	for(s32 i = 0; i < count; i++) {
+		if(types[i].crc == type_crc) {
+			return types[i].name;
+		}
+	}
+	return NULL;
+}

@@ -40,7 +40,6 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	
-	RA_dat_init();
 	startup();
 	renderer_init();
 	

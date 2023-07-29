@@ -5,7 +5,6 @@ static void ls(const char* input_file);
 static void print_help();
 
 int main(int argc, char** argv) {
-	RA_dat_init();
 	if(argc == 3 && strcmp(argv[1], "list") == 0) {
 		ls(argv[2]);
 	} else {

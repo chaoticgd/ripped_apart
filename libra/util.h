@@ -53,7 +53,6 @@ typedef const char* RA_Result;
 RA_Result RA_file_read(u8** data_dest, u32* size_dest, const char* path);
 RA_Result RA_file_write(const char* path, u8* data, u32 size);
 
-void RA_crc_init();
 u32 RA_crc_update(const u8* data, s64 size);
 u32 RA_crc_string(const char* string);
 

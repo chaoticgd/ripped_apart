@@ -34,14 +34,12 @@ typedef struct {
 	u32 crc;
 } RA_LumpType;
 
-void RA_dat_init();
 RA_Result RA_dat_parse(RA_DatFile* dat, u8* data, u32 size); // lumps point into file data
 RA_Result RA_dat_read(RA_DatFile* dat, const char* path);    // RA_arena_allocs the lumps
 RA_Result RA_dat_free(RA_DatFile* dat, b8 free_file_data);
-const char* RA_dat_lump_type_name(u32 type_crc);
 
-extern RA_LumpType dat_lump_types[];
-extern s32 dat_lump_type_count;
+void RA_dat_get_lump_types(RA_LumpType** lump_types_dest, s32* lump_type_count_dest);
+const char* RA_dat_lump_type_name(u32 type_crc);
 
 #ifdef __cplusplus
 }
