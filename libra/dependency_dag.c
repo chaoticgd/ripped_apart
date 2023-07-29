@@ -70,4 +70,5 @@ RA_Result RA_dag_free(RA_DependencyDag* dag, b8 free_file_data) {
 	if(free_file_data && dag->file_data) {
 		free(dag->file_data);
 	}
+	return RA_SUCCESS;
 }

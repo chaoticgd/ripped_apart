@@ -20,7 +20,7 @@ void* RA_arena_alloc(RA_Arena* arena, s64 size) {
 		arena->head = malloc(sizeof(RA_ArenaBlock) + capacity);
 		memset(arena->head, 0, sizeof(RA_ArenaBlock));
 		arena->head->size = capacity;
-		arena->top = 0;
+		offset = 0;
 	} else if(offset + size > arena->head->size) {
 		RA_ArenaBlock* prev = arena->head;
 		s64 capacity = MAX(size, prev->size * 2);
@@ -28,7 +28,7 @@ void* RA_arena_alloc(RA_Arena* arena, s64 size) {
 		memset(arena->head, 0, sizeof(RA_ArenaBlock));
 		arena->head->prev = prev;
 		arena->head->size = capacity;
-		arena->top = 0;
+		offset = 0;
 	}
 	arena->top = offset + size;
 	return arena->head->data + offset;
