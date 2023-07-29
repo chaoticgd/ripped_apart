@@ -173,6 +173,7 @@ static void load_model(const char* path, const char* root_asset_dir) {
 		if(strlen(material->path) > 0) {
 			char material_path[1024];
 			snprintf(material_path, 1024, "%s/%s", root_asset_dir, material->path);
+			RA_file_fix_path(&material_path[strlen(root_asset_dir)]);
 			
 			u8* material_data;
 			u32 material_size;

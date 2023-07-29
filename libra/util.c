@@ -2,19 +2,19 @@
 
 #include <ctype.h>
 
-RA_Result RA_file_read(u8** data_dest, u32* size_dest, const char* path) {
+void RA_file_fix_path(char* path) {
 	u64 path_size = strlen(path);
-	char* fixed_path = malloc(path_size + 1);
 	for(u64 i = 0; i < path_size; i++) {
 		if(path[i] == '\\') {
-			fixed_path[i] = '/';
+			path[i] = '/';
 		} else {
-			fixed_path[i] = tolower(path[i]);
+			path[i] = tolower(path[i]);
 		}
 	}
-	fixed_path[path_size] = '\0';
-	
-	FILE* file = fopen(fixed_path, "rb");
+}
+
+RA_Result RA_file_read(u8** data_dest, u32* size_dest, const char* path) {
+	FILE* file = fopen(path, "rb");
 	if(file == NULL) {
 		return "failed to open file for reading";
 	}

@@ -11,8 +11,10 @@ typedef struct {
 } RA_DependencyDagFileHeader;
 
 typedef struct {
+	u8 type;
+	u64 hash;
 	const char* path;
-	s32 thing;
+	s32 dependency_index;
 } RA_DependencyDagAsset;
 
 typedef struct {

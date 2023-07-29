@@ -1,19 +1,22 @@
 #include "libra/dat_container.h"
 #include "libra/dependency_dag.h"
 
-static void ls(const char* input_file);
+static void list(const char* input_file);
+static void rebuild(const char* input_file, const char* output_file);
 static void print_help();
 
 int main(int argc, char** argv) {
 	if(argc == 3 && strcmp(argv[1], "list") == 0) {
-		ls(argv[2]);
+		list(argv[2]);
+	} else if(argc == 4 && strcmp(argv[1], "rebuild") == 0) {
+		rebuild(argv[2], argv[3]);
 	} else {
 		print_help();
 		return 1;
 	}
 }
 
-static void ls(const char* input_file) {
+static void list(const char* input_file) {
 	RA_Result result;
 	
 	u8* data;
@@ -32,6 +35,37 @@ static void ls(const char* input_file) {
 	for(u32 i = 0; i < dag.asset_count; i++) {
 		RA_DependencyDagAsset* asset = &dag.assets[i];
 		printf("%s\n", asset->path);
+	}
+	
+	RA_dag_free(&dag, true);
+}
+
+static void rebuild(const char* input_file, const char* output_file) {
+	RA_Result result;
+	
+	u8* in_data;
+	u32 in_size;
+	if((result = RA_file_read(&in_data, &in_size, input_file)) != RA_SUCCESS) {
+		fprintf(stderr, "Failed to read input file '%s' (%s).\n", input_file, result);
+		exit(1);
+	}
+	
+	RA_DependencyDag dag;
+	if((result = RA_dag_parse(&dag, in_data, in_size)) != RA_SUCCESS) {
+		fprintf(stderr, "Failed to parse DAG file '%s' (%s).\n", input_file, result);
+		exit(1);
+	}
+	
+	u8* out_data;
+	u32 out_size;
+	if((result = RA_dag_build(&dag, &out_data, &out_size)) != RA_SUCCESS) {
+		fprintf(stderr, "Failed to rebuild DAG file '%s' (%s).\n", output_file, result);
+		exit(1);
+	}
+	
+	if((result = RA_file_write(output_file, out_data, out_size)) != RA_SUCCESS) {
+		fprintf(stderr, "Failed to write output file '%s' (%s).\n", input_file, result);
+		exit(1);
 	}
 	
 	RA_dag_free(&dag, true);

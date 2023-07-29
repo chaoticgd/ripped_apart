@@ -47,9 +47,12 @@ typedef const char* RA_Result;
 #define RA_SUCCESS NULL
 
 #define MAX(x, y) (((y) > (x)) ? (y) : (x))
+#define ALIGN(value, alignment) (value) + (-(value) & ((alignment) - 1))
+#define FOURCC(string) ((string)[0] | (string)[1] << 8 | (string)[2] << 16 | (string)[3] << 24)
 
 #define RA_PI 3.14159265358979323846
 
+void RA_file_fix_path(char* path);
 RA_Result RA_file_read(u8** data_dest, u32* size_dest, const char* path);
 RA_Result RA_file_write(const char* path, u8* data, u32 size);
 
