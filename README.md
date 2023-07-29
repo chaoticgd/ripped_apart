@@ -40,11 +40,11 @@ Command line usage:
 
 	./igfile <input paths>
 
-# dag
+## dag
 
 A tool for working with dependency DAG files.
 
-# dsar
+## dsar
 
 A tool for working with DSAR archives.
 
