@@ -45,7 +45,9 @@ typedef char b8;
 
 typedef const char* RA_Result;
 #define RA_SUCCESS NULL
+RA_Result RA_failure(const char* format, ...);
 
+#define MIN(x, y) (((y) < (x)) ? (y) : (x))
 #define MAX(x, y) (((y) > (x)) ? (y) : (x))
 #define ALIGN(value, alignment) (value) + (-(value) & ((alignment) - 1))
 #define FOURCC(string) ((string)[0] | (string)[1] << 8 | (string)[2] << 16 | (string)[3] << 24)

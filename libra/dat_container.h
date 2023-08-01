@@ -35,8 +35,8 @@ RA_Result RA_dat_free(RA_DatFile* dat, b8 free_file_data);
 struct t_RA_DatWriter;
 typedef struct t_RA_DatWriter RA_DatWriter;
 
-RA_DatWriter* RA_dat_writer_begin(u32 asset_type_crc);                           // Begin writing. Call this first.
-void* RA_dat_writer_lump(RA_DatWriter* writer, u32 type_crc, s64 size);            // Allocate memory for a lump. Call this second.
+RA_DatWriter* RA_dat_writer_begin(u32 asset_type_crc, u32 bytes_before_magic);   // Begin writing. Call this first.
+void* RA_dat_writer_lump(RA_DatWriter* writer, u32 type_crc, s64 size);          // Allocate memory for a lump. Call this second.
 u32 RA_dat_writer_string(RA_DatWriter* writer, const char* string);              // Allocate a string. Call this third.
 void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, u32* size_dest); // Finish writing, generate the output.
 void RA_dat_writer_abort(RA_DatWriter* writer);                                  // Finish writing, don't generate any output.
@@ -57,6 +57,10 @@ typedef struct {
 
 void RA_dat_get_lump_types(RA_LumpType** lump_types_dest, s32* lump_type_count_dest);
 const char* RA_dat_lump_type_name(u32 type_crc);
+
+// Testing
+
+RA_Result RA_dat_test(const u8* original, u32 original_size, const u8* repacked, u32 repacked_size, b8 print_hex_dump_on_failure);
 
 #ifdef __cplusplus
 }

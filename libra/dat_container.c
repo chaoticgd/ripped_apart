@@ -134,6 +134,7 @@ RA_Result RA_dat_free(RA_DatFile* dat, b8 free_file_data) {
 struct t_RA_DatWriter {
 	RA_Arena prologue;
 	RA_Arena lumps;
+	u32 bytes_before_magic;
 	u32 prologue_size;
 	u32 lumps_size;
 	u32 asset_type_crc;
@@ -143,12 +144,13 @@ struct t_RA_DatWriter {
 	b8 write_string_called;
 };
 
-RA_DatWriter* RA_dat_writer_begin(u32 asset_type_crc) {
+RA_DatWriter* RA_dat_writer_begin(u32 asset_type_crc, u32 bytes_before_magic) {
 	RA_DatWriter* writer = calloc(1, sizeof(RA_DatWriter));
 	RA_arena_create(&writer->prologue);
 	RA_arena_create(&writer->lumps);
-	RA_arena_alloc_aligned(&writer->prologue, sizeof(DatHeader), 1);
-	writer->prologue_size = sizeof(DatHeader);
+	RA_arena_alloc_aligned(&writer->prologue, bytes_before_magic + sizeof(DatHeader), 1);
+	writer->bytes_before_magic = bytes_before_magic;
+	writer->prologue_size = bytes_before_magic + sizeof(DatHeader);
 	writer->asset_type_crc = asset_type_crc;
 	return writer;
 }
@@ -194,7 +196,7 @@ void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, u32* size_dest) 
 	}
 	RA_arena_destroy(&writer->prologue);
 	RA_arena_destroy(&writer->lumps);
-	DatHeader* header = (DatHeader*) *data_dest;
+	DatHeader* header = (DatHeader*) (*data_dest + writer->bytes_before_magic);
 	header->magic = FOURCC("1TAD");
 	header->asset_type_crc = writer->asset_type_crc;
 	header->file_size = *size_dest;
@@ -248,4 +250,111 @@ const char* RA_dat_lump_type_name(u32 type_crc) {
 		}
 	}
 	return NULL;
+}
+
+// Testing
+
+static RA_Result diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rhs_size, u32 lump, b8 print_hex_dump_on_failure);
+
+RA_Result RA_dat_test(const u8* original, u32 original_size, const u8* repacked, u32 repacked_size, b8 print_hex_dump_on_failure) {
+	RA_Result result;
+	
+	if(original_size < sizeof(DatHeader)) return RA_failure("original file only %d bytes in size, too small for dat header", original_size);
+	if(repacked_size < sizeof(DatHeader)) return RA_failure("repacked file only %d bytes in size, too small for dat header", repacked_size);
+	
+	DatHeader* original_header = (DatHeader*) original;
+	DatHeader* repacked_header = (DatHeader*) repacked;
+	
+	if(original_header->magic != FOURCC("1TAD")) return "original file is not a dat file";
+	if(repacked_header->magic != FOURCC("1TAD")) return "repacked file is not a dat file";
+	
+	if(original_header->asset_type_crc != repacked_header->asset_type_crc)
+		return RA_failure("asset types differ, original is %x, repacked is %x", original_header->asset_type_crc, repacked_header->asset_type_crc);
+	if(original_header->lump_count != repacked_header->lump_count)
+		return RA_failure("lump count is different, original is %hd, repacked is %hd", original_header->lump_count, repacked_header->lump_count);
+	
+	if(original_size < sizeof(DatHeader) + original_header->lump_count * sizeof(LumpHeader)) return "original file too small for lump headers";
+	if(repacked_size < sizeof(DatHeader) + repacked_header->lump_count * sizeof(LumpHeader)) return "repacked file too small for lump headers";
+	
+	for(u32 i = 0; i < original_header->lump_count; i++) {
+		LumpHeader* original_lump = (LumpHeader*) &original_header->lumps[i];
+		LumpHeader* repacked_lump = (LumpHeader*) &original_header->lumps[i];
+		
+		if(original_lump->type_crc != repacked_lump->type_crc) return RA_failure("lump %u crcs differ", i);
+		if(original_lump->size != repacked_lump->size) return RA_failure("lump %u sizes differ", i);
+		
+		if(original_lump->offset + original_lump->size > original_size) return RA_failure("original lump %u out of bounds", i);
+		if(repacked_lump->offset + repacked_lump->size > original_size) return RA_failure("repacked lump %u out of bounds", i);
+		
+		const u8* original_data = &original[original_lump->offset];
+		const u8* repacked_data = &original[repacked_lump->offset];
+		
+		if((result = diff_buffers(original_data, original_lump->size, repacked_data, repacked_lump->size, i, print_hex_dump_on_failure)) != RA_SUCCESS) {
+			return result;
+		}
+	}
+	
+	return RA_SUCCESS;
+}
+
+static RA_Result diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rhs_size, u32 lump, b8 print_hex_dump_on_failure) {
+	u32 min_size = MIN(lhs_size, rhs_size);
+	u32 max_size = MAX(lhs_size, rhs_size);
+	
+	u32 diff_offset = UINT32_MAX;
+	for(u32 j = 0; j < min_size; j++) {
+		if(lhs[j] != rhs[j]) {
+			diff_offset = j;
+			break;
+		}
+	}
+	
+	if(diff_offset == UINT32_MAX) {
+		return RA_SUCCESS;
+	}
+	
+	RA_Result error = RA_failure("lump %u differs at offset %x", lump, diff_offset);
+	if(print_hex_dump_on_failure) {
+		printf("%s\n", error);
+		
+	}
+	
+	s64 row_start = (diff_offset / 0x10) * 0x10;
+	s64 hexdump_begin = MAX(0, row_start - 0x50);
+	s64 hexdump_end = max_size;
+	for(s64 i = hexdump_begin; i < hexdump_end; i += 0x10) {
+		printf("%08x: ", (s32) i);
+		const u8* current = lhs;
+		u32 current_size = lhs_size;
+		for(u32 j = 0; j < 2; j++) {
+			for(s64 j = 0; j < 0x10; j++) {
+				s64 pos = i + j;
+				const char* colour = NULL;
+				if(pos < lhs_size && pos < rhs_size) {
+					if(lhs[pos] == rhs[pos]) {
+						colour = "32";
+					} else {
+						colour = "31";
+					}
+				} else if(pos < current_size) {
+					colour = "33";
+				} else {
+					printf("   ");
+				}
+				if(colour != NULL) {
+					printf("\033[%sm%02x\033[0m ", colour, current[pos]);
+				}
+				if(j % 4 == 3 && j != 0xf) {
+					printf(" ");
+				}
+			}
+			printf("| ");
+			current = rhs;
+			current_size = rhs_size;
+		}
+		printf("\n");
+	}
+	printf("\n");
+	
+	return error;
 }

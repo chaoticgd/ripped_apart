@@ -1,6 +1,18 @@
 #include "util.h"
 
 #include <ctype.h>
+#include <stdarg.h>
+
+RA_Result RA_failure(const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	
+	static char message[16 * 1024];
+	vsnprintf(message, 16 * 1024, format, args);
+	
+	va_end(args);
+	return message;
+}
 
 void RA_file_fix_path(char* path) {
 	u64 path_size = strlen(path);
@@ -63,10 +75,10 @@ static u32 crc32_table[256];
 
 static void crc_init() {
 	u32 polynomial = 0xedb88320;
-	for (u32 i = 0; i < 256; i++) {
+	for(u32 i = 0; i < 256; i++) {
 		u32 accumulator = i;
 		for(s32 j = 0; j < 8; j++) {
-			if (accumulator & 1) {
+			if(accumulator & 1) {
 				accumulator = polynomial ^ (accumulator >> 1);
 			} else {
 				accumulator >>= 1;
@@ -82,7 +94,7 @@ u32 RA_crc_update(const u8* data, s64 size) {
 		crc_init();
 	}
 	u32 crc = 0xedb88320;
-	for (s64 i = 0; i < size; i++) {
+	for(s64 i = 0; i < size; i++) {
 		crc = crc32_table[(crc ^ data[i]) & 0xff] ^ (crc >> 8);
 	}
 	return crc;

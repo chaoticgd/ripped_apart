@@ -109,7 +109,7 @@ RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, u32* size_dest) {
 	u32 paths_crc = 0xd101a6cc;
 	u32 dependency_indices_crc = 0xf958372e;
 	
-	RA_DatWriter* writer = RA_dat_writer_begin(RA_ASSET_TYPE_DAG);
+	RA_DatWriter* writer = RA_dat_writer_begin(RA_ASSET_TYPE_DAG, 0xc);
 	
 	u8* asset_types = RA_dat_writer_lump(writer, asset_types_crc, dag->asset_count);
 	u64* hashes = RA_dat_writer_lump(writer, hashes_crc, dag->asset_count * 8);
