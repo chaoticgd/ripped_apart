@@ -14,7 +14,8 @@ typedef struct {
 	u8 type;
 	u64 hash;
 	const char* path;
-	s32 dependency_index;
+	u32* dependencies;
+	u32 dependency_count;
 } RA_DependencyDagAsset;
 
 typedef struct {
