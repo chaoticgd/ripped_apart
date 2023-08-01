@@ -320,7 +320,7 @@ static RA_Result diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rh
 	}
 	
 	RA_Result error = RA_failure("lump %u differs at offset %x", lump, diff_offset);
-	if(print_hex_dump_on_failure) {
+	if(!print_hex_dump_on_failure) {
 		return error;
 	}
 	
