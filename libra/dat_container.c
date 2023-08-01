@@ -161,6 +161,7 @@ void* RA_dat_writer_lump(RA_DatWriter* writer, u32 type_crc, s64 size) {
 		abort();
 	}
 	LumpHeader* header = RA_arena_alloc_aligned(&writer->prologue, sizeof(LumpHeader), 1);
+	header->type_crc = type_crc;
 	header->offset = writer->lumps_size;
 	header->size = size;
 	s64 aligned_size = ALIGN(size, 0x10);
@@ -179,6 +180,10 @@ u32 RA_dat_writer_string(RA_DatWriter* writer, const char* string) {
 	writer->prologue_size += string_size;
 	writer->write_string_called = true;
 	return offset;
+}
+
+static int compare_lumps(const void* lhs, const void* rhs) {
+	return ((LumpHeader*) lhs)->type_crc > ((LumpHeader*) rhs)->type_crc;
 }
 
 void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, u32* size_dest) {
@@ -202,6 +207,7 @@ void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, u32* size_dest) 
 	header->file_size = *size_dest;
 	header->lump_count = writer->lump_count;
 	header->shader_count = writer->shader_count;
+	qsort(header->lumps, header->lump_count, sizeof(LumpHeader), compare_lumps);
 	free(writer);
 }
 
