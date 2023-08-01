@@ -36,7 +36,9 @@ int main(int argc, const char** argv) {
 			char file_path[1024];
 			snprintf(file_path, 1024, "%s/%s", directory_path, entry->d_name);
 			
-			if((result = test_file(file_path)) != RA_SUCCESS) {
+			if((result = test_file(file_path)) == RA_SUCCESS) {
+				printf("success\n");
+			} else {
 				printf("%s\n", result);
 			}
 		}
@@ -66,6 +68,7 @@ static RA_Result test_file(const char* path) {
 	} else {
 		printf("skipped\n");
 	}
+	
 	return RA_SUCCESS;
 }
 
@@ -86,6 +89,7 @@ static RA_Result test_dat_file(u8* data, u32 size) {
 			printf("skipped\n");
 		}
 	}
+	
 	return RA_SUCCESS;
 }
 

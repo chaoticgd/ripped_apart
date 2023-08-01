@@ -278,7 +278,7 @@ RA_Result RA_dat_test(const u8* original, u32 original_size, const u8* repacked,
 	
 	for(u32 i = 0; i < original_header->lump_count; i++) {
 		LumpHeader* original_lump = (LumpHeader*) &original_header->lumps[i];
-		LumpHeader* repacked_lump = (LumpHeader*) &original_header->lumps[i];
+		LumpHeader* repacked_lump = (LumpHeader*) &repacked_header->lumps[i];
 		
 		if(original_lump->type_crc != repacked_lump->type_crc) return RA_failure("lump %u crcs differ", i);
 		if(original_lump->size != repacked_lump->size) return RA_failure("lump %u sizes differ", i);
@@ -287,7 +287,7 @@ RA_Result RA_dat_test(const u8* original, u32 original_size, const u8* repacked,
 		if(repacked_lump->offset + repacked_lump->size > original_size) return RA_failure("repacked lump %u out of bounds", i);
 		
 		const u8* original_data = &original[original_lump->offset];
-		const u8* repacked_data = &original[repacked_lump->offset];
+		const u8* repacked_data = &repacked[repacked_lump->offset];
 		
 		if((result = diff_buffers(original_data, original_lump->size, repacked_data, repacked_lump->size, i, print_hex_dump_on_failure)) != RA_SUCCESS) {
 			return result;
@@ -309,15 +309,16 @@ static RA_Result diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rh
 		}
 	}
 	
-	if(diff_offset == UINT32_MAX) {
+	if(lhs_size == rhs_size && diff_offset == UINT32_MAX) {
 		return RA_SUCCESS;
 	}
 	
 	RA_Result error = RA_failure("lump %u differs at offset %x", lump, diff_offset);
 	if(print_hex_dump_on_failure) {
-		printf("%s\n", error);
-		
+		return error;
 	}
+	
+	printf("%s\n", error);
 	
 	s64 row_start = (diff_offset / 0x10) * 0x10;
 	s64 hexdump_begin = MAX(0, row_start - 0x50);

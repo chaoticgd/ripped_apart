@@ -5,12 +5,12 @@
 static RA_Result alloc_assets(RA_DependencyDag* dag, u32 asset_count);
 
 RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size) {
-	u32 asset_types_crc = RA_crc_string("Asset Types");
 	u32 hashes_crc = 0x933c0d32;
+	u32 paths_crc = 0xd101a6cc;
+	u32 asset_types_crc = RA_crc_string("Asset Types");
+	u32 dependency_indices_crc = 0xf958372e;
 	u32 dependency_crc = 0xbc91d1cc;
 	u32 unk_crc = 0xbfec699f;
-	u32 paths_crc = 0xd101a6cc;
-	u32 dependency_indices_crc = 0xf958372e;
 	
 	RA_Result result;
 	
@@ -77,7 +77,7 @@ RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size) {
 				if(dependency_list_index > -1) {
 					if(!dependencies) return "no dependencies lump";
 					if(dependency_list_index * 4 >= dependency_lump_size) return "dependency list index out of range";
-					dag->assets[i].dependencies = &dependencies[dependency_list_index];
+					dag->assets[i].dependencies = (u32*) &dependencies[dependency_list_index];
 					s32* dependency = &dependencies[dependency_list_index];
 					while(*dependency > -1) {
 						if(*dependency >= dag->asset_count) return "dependency index out of range";
@@ -111,12 +111,12 @@ static RA_Result alloc_assets(RA_DependencyDag* dag, u32 asset_count) {
 }
 
 RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, u32* size_dest) {
-	u32 asset_types_crc = RA_crc_string("Asset Types");
 	u32 hashes_crc = 0x933c0d32;
+	u32 paths_crc = 0xd101a6cc;
+	u32 asset_types_crc = RA_crc_string("Asset Types");
+	u32 dependency_indices_crc = 0xf958372e;
 	u32 dependency_crc = 0xbc91d1cc;
 	u32 unk_crc = 0xbfec699f;
-	u32 paths_crc = 0xd101a6cc;
-	u32 dependency_indices_crc = 0xf958372e;
 	
 	RA_DatWriter* writer = RA_dat_writer_begin(RA_ASSET_TYPE_DAG, 0xc);
 	
@@ -125,11 +125,12 @@ RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, u32* size_dest) {
 		dependency_count += dag->assets[i].dependency_count + 1;
 	}
 	
-	u8* asset_types = RA_dat_writer_lump(writer, asset_types_crc, dag->asset_count);
 	u64* hashes = RA_dat_writer_lump(writer, hashes_crc, dag->asset_count * 8);
-	s32* dependency = RA_dat_writer_lump(writer, dependency_crc, dependency_count * 4);
 	u32* paths = RA_dat_writer_lump(writer, paths_crc, dag->asset_count * 4);
+	u8* asset_types = RA_dat_writer_lump(writer, asset_types_crc, dag->asset_count);
 	u32* dependency_indices = RA_dat_writer_lump(writer, dependency_indices_crc, dag->asset_count * 4);
+	s32* dependency = RA_dat_writer_lump(writer, dependency_crc, dependency_count * 4);
+	u32* unk = RA_dat_writer_lump(writer, unk_crc, 1);
 	
 	for(u32 i = 0; i < dag->asset_count; i++) {
 		asset_types[i] = dag->assets[i].type;
