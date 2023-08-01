@@ -187,6 +187,11 @@ static int compare_lumps(const void* lhs, const void* rhs) {
 }
 
 void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, u32* size_dest) {
+	if(writer->prologue_size % 0x10 != 0) {
+		u32 padding_size = 0x10 - writer->prologue_size % 0x10;
+		RA_arena_alloc_aligned(&writer->prologue, padding_size, 1);
+		writer->prologue_size += padding_size;
+	}
 	*size_dest = writer->prologue_size + writer->lumps_size;
 	*data_dest = malloc(*size_dest);
 	s64 prologue_size = RA_arena_copy(&writer->prologue, *data_dest, *size_dest);
@@ -207,6 +212,9 @@ void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, u32* size_dest) 
 	header->file_size = *size_dest;
 	header->lump_count = writer->lump_count;
 	header->shader_count = writer->shader_count;
+	for(u32 i = 0; i < header->lump_count; i++) {
+		header->lumps[i].offset += writer->prologue_size;
+	}
 	qsort(header->lumps, header->lump_count, sizeof(LumpHeader), compare_lumps);
 	free(writer);
 }
