@@ -1,9 +1,9 @@
 # Package up all the files for a release. This is to be run as part of a CI job.
 if(ZIP_RELEASE)
 	if(GIT_TAG STREQUAL "")
-		string(TIMESTAMP RELEASE_DATE "%Y-%m-%d")
+		string(TIMESTAMP RELEASE_DATE "%Y-%m-%d_%H-%M-%S")
 		string(SUBSTRING "${GIT_COMMIT}" 0 7 GIT_SHORT_COMMIT)
-		set(RELEASE_VERSION "${RELEASE_DATE}-${GIT_SHORT_COMMIT}")
+		set(RELEASE_VERSION "${RELEASE_DATE}_${GIT_SHORT_COMMIT}")
 	else()
 		set(RELEASE_VERSION ${GIT_TAG})
 	endif()
