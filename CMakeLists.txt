@@ -48,6 +48,8 @@ add_executable(dsar dsar.c)
 target_link_libraries(dsar libra lz4_static)
 add_executable(dag dag.c)
 target_link_libraries(dag libra)
+add_executable(genlumptypes genlumptypes.c)
+target_link_libraries(genlumptypes libra)
 
 set(RELEASE_FILES
 	$<TARGET_FILE:superswizzle>

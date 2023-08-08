@@ -50,10 +50,18 @@ typedef enum {
 } RA_AssetType;
 
 typedef struct {
-	b8 has_fake_name;
 	const char* name;
 	u32 crc;
 } RA_LumpType;
+
+extern RA_LumpType lump_types[];
+extern s32 lump_type_count;
+
+enum RA_LumpName {
+	#define LUMP_TYPE(identifier, crc, name) LUMP_ ##identifier = crc,
+	#include "lump_types.h"
+	#undef LUMP_TYPE
+};
 
 void RA_dat_get_lump_types(RA_LumpType** lump_types_dest, s32* lump_type_count_dest);
 const char* RA_dat_lump_type_name(u32 type_crc);

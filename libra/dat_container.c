@@ -228,40 +228,17 @@ void RA_dat_writer_abort(RA_DatWriter* writer) {
 
 // Lump type information
 
-static b8 lump_types_initialised = false;
-static RA_LumpType lump_types[] = {
-	#define LUMP_TYPE(string, identifier) {false, string},
-	#define LUMP_TYPE_FAKE_NAME(crc, identifier) {true, #identifier, crc},
+RA_LumpType lump_types[] = {
+	#define LUMP_TYPE(identifier, crc, name) {name, crc},
 	#include "lump_types.h"
 	#undef LUMP_TYPE
 };
-static s32 lump_type_count = ARRAY_SIZE(lump_types);
-
-static void lump_types_init() {
-	for(s32 i = 0; i < lump_type_count; i++) {
-		if(!lump_types[i].has_fake_name) {
-			const char* name = lump_types[i].name;
-			lump_types[i].crc = RA_crc_update((const uint8_t*) lump_types[i].name, strlen(name));
-		}
-	}
-	lump_types_initialised = true;
-}
-
-void RA_dat_get_lump_types(RA_LumpType** lump_types_dest, s32* lump_type_count_dest) {
-	if(!lump_types_initialised) {
-		lump_types_init();
-	}
-	*lump_types_dest = lump_types;
-	*lump_type_count_dest = lump_type_count;
-}
+s32 lump_type_count = ARRAY_SIZE(lump_types);
 
 const char* RA_dat_lump_type_name(u32 type_crc) {
-	RA_LumpType* types;
-	s32 count;
-	RA_dat_get_lump_types(&types, &count);
-	for(s32 i = 0; i < count; i++) {
-		if(types[i].crc == type_crc) {
-			return types[i].name;
+	for(s32 i = 0; i < lump_type_count; i++) {
+		if(lump_types[i].crc == type_crc) {
+			return lump_types[i].name;
 		}
 	}
 	return NULL;
