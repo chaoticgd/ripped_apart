@@ -69,37 +69,3 @@ RA_Result RA_file_write(const char* path, u8* data, u32 size) {
 	fclose(file);
 	return RA_SUCCESS;
 }
-
-static b8 crc_initialised = false;
-static u32 crc32_table[256];
-
-static void crc_init() {
-	u32 polynomial = 0xedb88320;
-	for(u32 i = 0; i < 256; i++) {
-		u32 accumulator = i;
-		for(s32 j = 0; j < 8; j++) {
-			if(accumulator & 1) {
-				accumulator = polynomial ^ (accumulator >> 1);
-			} else {
-				accumulator >>= 1;
-			}
-		}
-		crc32_table[i] = accumulator;
-	}
-	crc_initialised = true;
-}
-
-u32 RA_crc_update(const u8* data, s64 size) {
-	if(!crc_initialised) {
-		crc_init();
-	}
-	u32 crc = 0xedb88320;
-	for(s64 i = 0; i < size; i++) {
-		crc = crc32_table[(crc ^ data[i]) & 0xff] ^ (crc >> 8);
-	}
-	return crc;
-}
-
-u32 RA_crc_string(const char* string) {
-	return RA_crc_update((const u8*) string, strlen(string));
-}

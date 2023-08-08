@@ -58,7 +58,7 @@ extern RA_LumpType lump_types[];
 extern s32 lump_type_count;
 
 enum RA_LumpName {
-	#define LUMP_TYPE(identifier, crc, name) LUMP_ ##identifier = crc,
+	#define LUMP_TYPE(identifier, crc, name) LUMP_##identifier = crc,
 	#include "lump_types.h"
 	#undef LUMP_TYPE
 };

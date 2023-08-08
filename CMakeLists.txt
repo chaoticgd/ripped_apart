@@ -36,6 +36,7 @@ elseif(MSVC)
 	add_compile_options(/W4 /EHsc /MP)
 endif()
 
+add_subdirectory(crc)
 add_subdirectory(libra)
 add_subdirectory(superswizzle)
 add_subdirectory(modeleditor)
@@ -49,7 +50,7 @@ target_link_libraries(dsar libra lz4_static)
 add_executable(dag dag.c)
 target_link_libraries(dag libra)
 add_executable(genlumptypes genlumptypes.c)
-target_link_libraries(genlumptypes libra)
+target_link_libraries(genlumptypes crc)
 
 set(RELEASE_FILES
 	$<TARGET_FILE:superswizzle>
