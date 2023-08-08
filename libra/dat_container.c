@@ -21,14 +21,14 @@ typedef struct {
 	/* 0x10 */ LumpHeader lumps[];
 } DatHeader;
 
-RA_Result RA_dat_parse(RA_DatFile* dat, u8* data, u32 size) {
+RA_Result RA_dat_parse(RA_DatFile* dat, u8* data, u32 size, u32 bytes_before_magic) {
 	memset(dat, 0, sizeof(RA_DatFile));
 	RA_arena_create(&dat->arena);
 	
 	dat->file_data = data;
 	dat->file_size = size;
 	
-	DatHeader* header = (DatHeader*) data;
+	DatHeader* header = (DatHeader*) &data[bytes_before_magic];
 	if(header->magic != FOURCC("1TAD")) {
 		return "bad magic bytes";
 	}
@@ -53,7 +53,7 @@ RA_Result RA_dat_parse(RA_DatFile* dat, u8* data, u32 size) {
 			RA_arena_destroy(&dat->arena);
 			return "lump too big";
 		}
-		dat->lumps[i].data = data + header->lumps[i].offset;
+		dat->lumps[i].data = data + bytes_before_magic + header->lumps[i].offset;
 	}
 	return RA_SUCCESS;
 }
@@ -213,7 +213,7 @@ void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, u32* size_dest) 
 	header->lump_count = writer->lump_count;
 	header->shader_count = writer->shader_count;
 	for(u32 i = 0; i < header->lump_count; i++) {
-		header->lumps[i].offset += writer->prologue_size;
+		header->lumps[i].offset += writer->prologue_size - writer->bytes_before_magic;
 	}
 	qsort(header->lumps, header->lump_count, sizeof(LumpHeader), compare_lumps);
 	free(writer);

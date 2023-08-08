@@ -21,7 +21,7 @@ RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size) {
 	dag->file_size = size;
 	
 	RA_DatFile dat;
-	if((result = RA_dat_parse(&dat, data + sizeof(RA_DependencyDagFileHeader), size - sizeof(RA_DependencyDagFileHeader))) != RA_SUCCESS) {
+	if((result = RA_dat_parse(&dat, data, size, sizeof(RA_DependencyDagFileHeader))) != RA_SUCCESS) {
 		return result;
 	}
 	
@@ -76,7 +76,8 @@ RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size) {
 				s32 dependency_list_index = dependency_indices[i];
 				if(dependency_list_index > -1) {
 					if(!dependencies) return "no dependencies lump";
-					if(dependency_list_index * 4 >= dependency_lump_size) return "dependency list index out of range";
+					if(dependency_list_index * 4 >= dependency_lump_size)
+						return RA_failure("dependency list index out of range (%d)", i);
 					dag->assets[i].dependencies = (u32*) &dependencies[dependency_list_index];
 					s32* dependency = &dependencies[dependency_list_index];
 					while(*dependency > -1) {
@@ -131,6 +132,8 @@ RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, u32* size_dest) {
 	u32* dependency_indices = RA_dat_writer_lump(writer, dependency_indices_crc, dag->asset_count * 4);
 	s32* dependency = RA_dat_writer_lump(writer, dependency_crc, dependency_count * 4);
 	u32* unk = RA_dat_writer_lump(writer, unk_crc, 1);
+	
+	RA_dat_writer_string(writer, "DependencyDAG");
 	
 	for(u32 i = 0; i < dag->asset_count; i++) {
 		asset_types[i] = dag->assets[i].type;

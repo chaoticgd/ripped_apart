@@ -26,7 +26,7 @@ typedef struct {
 	RA_DatLump* lumps;
 } RA_DatFile;
 
-RA_Result RA_dat_parse(RA_DatFile* dat, u8* data, u32 size); // lumps point into file data
+RA_Result RA_dat_parse(RA_DatFile* dat, u8* data, u32 size, u32 bytes_before_magic); // lumps point into file data
 RA_Result RA_dat_read(RA_DatFile* dat, const char* path);    // RA_arena_allocs the lumps
 RA_Result RA_dat_free(RA_DatFile* dat, b8 free_file_data);
 

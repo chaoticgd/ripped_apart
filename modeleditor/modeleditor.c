@@ -155,7 +155,7 @@ static void load_model(const char* path, const char* root_asset_dir) {
 	}
 	
 	RA_DatFile dat;
-	if((result = RA_dat_parse(&dat, model_file_data, model_file_size)) != RA_SUCCESS) {
+	if((result = RA_dat_parse(&dat, model_file_data, model_file_size, 0)) != RA_SUCCESS) {
 		fprintf(stderr, "Malfunction while parsing header for model file '%s' (%s).\n", path, result);
 		abort();
 	}
@@ -183,7 +183,7 @@ static void load_model(const char* path, const char* root_asset_dir) {
 			}
 			
 			RA_DatFile dat;
-			if((result = RA_dat_parse(&dat, material_data, material_size)) != RA_SUCCESS) {
+			if((result = RA_dat_parse(&dat, material_data, material_size, 0)) != RA_SUCCESS) {
 				fprintf(stderr, "Malfunction while parsing header for material file '%s' (%s).\n", material_path, result);
 				abort();
 			}

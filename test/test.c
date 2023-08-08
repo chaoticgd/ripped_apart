@@ -76,7 +76,7 @@ static RA_Result test_dat_file(u8* data, u32 size) {
 	RA_Result result;
 	
 	RA_DatFile dat;
-	RA_dat_parse(&dat, data, size);
+	RA_dat_parse(&dat, data, size, 0);
 	
 	switch(dat.asset_type_crc) {
 		case RA_ASSET_TYPE_MATERIAL: {
