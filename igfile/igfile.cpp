@@ -30,10 +30,15 @@ int main(int argc, char** argv) {
 }
 
 static RA_Result process_file(const char* path, bool print_sections) {
+	RA_Result result;
+	
 	RA_DatFile dat;
-	RA_Result result = RA_dat_read(&dat, path);
-	if(result != NULL) {
-		return result;
+	if((result = RA_dat_read(&dat, path, 0)) != RA_SUCCESS) {
+		if(RA_dat_read(&dat, path, 8) != RA_SUCCESS) {
+			if(RA_dat_read(&dat, path, 0xc) != RA_SUCCESS) {
+				return result;
+			}
+		}
 	}
 	
 	printf("%s", path);
