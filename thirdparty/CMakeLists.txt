@@ -40,3 +40,5 @@ target_include_directories(cimgui PUBLIC cimgui/imgui/)
 target_include_directories(cimgui PUBLIC cimgui/generator/output/)
 set_target_properties(cimgui PROPERTIES PREFIX "")
 target_link_libraries(cimgui glfw ${IMGUI_LIBRARIES})
+
+add_subdirectory(gdeflate)

@@ -70,14 +70,19 @@ int main(int argc, char** argv) {
 		// Read and decompress blocks as necessary, and assemble the asset.
 		u8* data = calloc(1, toc_asset->location.size);
 		u32 size = toc_asset->location.size;
-		if((result = RA_archive_read_decompressed(&archive, data, toc_asset->location.decompressed_offset, toc_asset->location.size)) != RA_SUCCESS) {
+		u8 compression_mode;
+		if((result = RA_archive_read_decompressed(&archive, toc_asset->location.decompressed_offset, toc_asset->location.size, data, &compression_mode)) != RA_SUCCESS) {
 			fprintf(stderr, "Failed to read block for asset '%s' (%s).", dag_asset->path, result);
 			return 1;
 		}
 		
 		// Extract the file.
 		char out_path[RA_MAX_PATH];
-		snprintf(out_path, RA_MAX_PATH, "%s/%s", out_dir, dag_asset->path);
+		if(compression_mode == RA_ARCHIVE_COMPRESSION_GDEFLATE) {
+			snprintf(out_path, RA_MAX_PATH, "%s/%s.stream", out_dir, dag_asset->path);
+		} else {
+			snprintf(out_path, RA_MAX_PATH, "%s/%s", out_dir, dag_asset->path);
+		}
 		RA_file_fix_path(out_path + strlen(out_dir));
 		if((result = RA_make_dirs(out_path)) != RA_SUCCESS) {
 			fprintf(stderr, "Failed to make directory for file '%s' (%s).\n", out_path, result);

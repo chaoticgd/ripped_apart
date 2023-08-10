@@ -13,7 +13,7 @@ typedef struct {
 } RA_ArchiveHeader;
 
 enum {
-	RA_ARCHIVE_COMPRESSION_TEXTURE = 2,
+	RA_ARCHIVE_COMPRESSION_GDEFLATE = 2,
 	RA_ARCHIVE_COMPRESSION_LZ4 = 3
 };
 
@@ -40,6 +40,6 @@ typedef struct {
 
 RA_Result RA_archive_open(RA_Archive* archive, const char* path);
 RA_Result RA_archive_close(RA_Archive* archive);
-RA_Result RA_archive_read_decompressed(RA_Archive* archive, u8* data_dest, u32 decompressed_offset, u32 decompressed_size);
+RA_Result RA_archive_read_decompressed(RA_Archive* archive, u32 decompressed_offset, u32 decompressed_size, u8* data_dest, u8* compression_mode_dest);
 
 #endif

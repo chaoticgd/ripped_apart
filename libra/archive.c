@@ -1,6 +1,7 @@
 #include "archive.h"
 
 #include <lz4.h>
+#include "gdeflate_wrapper.h"
 
 static RA_Result load_block(RA_Archive* archive, RA_ArchiveBlock* block);
 
@@ -43,7 +44,7 @@ RA_Result RA_archive_close(RA_Archive* archive) {
 	return RA_SUCCESS;
 }
 
-RA_Result RA_archive_read_decompressed(RA_Archive* archive, u8* data_dest, u32 decompressed_offset, u32 decompressed_size) {
+RA_Result RA_archive_read_decompressed(RA_Archive* archive, u32 decompressed_offset, u32 decompressed_size, u8* data_dest, u8* compression_mode_dest) {
 	for(u32 i = 0; i < archive->block_count; i++) {
 		RA_ArchiveBlock* block = &archive->blocks[i];
 		b8 should_be_loaded =
@@ -73,6 +74,7 @@ RA_Result RA_archive_read_decompressed(RA_Archive* archive, u8* data_dest, u32 d
 				copy_size = decompressed_size - src_offset;
 			}
 			memcpy(data_dest + dest_offset, block->decompressed_data + src_offset, copy_size);
+			*compression_mode_dest = block->header.compression_mode;
 		} else if(block->decompressed_data != NULL) {
 			free(block->decompressed_data);
 			block->decompressed_data = NULL;
@@ -93,8 +95,14 @@ static RA_Result load_block(RA_Archive* archive, RA_ArchiveBlock* block) {
 	}
 	
 	switch(block->header.compression_mode) {
-		case RA_ARCHIVE_COMPRESSION_TEXTURE: {
-			block->decompressed_size = 0;
+		case RA_ARCHIVE_COMPRESSION_GDEFLATE: {
+			block->decompressed_data = malloc(block->header.decompressed_size);
+			block->decompressed_size = block->header.decompressed_size;
+			if(!gdeflate_decompress(block->decompressed_data, block->header.decompressed_size, compressed_data, compressed_size, 8)) {
+				free(compressed_data);
+				free(block->decompressed_data);
+				return "failed to decompress GDeflate block";
+			}
 			break;
 		}
 		case RA_ARCHIVE_COMPRESSION_LZ4: {
@@ -103,7 +111,7 @@ static RA_Result load_block(RA_Archive* archive, RA_ArchiveBlock* block) {
 			if(bytes_written != block->header.decompressed_size) {
 				free(compressed_data);
 				free(block->decompressed_data);
-				return "failed to load block";
+				return "failed to decompress LZ4 block";
 			}
 			block->decompressed_size = block->header.decompressed_size;
 			break;

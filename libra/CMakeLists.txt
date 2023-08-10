@@ -17,5 +17,7 @@ add_library(libra STATIC
 	dependency_dag.h
 	table_of_contents.c
 	table_of_contents.h
+	gdeflate_wrapper.cpp
+	gdeflate_wrapper.h
 )
-target_link_libraries(libra crc lz4_static)
+target_link_libraries(libra crc lz4_static GDeflate)
