@@ -18,4 +18,4 @@ add_library(libra STATIC
 	table_of_contents.c
 	table_of_contents.h
 )
-target_link_libraries(libra crc)
+target_link_libraries(libra crc lz4_static)

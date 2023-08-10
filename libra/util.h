@@ -8,6 +8,8 @@
 #include <string.h>
 #include <inttypes.h>
 
+#include "../crc/crc.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,6 +59,14 @@ RA_Result RA_failure(const char* format, ...);
 void RA_file_fix_path(char* path);
 RA_Result RA_file_read(u8** data_dest, u32* size_dest, const char* path);
 RA_Result RA_file_write(const char* path, u8* data, u32 size);
+RA_Result RA_make_dirs(const char* file_path);
+
+#define RA_MAX_PATH 1024
+
+typedef enum {
+	DONT_FREE_FILE_DATA = 0,
+	FREE_FILE_DATA = 1
+} ShouldFreeFileData;
 
 #ifdef __cplusplus
 }

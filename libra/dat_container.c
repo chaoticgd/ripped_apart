@@ -130,6 +130,29 @@ RA_Result RA_dat_free(RA_DatFile* dat, b8 free_file_data) {
 	return RA_SUCCESS;
 }
 
+RA_DatLump* RA_dat_lookup_lump(RA_DatFile* dat, u32 name_crc) {
+	if(dat->lump_count == 0) {
+		return NULL;
+	}
+	
+	u32 first = 0;
+	u32 last = dat->lump_count - 1;
+	
+	while(first <= last) {
+		u32 mid = (first + last) / 2;
+		RA_DatLump* lump = &dat->lumps[mid];
+		if(lump->type_crc < name_crc) {
+			first = mid + 1;
+		} else if(lump->type_crc > name_crc) {
+			last = mid - 1;
+		} else {
+			return lump;
+		}
+	}
+	
+	return NULL;
+}
+
 // Writing
 
 struct t_RA_DatWriter {

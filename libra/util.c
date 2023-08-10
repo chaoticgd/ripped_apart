@@ -3,6 +3,13 @@
 #include <ctype.h>
 #include <stdarg.h>
 
+#ifdef WIN32
+	#define mkdir_portable(path) _mkdir(path)
+#else
+	#include <sys/stat.h>
+	#define mkdir_portable(path) mkdir(path, 0777)
+#endif
+
 RA_Result RA_failure(const char* format, ...) {
 	va_list args;
 	va_start(args, format);
@@ -67,5 +74,32 @@ RA_Result RA_file_write(const char* path, u8* data, u32 size) {
 		return "fwrite";
 	}
 	fclose(file);
+	printf("File written: %s\n", path);
+	return RA_SUCCESS;
+}
+
+RA_Result RA_make_dirs(const char* file_path) {
+	// Remove filename.
+	char dir_path[RA_MAX_PATH];
+	strncpy(dir_path, file_path, RA_MAX_PATH);
+	char* seperator_forward = strrchr(dir_path, '/');
+	char* seperator_backward = strrchr(dir_path, '\\');
+	if(seperator_forward && seperator_forward > seperator_backward) {
+		*seperator_forward = '\0';
+	} else if(seperator_backward) {
+		*seperator_backward = '\0';
+	}
+	
+	// Make the directories.
+	for(char* ptr = dir_path + 1; *ptr != '\0'; ptr++) {
+		if(*ptr == '/' || *ptr == '\\') {
+			char seperator = *ptr;
+			*ptr = '\0';
+			mkdir_portable(dir_path);
+			*ptr = seperator;
+		}
+	}
+	mkdir_portable(dir_path);
+	
 	return RA_SUCCESS;
 }

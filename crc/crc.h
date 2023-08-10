@@ -1,7 +1,11 @@
 #ifndef CRC_H
 #define CRC_H
 
-unsigned int RA_crc_update(const unsigned char* data, long long size);
-unsigned int RA_crc_string(const char* string);
+#include <stdint.h>
+
+uint32_t RA_crc_update(const unsigned char* data, long long size);
+uint32_t RA_crc_string(const char* string);
+
+uint64_t RA_crc64_path(const char* string);
 
 #endif

@@ -46,11 +46,13 @@ if(UNIX)
 	add_subdirectory(test)
 endif()
 add_executable(dsar dsar.c)
-target_link_libraries(dsar libra lz4_static)
+target_link_libraries(dsar libra)
 add_executable(dag dag.c)
 target_link_libraries(dag libra)
 add_executable(genlumptypes genlumptypes.c)
 target_link_libraries(genlumptypes crc)
+add_executable(extractall extractall.c)
+target_link_libraries(extractall libra)
 
 set(RELEASE_FILES
 	$<TARGET_FILE:superswizzle>

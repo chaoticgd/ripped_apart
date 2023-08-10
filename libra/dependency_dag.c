@@ -58,6 +58,7 @@ RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size) {
 			u32* path_offsets = (u32*) lump->data;
 			for(u32 i = 0; i < dag->asset_count; i++) {
 				dag->assets[i].path = (char*) (data + sizeof(RA_DependencyDagFileHeader) + path_offsets[i]);
+				dag->assets[i].path_crc = RA_crc64_path(dag->assets[i].path);
 			}
 			has_file_paths_lump = true;
 		} else if(lump->type_crc == LUMP_DEPENDENCY_INDEX) {
@@ -135,10 +136,32 @@ RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, u32* size_dest) {
 	return RA_SUCCESS;
 }
 
-RA_Result RA_dag_free(RA_DependencyDag* dag, b8 free_file_data) {
+void RA_dag_free(RA_DependencyDag* dag, b8 free_file_data) {
 	RA_arena_destroy(&dag->arena);
 	if(free_file_data && dag->file_data) {
 		free(dag->file_data);
 	}
-	return RA_SUCCESS;
+}
+
+RA_DependencyDagAsset* RA_dag_lookup_asset(RA_DependencyDag* dag, u64 path_crc) {
+	if(dag->asset_count == 0) {
+		return NULL;
+	}
+	
+	u32 first = 0;
+	u32 last = dag->asset_count - 1;
+	
+	while(first <= last) {
+		u32 mid = (first + last) / 2;
+		RA_DependencyDagAsset* asset = &dag->assets[mid];
+		if(asset->path_crc < path_crc) {
+			first = mid + 1;
+		} else if(asset->path_crc > path_crc) {
+			last = mid - 1;
+		} else {
+			return asset;
+		}
+	}
+	
+	return NULL;
 }
