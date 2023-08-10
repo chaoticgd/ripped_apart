@@ -92,6 +92,8 @@ int main(int argc, char** argv) {
 			fprintf(stderr, "Failed to write file '%s' (%s).\n", out_path, result);
 			return 1;
 		}
+		
+		free(data);
 	}
 }
 
