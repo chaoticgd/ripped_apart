@@ -56,6 +56,25 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 		toc->assets[i].path_hash = ((u64*) asset_hash->data)[i];
 	}
 	
+	RA_DatLump* asset_groups = RA_dat_lookup_lump(&dat, LUMP_ASSET_GROUPING);
+	if(file_locations == NULL) {
+		RA_dat_free(&dat, false);
+		RA_arena_destroy(&toc->arena);
+		return "asset groups lump not found";
+	}
+	
+	for(u32 i = 0; i < asset_groups->size / 8; i++) {
+		RA_TocAssetGroup* group = &((RA_TocAssetGroup*) asset_groups->data)[i];
+		if(group->first_index + group->count > toc->asset_count) {
+			RA_dat_free(&dat, false);
+			RA_arena_destroy(&toc->arena);
+			return "asset group out of range";
+		}
+		for(u32 j = 0; j < group->count; j++) {
+			toc->assets[group->first_index + j].group = i;
+		}
+	}
+	
 	RA_dat_free(&dat, false);
 	return RA_SUCCESS;
 }

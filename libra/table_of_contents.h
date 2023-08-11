@@ -14,6 +14,11 @@ typedef struct {
 } RA_TocArchive;
 
 typedef struct {
+	/* 0x0 */ u32 first_index;
+	/* 0x4 */ u32 count;
+} RA_TocAssetGroup;
+
+typedef struct {
 	u32 size;
 	u32 archive_index;
 	u32 decompressed_offset;
@@ -23,6 +28,7 @@ typedef struct {
 typedef struct {
 	RA_TocFileLocation location;
 	u64 path_hash;
+	u32 group;
 } RA_TocAsset;
 
 typedef struct {
@@ -34,8 +40,6 @@ typedef struct {
 	RA_TocAsset* assets;
 	u32 asset_count;
 } RA_TableOfContents;
-
-#define RA_MAX_ARCHIVE_COUNT 1000
 
 RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size);
 RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, u32* size_dest);

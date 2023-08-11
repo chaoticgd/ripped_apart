@@ -28,11 +28,6 @@ int main(int argc, char** argv) {
 	RA_TableOfContents toc;
 	parse_dag_and_toc(&dag, &toc, game_dir);
 	
-	if(toc.archive_count > RA_MAX_ARCHIVE_COUNT) {
-		fprintf(stderr, "Over %d archive files. Oh no.\n", RA_MAX_ARCHIVE_COUNT);
-		return 1;
-	}
-	
 	// Sort the assets by archive index, then by file offset. This way we can
 	// open archive files and decompress blocks one by one.
 	qsort(toc.assets, toc.asset_count, sizeof(RA_TocAsset), compare_toc_assets);
@@ -44,8 +39,17 @@ int main(int argc, char** argv) {
 	for(u32 i = 0; i < toc.asset_count; i++) {
 		RA_TocAsset* toc_asset = &toc.assets[i];
 		RA_DependencyDagAsset* dag_asset = RA_dag_lookup_asset(&dag, toc_asset->path_hash);
-		if(dag_asset == NULL) {
-			continue;
+		
+		// Determine the relative path of the asset.
+		char asset_path[RA_MAX_PATH];
+		if(dag_asset) {
+			strncpy(asset_path, dag_asset->path, RA_MAX_PATH - 1);
+		} else {
+			// We don't have a proper file path, so just use the asset hash instead.
+			if(snprintf(asset_path, RA_MAX_PATH, "%" PRIx64, toc_asset->path_hash) < 0) {
+				fprintf(stderr, "error: Output path too long.\n");
+				return 1;
+			}
 		}
 		
 		// Open the next archive file if necessary.
@@ -55,13 +59,17 @@ int main(int argc, char** argv) {
 				RA_archive_close(&archive);
 			}
 			if(toc_asset->location.archive_index >= toc.archive_count) {
-				fprintf(stderr, "Archive index out of range!\n");
-				continue;
+				fprintf(stderr, "error: Archive index out of range!\n");
+				return 1;
 			}
 			char archive_path[RA_MAX_PATH];
-			snprintf(archive_path, RA_MAX_PATH, "%s/%s", game_dir, toc.archives[toc_asset->location.archive_index].data);
+			if(snprintf(archive_path, RA_MAX_PATH, "%s/%s", game_dir, toc.archives[toc_asset->location.archive_index].data) < 0) {
+				fprintf(stderr, "error: Output path too long.\n");
+				return 1;
+			}
 			RA_file_fix_path(archive_path + strlen(game_dir));
 			if((result = RA_archive_open(&archive, archive_path)) != RA_SUCCESS) {
+				fprintf(stderr, "Cannot to open archive '%s'. This is normal for localization files.\n", archive_path);
 				continue;
 			}
 			current_archive_index = toc_asset->location.archive_index;
@@ -72,28 +80,50 @@ int main(int argc, char** argv) {
 		u32 size = toc_asset->location.size;
 		u8 compression_mode;
 		if((result = RA_archive_read_decompressed(&archive, toc_asset->location.decompressed_offset, toc_asset->location.size, data, &compression_mode)) != RA_SUCCESS) {
-			fprintf(stderr, "Failed to read block for asset '%s' (%s).", dag_asset->path, result);
+			fprintf(stderr, "error: Failed to read block for asset '%s' (%s).", asset_path, result);
 			return 1;
 		}
 		
-		// Extract the file.
+		// Write out the file.
 		char out_path[RA_MAX_PATH];
-		if(compression_mode == RA_ARCHIVE_COMPRESSION_GDEFLATE) {
-			snprintf(out_path, RA_MAX_PATH, "%s/%s.stream", out_dir, dag_asset->path);
+		if(toc_asset->group > 0) {
+			if(snprintf(out_path, RA_MAX_PATH, "%s/%s.%u", out_dir, asset_path, toc_asset->group) < 0) {
+				fprintf(stderr, "error: Output path too long.\n");
+				return 1;
+			}
 		} else {
-			snprintf(out_path, RA_MAX_PATH, "%s/%s", out_dir, dag_asset->path);
+			if(snprintf(out_path, RA_MAX_PATH, "%s/%s", out_dir, asset_path) < 0) {
+				fprintf(stderr, "error: Output path too long.\n");
+				return 1;
+			}
 		}
 		RA_file_fix_path(out_path + strlen(out_dir));
 		if((result = RA_make_dirs(out_path)) != RA_SUCCESS) {
-			fprintf(stderr, "Failed to make directory for file '%s' (%s).\n", out_path, result);
+			fprintf(stderr, "error: Failed to make directory for file '%s' (%s).\n", out_path, result);
 			return 1;
 		}
 		if((result = RA_file_write(out_path, data, size)) != RA_SUCCESS) {
-			fprintf(stderr, "Failed to write file '%s' (%s).\n", out_path, result);
+			fprintf(stderr, "error: Failed to write file '%s' (%s).\n", out_path, result);
 			return 1;
 		}
 		
 		free(data);
+		
+		// Write out the list of dependencies for the file.
+		if(dag_asset) {
+			char deps_out_path[RA_MAX_PATH];
+			if(snprintf(deps_out_path, RA_MAX_PATH, "%s/%s.deps", out_dir, asset_path) < 0) {
+				fprintf(stderr, "error: Output path too long.\n");
+				return 1;
+			}
+			RA_file_fix_path(deps_out_path + strlen(out_dir));
+			FILE* deps_file = fopen(deps_out_path, "w");
+			for(u32 j = 0; j < dag_asset->dependency_count; j++) {
+				RA_DependencyDagAsset* dependency = &dag.assets[dag_asset->dependencies[j]];
+				fprintf(deps_file, "%" PRIx64 " %s\n", dependency->path_crc, dependency->path);
+			}
+			fclose(deps_file);
+		}
 	}
 }
 
@@ -107,12 +137,12 @@ static void parse_dag_and_toc(RA_DependencyDag* dag, RA_TableOfContents* toc, co
 	u8* dag_data;
 	u32 dag_size;
 	if((result = RA_file_read(&dag_data, &dag_size, dag_path))) {
-		fprintf(stderr, "Failed to read dag file (%s).\n", result);
+		fprintf(stderr, "error: Failed to read dag file (%s).\n", result);
 		exit(1);
 	}
 	
 	if((result = RA_dag_parse(dag, dag_data, dag_size)) != RA_SUCCESS) {
-		fprintf(stderr, "Failed to parse dag file (%s).\n", result);
+		fprintf(stderr, "error: Failed to parse dag file (%s).\n", result);
 		exit(1);
 	}
 	
@@ -123,12 +153,12 @@ static void parse_dag_and_toc(RA_DependencyDag* dag, RA_TableOfContents* toc, co
 	u8* toc_data;
 	u32 toc_size;
 	if((result = RA_file_read(&toc_data, &toc_size, toc_path)) != RA_SUCCESS) {
-		fprintf(stderr, "Failed to read toc file (%s).\n", result);
+		fprintf(stderr, "error: Failed to read toc file (%s).\n", result);
 		exit(1);
 	}
 	
 	if((result = RA_toc_parse(toc, toc_data, toc_size)) != RA_SUCCESS) {
-		fprintf(stderr, "Failed to parse toc file (%s).\n", result);
+		fprintf(stderr, "error: Failed to parse toc file (%s).\n", result);
 		exit(1);
 	}
 }
