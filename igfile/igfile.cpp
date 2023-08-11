@@ -54,7 +54,7 @@ static RA_Result process_file(const char* path, bool print_sections) {
 	
 	if(print_sections) {
 		printf("sections:\n\n");
-		printf("Type     | Offset   | Size\n");
+		printf("CRC      | Offset   | Size     | Name\n");
 		for(int32_t i = 0; i < dat.lump_count; i++) {
 			RA_DatLump* lump = &dat.lumps[i];
 			
