@@ -6,20 +6,17 @@
 #include "dat_container.h"
 
 typedef struct {
+	const char* name;
+} RA_ModelJoint;
+
+typedef struct {
+	const char* name;
+} RA_ModelLocator;
+
+typedef struct {
 	u16 lod_begin;
 	u16 lod_count;
 } RA_ModelLook;
-
-typedef struct {
-	/* 0x0 */ u16 unknown_0;
-	/* 0x2 */ u16 unknown_2;
-	/* 0x4 */ u16 unknown_4;
-	/* 0x6 */ u16 unknown_6;
-	/* 0x8 */ u16 unknown_8;
-	/* 0xa */ u16 unknown_a;
-	/* 0xc */ u16 unknown_c;
-	/* 0xe */ u16 unknown_e;
-} RA_ModelJoint;
 
 typedef struct {
 	/* 0x00 */ u32 unknown_0;
@@ -91,12 +88,16 @@ typedef struct {
 	u8* file_data;
 	u32 file_size;
 	RA_Arena arena;
-	RA_ModelLook* looks;
+	u8* physics_data;
+	u32 physics_data_size;
 	RA_ModelBuilt* built;
+	RA_ModelJoint* joints;
+	RA_ModelLook* looks;
 	RA_ModelMaterial* materials;
 	RA_ModelSubset* subsets;
 	u16* indices;
 	RA_ModelStdVert* std_verts;
+	u32 joint_count;
 	u32 look_count;
 	u32 material_count;
 	u32 subset_count;
