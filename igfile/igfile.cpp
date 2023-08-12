@@ -6,7 +6,13 @@
 
 namespace fs = std::filesystem;
 
-static RA_Result process_file(const char* name, bool print_sections);
+static RA_Result process_file(const char* name, bool print_lumps);
+
+static enum {
+	SORT_CRC,
+	SORT_OFFSET,
+	SORT_SIZE
+} sort_mode;
 
 int main(int argc, char** argv) {
 	if(argc < 2) {
@@ -16,6 +22,21 @@ int main(int argc, char** argv) {
 	}
 	
 	for(int i = 1; i < argc; i++) {
+		if(strcmp(argv[i], "-sc") == 0) {
+			sort_mode = SORT_CRC;
+			continue;
+		}
+		
+		if(strcmp(argv[i], "-so") == 0) {
+			sort_mode = SORT_OFFSET;
+			continue;
+		}
+		
+		if(strcmp(argv[i], "-ss") == 0) {
+			sort_mode = SORT_SIZE;
+			continue;
+		}
+		
 		if(fs::is_directory(argv[i])) {
 			for(const auto& dir_entry : fs::recursive_directory_iterator(argv[i])) {
 				process_file(dir_entry.path().string().c_str(), false);
@@ -29,7 +50,11 @@ int main(int argc, char** argv) {
 	}
 }
 
-static RA_Result process_file(const char* path, bool print_sections) {
+static int sort_crc(const void* lhs, const void* rhs) { return ((RA_DatLump*) lhs)->type_crc > ((RA_DatLump*) rhs)->type_crc; }
+static int sort_offset(const void* lhs, const void* rhs) { return ((RA_DatLump*) lhs)->offset > ((RA_DatLump*) rhs)->offset; }
+static int sort_size(const void* lhs, const void* rhs) { return ((RA_DatLump*) lhs)->size > ((RA_DatLump*) rhs)->size; }
+
+static RA_Result process_file(const char* path, bool print_lumps) {
 	RA_Result result;
 	
 	RA_DatFile dat;
@@ -52,8 +77,14 @@ static RA_Result process_file(const char* path, bool print_sections) {
 	
 	printf("\n");
 	
-	if(print_sections) {
-		printf("sections:\n\n");
+	if(print_lumps) {
+		switch(sort_mode) {
+			case SORT_CRC: break;
+			case SORT_OFFSET: qsort(dat.lumps, dat.lump_count, sizeof(RA_DatLump), sort_offset); break;
+			case SORT_SIZE: qsort(dat.lumps, dat.lump_count, sizeof(RA_DatLump), sort_size); break;
+		}
+		
+		printf("lumps:\n\n");
 		printf("CRC      | Offset   | Size     | Name\n");
 		for(int32_t i = 0; i < dat.lump_count; i++) {
 			RA_DatLump* lump = &dat.lumps[i];
