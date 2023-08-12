@@ -62,6 +62,12 @@ RA_Result RA_file_write(const char* path, u8* data, u32 size);
 RA_Result RA_make_dirs(const char* file_path);
 
 #define RA_MAX_PATH 1024
+// On Windows long is only 4 bytes, so the regular libc standard IO functions
+// are crippled, hence we need to use these special versions instead.
+#ifdef _MSC_VER
+	#define fseek _fseeki64
+	#define ftell _ftelli64
+#endif
 
 typedef enum {
 	DONT_FREE_FILE_DATA = 0,
