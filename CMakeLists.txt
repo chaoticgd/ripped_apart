@@ -54,6 +54,16 @@ target_link_libraries(genlumptypes crc)
 add_executable(extractall extractall.c)
 target_link_libraries(extractall libra)
 
+# Set the windows codepage to UTF-8.
+if(WIN32)
+	target_sources(superswizzle PUBLIC ripped_apart.manifest)
+	target_sources(modeleditor PUBLIC ripped_apart.manifest)
+	target_sources(igfile PUBLIC ripped_apart.manifest)
+	target_sources(igcrc PUBLIC ripped_apart.manifest)
+	target_sources(dsar PUBLIC ripped_apart.manifest)
+	target_sources(dag PUBLIC ripped_apart.manifest)
+endif()
+
 set(RELEASE_FILES
 	$<TARGET_FILE:superswizzle>
 	$<TARGET_FILE:modeleditor>
