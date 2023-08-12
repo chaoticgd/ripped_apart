@@ -3,7 +3,7 @@
 #include <lz4.h>
 #include "gdeflate_wrapper.h"
 
-static RA_Result load_block(RA_Archive* archive, RA_ArchiveBlock* block);
+static RA_Result load_dsar_block(RA_Archive* archive, RA_ArchiveBlock* block);
 
 RA_Result RA_archive_open(RA_Archive* archive, const char* path) {
 	memset(archive, 0, sizeof(RA_Archive));
@@ -17,21 +17,23 @@ RA_Result RA_archive_open(RA_Archive* archive, const char* path) {
 		return "fread header";
 	}
 	
-	if(header.magic != FOURCC("DSAR")) {
-		return "magic bytes don't match";
-	}
-	
-	archive->blocks = calloc(header.block_count, sizeof(RA_ArchiveBlock));
-	archive->block_count = header.block_count;
-	if(archive->blocks == NULL) {
-		return "malloc";
-	}
-	
-	for(u32 i = 0; i < archive->block_count; i++) {
-		if(fread(&archive->blocks[i].header, sizeof(RA_ArchiveBlockHeader), 1, archive->file) != 1) {
-			free(archive->blocks);
-			return "fread block header";
+	if(header.magic == FOURCC("DSAR")) {
+		archive->is_dsar_archive = true;
+		
+		archive->dsar_blocks = calloc(header.block_count, sizeof(RA_ArchiveBlock));
+		archive->dsar_block_count = header.block_count;
+		if(archive->dsar_blocks == NULL) {
+			return "malloc";
 		}
+		
+		for(u32 i = 0; i < archive->dsar_block_count; i++) {
+			if(fread(&archive->dsar_blocks[i].header, sizeof(RA_ArchiveBlockHeader), 1, archive->file) != 1) {
+				free(archive->dsar_blocks);
+				return "fread block header";
+			}
+		}
+	} else {
+		archive->is_dsar_archive = false;
 	}
 	
 	return RA_SUCCESS;
@@ -39,49 +41,60 @@ RA_Result RA_archive_open(RA_Archive* archive, const char* path) {
 
 RA_Result RA_archive_close(RA_Archive* archive) {
 	fclose(archive->file);
-	for(u32 i = 0; i < archive->block_count; i++) {
-		if(archive->blocks[i].decompressed_data != NULL) {
-			free(archive->blocks[i].decompressed_data);
+	if(archive->is_dsar_archive) {
+		for(u32 i = 0; i < archive->dsar_block_count; i++) {
+			if(archive->dsar_blocks[i].decompressed_data != NULL) {
+				free(archive->dsar_blocks[i].decompressed_data);
+			}
 		}
+		free(archive->dsar_blocks);
 	}
-	free(archive->blocks);
 	return RA_SUCCESS;
 }
 
-RA_Result RA_archive_read_decompressed(RA_Archive* archive, u32 decompressed_offset, u32 decompressed_size, u8* data_dest) {
+RA_Result RA_archive_read(RA_Archive* archive, u32 offset, u32 size, u8* data_dest) {
 	RA_Result result;
 	
-	for(u32 i = 0; i < archive->block_count; i++) {
-		RA_ArchiveBlock* block = &archive->blocks[i];
-		b8 should_be_loaded =
-			block->header.decompressed_offset < (decompressed_offset + decompressed_size) &&
-			block->header.decompressed_offset + block->header.decompressed_size > decompressed_offset;
-		if(should_be_loaded) {
-			if(block->decompressed_data == NULL && (result = load_block(archive, block)) != RA_SUCCESS) {
-				return result;
+	if(archive->is_dsar_archive) {
+		for(u32 i = 0; i < archive->dsar_block_count; i++) {
+			RA_ArchiveBlock* block = &archive->dsar_blocks[i];
+			b8 should_be_loaded =
+				block->header.decompressed_offset < (offset + size) &&
+				block->header.decompressed_offset + block->header.decompressed_size > offset;
+			if(should_be_loaded) {
+				if(block->decompressed_data == NULL && (result = load_dsar_block(archive, block)) != RA_SUCCESS) {
+					return result;
+				}
+				
+				s64 begin = MAX(block->header.decompressed_offset, offset);
+				s64 block_end = block->header.decompressed_offset + block->decompressed_size;
+				s64 file_end = offset + size;
+				s64 end = MIN(block_end, file_end);
+				
+				s64 dest_offset = begin - offset;
+				s64 src_offset = begin - block->header.decompressed_offset;
+				s64 copy_size = end - begin;
+				
+				memcpy(data_dest + dest_offset, block->decompressed_data + src_offset, copy_size);
+			} else if(block->decompressed_data != NULL) {
+				free(block->decompressed_data);
+				block->decompressed_data = NULL;
+				block->decompressed_size = 0;
 			}
-			
-			s64 begin = MAX(block->header.decompressed_offset, decompressed_offset);
-			s64 block_end = block->header.decompressed_offset + block->decompressed_size;
-			s64 file_end = decompressed_offset + decompressed_size;
-			s64 end = MIN(block_end, file_end);
-			
-			s64 dest_offset = begin - decompressed_offset;
-			s64 src_offset = begin - block->header.decompressed_offset;
-			s64 copy_size = end - begin;
-			
-			memcpy(data_dest + dest_offset, block->decompressed_data + src_offset, copy_size);
-		} else if(block->decompressed_data != NULL) {
-			free(block->decompressed_data);
-			block->decompressed_data = NULL;
-			block->decompressed_size = 0;
+		}
+	} else {
+		if(fseek(archive->file, offset, SEEK_SET) != 0) {
+			return "fseek failed";
+		}
+		if(fread(data_dest, size, 1, archive->file) != 1) {
+			return "fread failed";
 		}
 	}
 	
 	return RA_SUCCESS;
 }
 
-static RA_Result load_block(RA_Archive* archive, RA_ArchiveBlock* block) {
+static RA_Result load_dsar_block(RA_Archive* archive, RA_ArchiveBlock* block) {
 	if(fseek(archive->file, block->header.compressed_offset, SEEK_SET) != 0) {
 		return "fseek";
 	}

@@ -23,14 +23,19 @@ static void ls(const char* path) {
 		exit(1);
 	}
 	
+	if(!archive.is_dsar_archive) {
+		fprintf(stderr, "error: Input file in not a dsar archive.\n");
+		exit(1);
+	}
+	
 	printf("Index Decompressed Offset Compressed Offset   Size     Compressed Size\n");
-	for(u32 i = 0; i < archive.block_count; i++) {
+	for(u32 i = 0; i < archive.dsar_block_count; i++) {
 		printf("%5u %19" PRIx64 " %19" PRIx64 " %08x %08x\n",
 			i,
-			archive.blocks[i].header.decompressed_offset,
-			archive.blocks[i].header.compressed_offset,
-			archive.blocks[i].header.decompressed_size,
-			archive.blocks[i].header.compressed_size);
+			archive.dsar_blocks[i].header.decompressed_offset,
+			archive.dsar_blocks[i].header.compressed_offset,
+			archive.dsar_blocks[i].header.decompressed_size,
+			archive.dsar_blocks[i].header.compressed_size);
 	}
 	
 	RA_archive_close(&archive);

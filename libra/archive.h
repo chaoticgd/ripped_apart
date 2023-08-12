@@ -34,12 +34,13 @@ typedef struct {
 
 typedef struct {
 	FILE* file;
-	RA_ArchiveBlock* blocks;
-	u32 block_count;
+	b8 is_dsar_archive;
+	RA_ArchiveBlock* dsar_blocks;
+	u32 dsar_block_count;
 } RA_Archive;
 
 RA_Result RA_archive_open(RA_Archive* archive, const char* path);
 RA_Result RA_archive_close(RA_Archive* archive);
-RA_Result RA_archive_read_decompressed(RA_Archive* archive, u32 decompressed_offset, u32 decompressed_size, u8* data_dest);
+RA_Result RA_archive_read(RA_Archive* archive, u32 offset, u32 size, u8* data_dest);
 
 #endif

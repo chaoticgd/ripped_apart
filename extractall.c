@@ -28,14 +28,12 @@ int main(int argc, char** argv) {
 	RA_TableOfContents toc;
 	parse_dag_and_toc(&dag, &toc, game_dir);
 	
-	// Sort the assets by archive index, then by file offset. This way we can
-	// open archive files and decompress blocks one by one.
+	// Sort the assets by archive index, then by file offset. This way we don't
+	// have to decompress blocks multiple times.
 	qsort(toc.assets, toc.asset_count, sizeof(RA_TocAsset), compare_toc_assets);
 	
-	b8 is_archive_compressed = false;
 	RA_Archive archive;
 	s32 current_archive_index = -1;
-	FILE* uncompressed_file = NULL;
 	
 	// Extract all the files.
 	for(u32 i = 0; i < toc.asset_count; i++) {
@@ -57,13 +55,8 @@ int main(int argc, char** argv) {
 		// Open the next archive file if necessary.
 		if(toc_asset->location.archive_index != current_archive_index) {
 			if(current_archive_index != -1) {
+				RA_archive_close(&archive);
 				current_archive_index = -1;
-				if(is_archive_compressed) {
-					RA_archive_close(&archive);
-				} else {
-					fclose(uncompressed_file);
-					uncompressed_file = NULL;
-				}
 			}
 			if(toc_asset->location.archive_index >= toc.archive_count) {
 				fprintf(stderr, "error: Archive index out of range!\n");
@@ -77,18 +70,8 @@ int main(int argc, char** argv) {
 			}
 			RA_file_fix_path(archive_path + strlen(game_dir));
 			if((result = RA_archive_open(&archive, archive_path)) != RA_SUCCESS) {
-				if(strcmp(result, "magic bytes don't match") == 0) {
-					is_archive_compressed = false;
-					if((uncompressed_file = fopen(archive_path, "rb")) == NULL) {
-						fprintf(stderr, "Cannot to open uncompressed archive '%s'.\n", archive_path);
-						continue;
-					}
-				} else {
-					fprintf(stderr, "Cannot to open archive '%s'. This is normal for localization files.\n", archive_path);
-					continue;
-				}
-			} else {
-				is_archive_compressed = true;
+				fprintf(stderr, "Cannot to open archive '%s'. This is normal for localization files.\n", archive_path);
+				continue;
 			}
 			current_archive_index = toc_asset->location.archive_index;
 		}
@@ -96,20 +79,9 @@ int main(int argc, char** argv) {
 		// Read and decompress blocks as necessary, and assemble the asset.
 		u8* data = calloc(1, toc_asset->location.size);
 		u32 size = toc_asset->location.size;
-		if(is_archive_compressed) {
-			if((result = RA_archive_read_decompressed(&archive, toc_asset->location.offset, size, data)) != RA_SUCCESS) {
-				fprintf(stderr, "error: Failed to read block for asset '%s' (%s).\n", asset_path, result);
-				return 1;
-			}
-		} else {
-			if(fseek(uncompressed_file, toc_asset->location.offset, SEEK_SET) != 0) {
-				fprintf(stderr, "error: Failed to seek to uncompressed asset '%s'.\n", asset_path);
-				return 1;
-			}
-			if(fread(data, size, 1, uncompressed_file) != 1) {
-				fprintf(stderr, "error: Failed to read uncompressed asset '%s'.\n", asset_path);
-				return 1;
-			}
+		if((result = RA_archive_read(&archive, toc_asset->location.offset, size, data)) != RA_SUCCESS) {
+			fprintf(stderr, "error: Failed to read block for asset '%s' (%s).\n", asset_path, result);
+			return 1;
 		}
 		
 		// Write out the file.
