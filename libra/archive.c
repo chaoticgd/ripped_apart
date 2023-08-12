@@ -45,34 +45,27 @@ RA_Result RA_archive_close(RA_Archive* archive) {
 }
 
 RA_Result RA_archive_read_decompressed(RA_Archive* archive, u32 decompressed_offset, u32 decompressed_size, u8* data_dest, u8* compression_mode_dest) {
+	RA_Result result;
+	
 	for(u32 i = 0; i < archive->block_count; i++) {
 		RA_ArchiveBlock* block = &archive->blocks[i];
 		b8 should_be_loaded =
 			block->header.decompressed_offset < (decompressed_offset + decompressed_size) &&
 			block->header.decompressed_offset + block->header.decompressed_size > decompressed_offset;
 		if(should_be_loaded) {
-			if(block->decompressed_data == NULL) {
-				load_block(archive, block);
+			if(block->decompressed_data == NULL && (result = load_block(archive, block)) != RA_SUCCESS) {
+				return result;
 			}
-			s64 src_offset = decompressed_offset - block->header.decompressed_offset;
-			s64 dest_offset = block->header.decompressed_offset - decompressed_offset;
-			s64 copy_size = decompressed_size;
-			if(src_offset < 0) {
-				src_offset = 0;
-				dest_offset += src_offset;
-				copy_size -= src_offset;
-			}
-			if(dest_offset < 0) {
-				dest_offset = 0;
-				src_offset += dest_offset;
-				copy_size -= dest_offset;
-			}
-			if(src_offset + copy_size > block->decompressed_size) {
-				copy_size = block->decompressed_size - src_offset;
-			}
-			if(dest_offset + copy_size > decompressed_size) {
-				copy_size = decompressed_size - src_offset;
-			}
+			
+			s64 begin = MAX(block->header.decompressed_offset, decompressed_offset);
+			s64 block_end = block->header.decompressed_offset + block->decompressed_size;
+			s64 file_end = decompressed_offset + decompressed_size;
+			s64 end = MIN(block_end, file_end);
+			
+			s64 dest_offset = begin - decompressed_offset;
+			s64 src_offset = begin - block->header.decompressed_offset;
+			s64 copy_size = end - begin;
+			
 			memcpy(data_dest + dest_offset, block->decompressed_data + src_offset, copy_size);
 			*compression_mode_dest = block->header.compression_mode;
 		} else if(block->decompressed_data != NULL) {
@@ -81,6 +74,8 @@ RA_Result RA_archive_read_decompressed(RA_Archive* archive, u32 decompressed_off
 			block->decompressed_size = 0;
 		}
 	}
+	
+	return RA_SUCCESS;
 }
 
 static RA_Result load_block(RA_Archive* archive, RA_ArchiveBlock* block) {
@@ -97,12 +92,12 @@ static RA_Result load_block(RA_Archive* archive, RA_ArchiveBlock* block) {
 	switch(block->header.compression_mode) {
 		case RA_ARCHIVE_COMPRESSION_GDEFLATE: {
 			block->decompressed_data = malloc(block->header.decompressed_size);
-			block->decompressed_size = block->header.decompressed_size;
 			if(!gdeflate_decompress(block->decompressed_data, block->header.decompressed_size, compressed_data, compressed_size, 8)) {
 				free(compressed_data);
 				free(block->decompressed_data);
-				return "failed to decompress GDeflate block";
+				return "failed to decompress gdeflate block";
 			}
+			block->decompressed_size = block->header.decompressed_size;
 			break;
 		}
 		case RA_ARCHIVE_COMPRESSION_LZ4: {
@@ -111,14 +106,14 @@ static RA_Result load_block(RA_Archive* archive, RA_ArchiveBlock* block) {
 			if(bytes_written != block->header.decompressed_size) {
 				free(compressed_data);
 				free(block->decompressed_data);
-				return "failed to decompress LZ4 block";
+				return "failed to decompress lz4 block";
 			}
 			block->decompressed_size = block->header.decompressed_size;
 			break;
 		}
 		default: {
 			free(compressed_data);
-			return "unknown compression mode";
+			return RA_failure("unknown compression mode %hhd", block->header.compression_mode);
 		}
 	}
 	

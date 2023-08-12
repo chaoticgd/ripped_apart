@@ -32,6 +32,18 @@ int main(int argc, char** argv) {
 	// open archive files and decompress blocks one by one.
 	qsort(toc.assets, toc.asset_count, sizeof(RA_TocAsset), compare_toc_assets);
 	
+	for(u32 i = 0; i < toc.asset_count; i++) {
+		u64 target_crc = 0xacea7075a95d9b8c;
+		RA_TocAsset* toc_asset = &toc.assets[i];
+		if(toc.assets[i].path_hash == target_crc) {
+			RA_DependencyDagAsset* dag_asset = RA_dag_lookup_asset(&dag, toc_asset->path_hash);
+			if(dag_asset) {
+				printf("haspath %s\n", dag_asset->path);
+			}
+			printf("arch: %s\n", toc.archives[toc_asset->location.archive_index].data);
+		}
+	}
+	return 0;
 	RA_Archive archive;
 	s32 current_archive_index = -1;
 	
@@ -79,8 +91,8 @@ int main(int argc, char** argv) {
 		u8* data = calloc(1, toc_asset->location.size);
 		u32 size = toc_asset->location.size;
 		u8 compression_mode;
-		if((result = RA_archive_read_decompressed(&archive, toc_asset->location.decompressed_offset, toc_asset->location.size, data, &compression_mode)) != RA_SUCCESS) {
-			fprintf(stderr, "error: Failed to read block for asset '%s' (%s).", asset_path, result);
+		if((result = RA_archive_read_decompressed(&archive, toc_asset->location.decompressed_offset, size, data, &compression_mode)) != RA_SUCCESS) {
+			fprintf(stderr, "error: Failed to read block for asset '%s' (%s).\n", asset_path, result);
 			return 1;
 		}
 		
