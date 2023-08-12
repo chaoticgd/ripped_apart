@@ -39,7 +39,7 @@ int main(int argc, const char** argv) {
 			if((result = test_file(file_path)) == RA_SUCCESS) {
 				printf("success\n");
 			} else {
-				printf("%s\n", result);
+				printf("%s\n", result->message);
 			}
 		}
 	}
@@ -94,8 +94,6 @@ static RA_Result test_dat_file(u8* data, u32 size) {
 }
 
 static RA_Result test_toc_file(u8* data, u32 size) {
-	RA_Result result;
-	
 	return RA_SUCCESS;
 }
 

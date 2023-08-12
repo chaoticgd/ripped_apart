@@ -10,15 +10,20 @@
 	#define mkdir_portable(path) mkdir(path, 0777)
 #endif
 
-RA_Result RA_failure(const char* format, ...) {
+RA_Result RA_failure(int line, const char* format, ...) {
 	va_list args;
 	va_start(args, format);
 	
 	static char message[16 * 1024];
 	vsnprintf(message, 16 * 1024, format, args);
 	
+	static RA_Error error;
+	memset(&error, 0, sizeof(RA_Error));
+	error.message = message;
+	error.line = line;
+	
 	va_end(args);
-	return message;
+	return &error;
 }
 
 void RA_file_fix_path(char* path) {
@@ -35,7 +40,7 @@ void RA_file_fix_path(char* path) {
 RA_Result RA_file_read(u8** data_dest, u32* size_dest, const char* path) {
 	FILE* file = fopen(path, "rb");
 	if(file == NULL) {
-		return "failed to open file for reading";
+		return RA_FAILURE("failed to open file for reading");
 	}
 	
 	fseek(file, 0, SEEK_END);
@@ -43,19 +48,19 @@ RA_Result RA_file_read(u8** data_dest, u32* size_dest, const char* path) {
 	fseek(file, 0, SEEK_SET);
 	if(size > 1024 * 1024 * 1024) {
 		fclose(file);
-		return "file too large";
+		return RA_FAILURE("file too large");
 	}
 	*size_dest = (u32) size;
 	
 	u8* data = malloc(size);
 	if(data == NULL) {
 		fclose(file);
-		return "failed to allocate memory for file contents";
+		return RA_FAILURE("failed to allocate memory for file contents");
 	}
 	if(fread(data, size, 1, file) != 1) {
 		free(data);
 		fclose(file);
-		return "failed to read file";
+		return RA_FAILURE("failed to read file");
 	}
 	*data_dest = data;
 	
@@ -67,11 +72,11 @@ RA_Result RA_file_read(u8** data_dest, u32* size_dest, const char* path) {
 RA_Result RA_file_write(const char* path, u8* data, u32 size) {
 	FILE* file = fopen(path, "wb");
 	if(file == NULL) {
-		return "fopen";
+		return RA_FAILURE("fopen");
 	}
 	if(fwrite(data, size, 1, file) != 1) {
 		fclose(file);
-		return "fwrite";
+		return RA_FAILURE("fwrite");
 	}
 	fclose(file);
 	printf("File written: %s\n", path);

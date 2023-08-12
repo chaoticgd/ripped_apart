@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
 	RA_DatFile dat;
 	result = RA_dat_read(&dat, texture_file, 0);
 	if(result != NULL) {
-		fprintf(stderr, "error: %s\n", result);
+		fprintf(stderr, "error: Failed to read texture file header (%s).\n", result->message);
 		exit(1);
 	}
 	

@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
 		u8* data = calloc(1, toc_asset->location.size);
 		u32 size = toc_asset->location.size;
 		if((result = RA_archive_read(&archive, toc_asset->location.offset, size, data)) != RA_SUCCESS) {
-			fprintf(stderr, "error: Failed to read block for asset '%s' (%s).\n", asset_path, result);
+			fprintf(stderr, "error: Failed to read block for asset '%s' (%s).\n", asset_path, result->message);
 			return 1;
 		}
 		
@@ -99,11 +99,11 @@ int main(int argc, char** argv) {
 		}
 		RA_file_fix_path(out_path + strlen(out_dir));
 		if((result = RA_make_dirs(out_path)) != RA_SUCCESS) {
-			fprintf(stderr, "error: Failed to make directory for file '%s' (%s).\n", out_path, result);
+			fprintf(stderr, "error: Failed to make directory for file '%s' (%s).\n", out_path, result->message);
 			return 1;
 		}
 		if((result = RA_file_write(out_path, data, size)) != RA_SUCCESS) {
-			fprintf(stderr, "error: Failed to write file '%s' (%s).\n", out_path, result);
+			fprintf(stderr, "error: Failed to write file '%s' (%s).\n", out_path, result->message);
 			return 1;
 		}
 		
@@ -120,7 +120,9 @@ int main(int argc, char** argv) {
 			FILE* deps_file = fopen(deps_out_path, "w");
 			for(u32 j = 0; j < dag_asset->dependency_count; j++) {
 				RA_DependencyDagAsset* dependency = &dag.assets[dag_asset->dependencies[j]];
-				fprintf(deps_file, "%" PRIx64 " %s\n", dependency->path_crc, dependency->path);
+				if(fprintf(deps_file, "%" PRIx64 " %s\n", dependency->path_crc, dependency->path) < 0) {
+					fprintf(stderr, "error: Failed to write to dependencies file for asset '%s'.\n", asset_path);
+				}
 			}
 			fclose(deps_file);
 		}
@@ -137,12 +139,12 @@ static void parse_dag_and_toc(RA_DependencyDag* dag, RA_TableOfContents* toc, co
 	u8* dag_data;
 	u32 dag_size;
 	if((result = RA_file_read(&dag_data, &dag_size, dag_path))) {
-		fprintf(stderr, "error: Failed to read dag file (%s).\n", result);
+		fprintf(stderr, "error: Failed to read dag file (%s).\n", result->message);
 		exit(1);
 	}
 	
 	if((result = RA_dag_parse(dag, dag_data, dag_size)) != RA_SUCCESS) {
-		fprintf(stderr, "error: Failed to parse dag file (%s).\n", result);
+		fprintf(stderr, "error: Failed to parse dag file (%s).\n", result->message);
 		exit(1);
 	}
 	
@@ -153,12 +155,12 @@ static void parse_dag_and_toc(RA_DependencyDag* dag, RA_TableOfContents* toc, co
 	u8* toc_data;
 	u32 toc_size;
 	if((result = RA_file_read(&toc_data, &toc_size, toc_path)) != RA_SUCCESS) {
-		fprintf(stderr, "error: Failed to read toc file (%s).\n", result);
+		fprintf(stderr, "error: Failed to read toc file (%s).\n", result->message);
 		exit(1);
 	}
 	
 	if((result = RA_toc_parse(toc, toc_data, toc_size)) != RA_SUCCESS) {
-		fprintf(stderr, "error: Failed to parse toc file (%s).\n", result);
+		fprintf(stderr, "error: Failed to parse toc file (%s).\n", result->message);
 		exit(1);
 	}
 }

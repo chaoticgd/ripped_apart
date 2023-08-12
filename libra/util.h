@@ -45,9 +45,14 @@ typedef char b8;
 #define Z 2
 #define W 3
 
-typedef const char* RA_Result;
+typedef struct {
+	const char* message;
+	int line;
+} RA_Error;
+typedef RA_Error* RA_Result;
 #define RA_SUCCESS NULL
-RA_Result RA_failure(const char* format, ...);
+#define RA_FAILURE(...) RA_failure(__LINE__, __VA_ARGS__)
+RA_Result RA_failure(int line, const char* format, ...);
 
 #define MIN(x, y) (((y) < (x)) ? (y) : (x))
 #define MAX(x, y) (((y) > (x)) ? (y) : (x))

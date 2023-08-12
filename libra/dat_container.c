@@ -30,15 +30,15 @@ RA_Result RA_dat_parse(RA_DatFile* dat, u8* data, u32 size, u32 bytes_before_mag
 	
 	DatHeader* header = (DatHeader*) &data[bytes_before_magic];
 	if(header->magic != FOURCC("1TAD")) {
-		return "bad magic bytes";
+		return RA_FAILURE("bad magic bytes");
 	}
 	dat->asset_type_crc = header->asset_type_crc;
 	dat->lump_count = header->lump_count;
 	if(dat->lump_count <= 0) {
-		return "lump count is zero";
+		return RA_FAILURE("lump count is zero");
 	}
 	if(dat->lump_count > 1000) {
-		return "lump count is too high";
+		return RA_FAILURE("lump count is too high");
 	}
 	dat->lumps = RA_arena_alloc(&dat->arena, sizeof(RA_DatLump) * header->lump_count);
 	for(s32 i = 0; i < header->lump_count; i++) {
@@ -47,11 +47,11 @@ RA_Result RA_dat_parse(RA_DatFile* dat, u8* data, u32 size, u32 bytes_before_mag
 		dat->lumps[i].size = header->lumps[i].size;
 		if(dat->lumps[i].offset + dat->lumps[i].size > size) {
 			RA_arena_destroy(&dat->arena);
-			return "lump past end of file";
+			return RA_FAILURE("lump past end of file");
 		}
 		if(header->lumps[i].size > 256 * 1024 * 1024) {
 			RA_arena_destroy(&dat->arena);
-			return "lump too big";
+			return RA_FAILURE("lump too big");
 		}
 		dat->lumps[i].data = data + bytes_before_magic + header->lumps[i].offset;
 	}
@@ -67,31 +67,31 @@ RA_Result RA_dat_read(RA_DatFile* dat, const char* path, u32 bytes_before_magic)
 	
 	FILE* file = fopen(path, "rb");
 	if(!file) {
-		return "failed to open file for reading";
+		return RA_FAILURE("failed to open file for reading");
 	}
 	fseek(file, bytes_before_magic, SEEK_SET);
 	DatHeader header;
 	if(fread(&header, sizeof(DatHeader), 1, file) != 1) {
 		fclose(file);
-		return "failed to read DAT header";
+		return RA_FAILURE("failed to read DAT header");
 	}
 	if(header.magic != FOURCC("1TAD")) {
 		fclose(file);
-		return "bad magic bytes";
+		return RA_FAILURE("bad magic bytes");
 	}
 	dat->asset_type_crc = header.asset_type_crc;
 	dat->lump_count = header.lump_count;
 	if(dat->lump_count <= 0) {
 		fclose(file);
-		return "lump count is zero";
+		return RA_FAILURE("lump count is zero");
 	}
 	if(dat->lump_count > 1000) {
 		fclose(file);
-		return "lump count is too high";
+		return RA_FAILURE("lump count is too high");
 	}
 	dat->lumps = RA_arena_alloc(&dat->arena, sizeof(RA_DatLump) * header.lump_count);
 	LumpHeader* headers = malloc(sizeof(LumpHeader) * header.lump_count);
-	if(fread(headers, dat->lump_count * sizeof(LumpHeader), 1, file) != 1) return "failed to read lump header";
+	if(fread(headers, dat->lump_count * sizeof(LumpHeader), 1, file) != 1) return RA_FAILURE("failed to read lump header");
 	for(s32 i = 0; i < header.lump_count; i++) {
 		dat->lumps[i].type_crc = headers[i].type_crc;
 		dat->lumps[i].offset = headers[i].offset;
@@ -103,7 +103,7 @@ RA_Result RA_dat_read(RA_DatFile* dat, const char* path, u32 bytes_before_magic)
 			free(headers);
 			RA_arena_destroy(&dat->arena);
 			fclose(file);
-			return "lump too big";
+			return RA_FAILURE("lump too big");
 		}
 		dat->lumps[i].data = RA_arena_alloc(&dat->arena, headers[i].size);
 		fseek(file, bytes_before_magic + headers[i].offset, SEEK_SET);
@@ -114,7 +114,7 @@ RA_Result RA_dat_read(RA_DatFile* dat, const char* path, u32 bytes_before_magic)
 			free(headers);
 			RA_arena_destroy(&dat->arena);
 			fclose(file);
-			return "failed to read lump";
+			return RA_FAILURE("failed to read lump");
 		}
 	}
 	free(headers);
@@ -274,32 +274,32 @@ static RA_Result diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rh
 RA_Result RA_dat_test(const u8* original, u32 original_size, const u8* repacked, u32 repacked_size, b8 print_hex_dump_on_failure) {
 	RA_Result result;
 	
-	if(original_size < sizeof(DatHeader)) return RA_failure("original file only %d bytes in size, too small for dat header", original_size);
-	if(repacked_size < sizeof(DatHeader)) return RA_failure("repacked file only %d bytes in size, too small for dat header", repacked_size);
+	if(original_size < sizeof(DatHeader)) return RA_FAILURE("original file only %d bytes in size, too small for dat header", original_size);
+	if(repacked_size < sizeof(DatHeader)) return RA_FAILURE("repacked file only %d bytes in size, too small for dat header", repacked_size);
 	
 	DatHeader* original_header = (DatHeader*) original;
 	DatHeader* repacked_header = (DatHeader*) repacked;
 	
-	if(original_header->magic != FOURCC("1TAD")) return "original file is not a dat file";
-	if(repacked_header->magic != FOURCC("1TAD")) return "repacked file is not a dat file";
+	if(original_header->magic != FOURCC("1TAD")) return RA_FAILURE("original file is not a dat file");
+	if(repacked_header->magic != FOURCC("1TAD")) return RA_FAILURE("repacked file is not a dat file");
 	
 	if(original_header->asset_type_crc != repacked_header->asset_type_crc)
-		return RA_failure("asset types differ, original is %x, repacked is %x", original_header->asset_type_crc, repacked_header->asset_type_crc);
+		return RA_FAILURE("asset types differ, original is %x, repacked is %x", original_header->asset_type_crc, repacked_header->asset_type_crc);
 	if(original_header->lump_count != repacked_header->lump_count)
-		return RA_failure("lump count is different, original is %hd, repacked is %hd", original_header->lump_count, repacked_header->lump_count);
+		return RA_FAILURE("lump count is different, original is %hd, repacked is %hd", original_header->lump_count, repacked_header->lump_count);
 	
-	if(original_size < sizeof(DatHeader) + original_header->lump_count * sizeof(LumpHeader)) return "original file too small for lump headers";
-	if(repacked_size < sizeof(DatHeader) + repacked_header->lump_count * sizeof(LumpHeader)) return "repacked file too small for lump headers";
+	if(original_size < sizeof(DatHeader) + original_header->lump_count * sizeof(LumpHeader)) return RA_FAILURE("original file too small for lump headers");
+	if(repacked_size < sizeof(DatHeader) + repacked_header->lump_count * sizeof(LumpHeader)) return RA_FAILURE("repacked file too small for lump headers");
 	
 	for(u32 i = 0; i < original_header->lump_count; i++) {
 		LumpHeader* original_lump = (LumpHeader*) &original_header->lumps[i];
 		LumpHeader* repacked_lump = (LumpHeader*) &repacked_header->lumps[i];
 		
-		if(original_lump->type_crc != repacked_lump->type_crc) return RA_failure("lump %u crcs differ", i);
-		if(original_lump->size != repacked_lump->size) return RA_failure("lump %u sizes differ", i);
+		if(original_lump->type_crc != repacked_lump->type_crc) return RA_FAILURE("lump %u crcs differ", i);
+		if(original_lump->size != repacked_lump->size) return RA_FAILURE("lump %u sizes differ", i);
 		
-		if(original_lump->offset + original_lump->size > original_size) return RA_failure("original lump %u out of bounds", i);
-		if(repacked_lump->offset + repacked_lump->size > original_size) return RA_failure("repacked lump %u out of bounds", i);
+		if(original_lump->offset + original_lump->size > original_size) return RA_FAILURE("original lump %u out of bounds", i);
+		if(repacked_lump->offset + repacked_lump->size > original_size) return RA_FAILURE("repacked lump %u out of bounds", i);
 		
 		const u8* original_data = &original[original_lump->offset];
 		const u8* repacked_data = &repacked[repacked_lump->offset];
@@ -328,12 +328,12 @@ static RA_Result diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rh
 		return RA_SUCCESS;
 	}
 	
-	RA_Result error = RA_failure("lump %u differs at offset %x", lump, diff_offset);
+	RA_Result error = RA_FAILURE("lump %u differs at offset %x", lump, diff_offset);
 	if(!print_hex_dump_on_failure) {
 		return error;
 	}
 	
-	printf("%s\n", error);
+	printf("%s\n", error->message);
 	
 	s64 row_start = (diff_offset / 0x10) * 0x10;
 	s64 hexdump_begin = MAX(0, row_start - 0x50);

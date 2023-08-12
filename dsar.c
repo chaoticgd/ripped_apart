@@ -19,7 +19,7 @@ static void ls(const char* path) {
 	
 	RA_Archive archive;
 	if((result = RA_archive_open(&archive, path)) != RA_SUCCESS) {
-		fprintf(stderr, "Failed to parse archive file '%s' (%s).\n", path, result);
+		fprintf(stderr, "Failed to parse archive file '%s' (%s).\n", path, result->message);
 		exit(1);
 	}
 	

@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
 
 static void startup() {
 	if(!glfwInit()) {
-		fprintf(stderr, "Failed to load GLFW.\n");
+		fprintf(stderr, "error: Failed to load GLFW.\n");
 		abort();
 	}
 	
@@ -88,7 +88,7 @@ static void startup() {
 	
 	window = glfwCreateWindow(1280, 720, "RA Model Editor", NULL, NULL);
 	if(!window) {
-		fprintf(stderr, "Failed to open GLFW window.\n");
+		fprintf(stderr, "error: Failed to open GLFW window.\n");
 		abort();
 	}
 	
@@ -97,7 +97,7 @@ static void startup() {
 	glfwSwapInterval(1);
 	
 	if(gladLoadGL() == 0) {
-		fprintf(stderr, "Failed to load OpenGL.\n");
+		fprintf(stderr, "error: Failed to load OpenGL.\n");
 		abort();
 	}
 	
@@ -150,18 +150,18 @@ static void load_model(const char* path, const char* root_asset_dir) {
 	RA_Result result;
 	
 	if((result = RA_file_read(&model_file_data, &model_file_size, path)) != RA_SUCCESS) {
-		fprintf(stderr, "Malfunction while reading model file '%s' (%s).\n", path, result);
+		fprintf(stderr, "error: Failed to read model file '%s' (%s).\n", path, result->message);
 		abort();
 	}
 	
 	RA_DatFile dat;
 	if((result = RA_dat_parse(&dat, model_file_data, model_file_size, 0)) != RA_SUCCESS) {
-		fprintf(stderr, "Malfunction while parsing header for model file '%s' (%s).\n", path, result);
+		fprintf(stderr, "error: Failed to parse header for model file '%s' (%s).\n", path, result->message);
 		abort();
 	}
 	
 	if((result = RA_model_parse(&model, &dat)) != RA_SUCCESS) {
-		fprintf(stderr, "Malfunction while parsing model file '%s' (%s).\n", path, result);
+		fprintf(stderr, "error: Failed to parse model file '%s' (%s).\n", path, result->message);
 		abort();
 	}
 	
@@ -178,18 +178,18 @@ static void load_model(const char* path, const char* root_asset_dir) {
 			u8* material_data;
 			u32 material_size;
 			if((result = RA_file_read(&material_data, &material_size, material_path)) != RA_SUCCESS) {
-				fprintf(stderr, "Malfunction while reading material file '%s' (%s).\n", material_path, result);
+				fprintf(stderr, "error: Failed to read material file '%s' (%s).\n", material_path, result->message);
 				abort();
 			}
 			
 			RA_DatFile dat;
 			if((result = RA_dat_parse(&dat, material_data, material_size, 0)) != RA_SUCCESS) {
-				fprintf(stderr, "Malfunction while parsing header for material file '%s' (%s).\n", material_path, result);
+				fprintf(stderr, "error: Failed to parse header for material file '%s' (%s).\n", material_path, result->message);
 				abort();
 			}
 			
 			if((result = RA_material_parse(&materials[i], &dat, material->path)) != RA_SUCCESS) {
-				fprintf(stderr, "Malfunction while parsing material file '%s' (%s).\n", material_path, result);
+				fprintf(stderr, "error: Failed to parse material file '%s' (%s).\n", material_path, result->message);
 				abort();
 			}
 		}

@@ -64,7 +64,7 @@ RA_Result RA_material_parse(RA_Material* material, const RA_DatFile* dat, const 
 	
 	if(!(has_first_lump && has_textures_lump)) {
 		RA_arena_destroy(&material->arena);
-		return "insufficient lumpology";
+		return RA_FAILURE("insufficient lumpology");
 	}
 	
 	return RA_SUCCESS;

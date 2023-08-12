@@ -21,28 +21,28 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 	if(archive_file == NULL) {
 		RA_dat_free(&dat, false);
 		RA_arena_destroy(&toc->arena);
-		return "archive file lump not found";
+		return RA_FAILURE("archive file lump not found");
 	}
 	
 	RA_DatLump* asset_hash = RA_dat_lookup_lump(&dat, LUMP_ASSET_HASH);
 	if(asset_hash == NULL) {
 		RA_dat_free(&dat, false);
 		RA_arena_destroy(&toc->arena);
-		return "asset hash lump not found";
+		return RA_FAILURE("asset hash lump not found");
 	}
 	
 	RA_DatLump* asset_headers = RA_dat_lookup_lump(&dat, LUMP_ASSET_HEADERS);
 	if(asset_headers == NULL) {
 		RA_dat_free(&dat, false);
 		RA_arena_destroy(&toc->arena);
-		return "asset header lump not found";
+		return RA_FAILURE("asset header lump not found");
 	}
 	
 	RA_DatLump* file_locations = RA_dat_lookup_lump(&dat, LUMP_FILE_LOCATION);
 	if(file_locations == NULL) {
 		RA_dat_free(&dat, false);
 		RA_arena_destroy(&toc->arena);
-		return "file locations lump not found";
+		return RA_FAILURE("file locations lump not found");
 	}
 	
 	toc->archive_count = archive_file->size / sizeof(RA_TocArchive);
@@ -60,7 +60,7 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 	if(file_locations == NULL) {
 		RA_dat_free(&dat, false);
 		RA_arena_destroy(&toc->arena);
-		return "asset groups lump not found";
+		return RA_FAILURE("asset groups lump not found");
 	}
 	
 	for(u32 i = 0; i < asset_groups->size / 8; i++) {
@@ -68,7 +68,7 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 		if(group->first_index + group->count > toc->asset_count) {
 			RA_dat_free(&dat, false);
 			RA_arena_destroy(&toc->arena);
-			return "asset group out of range";
+			return RA_FAILURE("asset group out of range");
 		}
 		for(u32 j = 0; j < group->count; j++) {
 			toc->assets[group->first_index + j].group = i;

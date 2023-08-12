@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 		} else {
 			RA_Result result = process_file(argv[i], true);
 			if(result != NULL) {
-				fprintf(stderr, "error: %s\n", result);
+				fprintf(stderr, "error: Failed to parse DAT1 header (%s).\n", result->message);
 			}
 		}
 	}

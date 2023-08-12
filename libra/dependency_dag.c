@@ -69,13 +69,13 @@ RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size) {
 			for(u32 i = 0; i < dag->asset_count; i++) {
 				s32 dependency_list_index = dependency_indices[i];
 				if(dependency_list_index > -1) {
-					if(!dependencies) return "no dependencies lump";
+					if(!dependencies) return RA_FAILURE("no dependencies lump");
 					if(dependency_list_index * 4 >= dependency_lump_size)
-						return RA_failure("dependency list index out of range (%d)", i);
+						return RA_FAILURE("dependency list index out of range (%d)", i);
 					dag->assets[i].dependencies = (u32*) &dependencies[dependency_list_index];
 					s32* dependency = &dependencies[dependency_list_index];
 					while(*dependency > -1) {
-						if(*dependency >= dag->asset_count) return "dependency index out of range";
+						if(*dependency >= dag->asset_count) return RA_FAILURE("dependency index out of range");
 						dag->assets[i].dependency_count++;
 						dependency++;
 					}
@@ -89,7 +89,7 @@ RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size) {
 	
 	if(!(has_asset_types_lump && has_hashes_lump && has_dependencies_lump && has_file_paths_lump && has_dependency_index_lump)) {
 		RA_arena_destroy(&dat.arena);
-		return "insufficient lumpology";
+		return RA_FAILURE("insufficient lumpology");
 	}
 	
 	return RA_SUCCESS;
@@ -100,7 +100,7 @@ static RA_Result alloc_assets(RA_DependencyDag* dag, u32 asset_count) {
 		dag->assets = RA_arena_calloc(&dag->arena, asset_count, sizeof(RA_DependencyDagAsset));
 		dag->asset_count = asset_count;
 	} else if(dag->asset_count != asset_count) {
-		return "asset count mismatch";
+		return RA_FAILURE("asset count mismatch");
 	}
 	return RA_SUCCESS;
 }
