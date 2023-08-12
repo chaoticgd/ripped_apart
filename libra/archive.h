@@ -40,6 +40,6 @@ typedef struct {
 
 RA_Result RA_archive_open(RA_Archive* archive, const char* path);
 RA_Result RA_archive_close(RA_Archive* archive);
-RA_Result RA_archive_read_decompressed(RA_Archive* archive, u32 decompressed_offset, u32 decompressed_size, u8* data_dest, u8* compression_mode_dest);
+RA_Result RA_archive_read_decompressed(RA_Archive* archive, u32 decompressed_offset, u32 decompressed_size, u8* data_dest);
 
 #endif

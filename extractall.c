@@ -9,7 +9,7 @@ static int compare_toc_assets(const void* lhs, const void* rhs) {
 	if(((RA_TocAsset*) lhs)->location.archive_index != ((RA_TocAsset*) rhs)->location.archive_index) {
 		return ((RA_TocAsset*) lhs)->location.archive_index > ((RA_TocAsset*) rhs)->location.archive_index;
 	} else {
-		return ((RA_TocAsset*) lhs)->location.decompressed_offset > ((RA_TocAsset*) rhs)->location.decompressed_offset;
+		return ((RA_TocAsset*) lhs)->location.offset > ((RA_TocAsset*) rhs)->location.offset;
 	}
 }
 
@@ -32,20 +32,10 @@ int main(int argc, char** argv) {
 	// open archive files and decompress blocks one by one.
 	qsort(toc.assets, toc.asset_count, sizeof(RA_TocAsset), compare_toc_assets);
 	
-	for(u32 i = 0; i < toc.asset_count; i++) {
-		u64 target_crc = 0xacea7075a95d9b8c;
-		RA_TocAsset* toc_asset = &toc.assets[i];
-		if(toc.assets[i].path_hash == target_crc) {
-			RA_DependencyDagAsset* dag_asset = RA_dag_lookup_asset(&dag, toc_asset->path_hash);
-			if(dag_asset) {
-				printf("haspath %s\n", dag_asset->path);
-			}
-			printf("arch: %s\n", toc.archives[toc_asset->location.archive_index].data);
-		}
-	}
-	return 0;
+	b8 is_archive_compressed = false;
 	RA_Archive archive;
 	s32 current_archive_index = -1;
+	FILE* uncompressed_file = NULL;
 	
 	// Extract all the files.
 	for(u32 i = 0; i < toc.asset_count; i++) {
@@ -68,21 +58,37 @@ int main(int argc, char** argv) {
 		if(toc_asset->location.archive_index != current_archive_index) {
 			if(current_archive_index != -1) {
 				current_archive_index = -1;
-				RA_archive_close(&archive);
+				if(is_archive_compressed) {
+					RA_archive_close(&archive);
+				} else {
+					fclose(uncompressed_file);
+					uncompressed_file = NULL;
+				}
 			}
 			if(toc_asset->location.archive_index >= toc.archive_count) {
 				fprintf(stderr, "error: Archive index out of range!\n");
 				return 1;
 			}
+			RA_TocArchive* toc_archive = &toc.archives[toc_asset->location.archive_index];
 			char archive_path[RA_MAX_PATH];
-			if(snprintf(archive_path, RA_MAX_PATH, "%s/%s", game_dir, toc.archives[toc_asset->location.archive_index].data) < 0) {
+			if(snprintf(archive_path, RA_MAX_PATH, "%s/%s", game_dir, toc_archive->data) < 0) {
 				fprintf(stderr, "error: Output path too long.\n");
 				return 1;
 			}
 			RA_file_fix_path(archive_path + strlen(game_dir));
 			if((result = RA_archive_open(&archive, archive_path)) != RA_SUCCESS) {
-				fprintf(stderr, "Cannot to open archive '%s'. This is normal for localization files.\n", archive_path);
-				continue;
+				if(strcmp(result, "magic bytes don't match") == 0) {
+					is_archive_compressed = false;
+					if((uncompressed_file = fopen(archive_path, "rb")) == NULL) {
+						fprintf(stderr, "Cannot to open uncompressed archive '%s'.\n", archive_path);
+						continue;
+					}
+				} else {
+					fprintf(stderr, "Cannot to open archive '%s'. This is normal for localization files.\n", archive_path);
+					continue;
+				}
+			} else {
+				is_archive_compressed = true;
 			}
 			current_archive_index = toc_asset->location.archive_index;
 		}
@@ -90,10 +96,20 @@ int main(int argc, char** argv) {
 		// Read and decompress blocks as necessary, and assemble the asset.
 		u8* data = calloc(1, toc_asset->location.size);
 		u32 size = toc_asset->location.size;
-		u8 compression_mode;
-		if((result = RA_archive_read_decompressed(&archive, toc_asset->location.decompressed_offset, size, data, &compression_mode)) != RA_SUCCESS) {
-			fprintf(stderr, "error: Failed to read block for asset '%s' (%s).\n", asset_path, result);
-			return 1;
+		if(is_archive_compressed) {
+			if((result = RA_archive_read_decompressed(&archive, toc_asset->location.offset, size, data)) != RA_SUCCESS) {
+				fprintf(stderr, "error: Failed to read block for asset '%s' (%s).\n", asset_path, result);
+				return 1;
+			}
+		} else {
+			if(fseek(uncompressed_file, toc_asset->location.offset, SEEK_SET) != 0) {
+				fprintf(stderr, "error: Failed to seek to uncompressed asset '%s'.\n", asset_path);
+				return 1;
+			}
+			if(fread(data, size, 1, uncompressed_file) != 1) {
+				fprintf(stderr, "error: Failed to read uncompressed asset '%s'.\n", asset_path);
+				return 1;
+			}
 		}
 		
 		// Write out the file.

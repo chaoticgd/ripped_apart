@@ -17,6 +17,10 @@ RA_Result RA_archive_open(RA_Archive* archive, const char* path) {
 		return "fread header";
 	}
 	
+	if(header.magic != FOURCC("DSAR")) {
+		return "magic bytes don't match";
+	}
+	
 	archive->blocks = calloc(header.block_count, sizeof(RA_ArchiveBlock));
 	archive->block_count = header.block_count;
 	if(archive->blocks == NULL) {
@@ -44,7 +48,7 @@ RA_Result RA_archive_close(RA_Archive* archive) {
 	return RA_SUCCESS;
 }
 
-RA_Result RA_archive_read_decompressed(RA_Archive* archive, u32 decompressed_offset, u32 decompressed_size, u8* data_dest, u8* compression_mode_dest) {
+RA_Result RA_archive_read_decompressed(RA_Archive* archive, u32 decompressed_offset, u32 decompressed_size, u8* data_dest) {
 	RA_Result result;
 	
 	for(u32 i = 0; i < archive->block_count; i++) {
@@ -67,7 +71,6 @@ RA_Result RA_archive_read_decompressed(RA_Archive* archive, u32 decompressed_off
 			s64 copy_size = end - begin;
 			
 			memcpy(data_dest + dest_offset, block->decompressed_data + src_offset, copy_size);
-			*compression_mode_dest = block->header.compression_mode;
 		} else if(block->decompressed_data != NULL) {
 			free(block->decompressed_data);
 			block->decompressed_data = NULL;

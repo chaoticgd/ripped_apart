@@ -21,7 +21,7 @@ typedef struct {
 typedef struct {
 	u32 size;
 	u32 archive_index;
-	u32 decompressed_offset;
+	u32 offset;
 	u32 header_offset;
 } RA_TocFileLocation;
 
