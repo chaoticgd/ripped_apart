@@ -122,9 +122,9 @@ RA_Result RA_dat_read(RA_DatFile* dat, const char* path, u32 bytes_before_magic)
 	return RA_SUCCESS;
 }
 
-RA_Result RA_dat_free(RA_DatFile* dat, b8 free_file_data) {
+RA_Result RA_dat_free(RA_DatFile* dat, ShouldFreeFileData free_file_data) {
 	RA_arena_destroy(&dat->arena);
-	if(free_file_data && dat->file_data != NULL) {
+	if(free_file_data == FREE_FILE_DATA && dat->file_data != NULL) {
 		free(dat->file_data);
 	}
 	return RA_SUCCESS;

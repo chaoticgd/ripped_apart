@@ -7,8 +7,7 @@ static GLuint program;
 static GLuint view_matrix_uniform;
 static GLuint proj_matrix_uniform;
 
-static void
-error_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
+static void error_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
 	static b8 had_errors = false;
 	if(type == GL_DEBUG_TYPE_OTHER && !had_errors) {
 		return;

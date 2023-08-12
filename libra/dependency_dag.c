@@ -85,7 +85,7 @@ RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size) {
 		}
 	}
 	
-	RA_dat_free(&dat, false);
+	RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 	
 	if(!(has_asset_types_lump && has_hashes_lump && has_dependencies_lump && has_file_paths_lump && has_dependency_index_lump)) {
 		RA_arena_destroy(&dat.arena);

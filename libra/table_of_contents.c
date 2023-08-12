@@ -19,28 +19,28 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 	
 	RA_DatLump* archive_file = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_FILE);
 	if(archive_file == NULL) {
-		RA_dat_free(&dat, false);
+		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
 		return RA_FAILURE("archive file lump not found");
 	}
 	
 	RA_DatLump* asset_hash = RA_dat_lookup_lump(&dat, LUMP_ASSET_HASH);
 	if(asset_hash == NULL) {
-		RA_dat_free(&dat, false);
+		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
 		return RA_FAILURE("asset hash lump not found");
 	}
 	
 	RA_DatLump* asset_headers = RA_dat_lookup_lump(&dat, LUMP_ASSET_HEADERS);
 	if(asset_headers == NULL) {
-		RA_dat_free(&dat, false);
+		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
 		return RA_FAILURE("asset header lump not found");
 	}
 	
 	RA_DatLump* file_locations = RA_dat_lookup_lump(&dat, LUMP_FILE_LOCATION);
 	if(file_locations == NULL) {
-		RA_dat_free(&dat, false);
+		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
 		return RA_FAILURE("file locations lump not found");
 	}
@@ -58,7 +58,7 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 	
 	RA_DatLump* asset_groups = RA_dat_lookup_lump(&dat, LUMP_ASSET_GROUPING);
 	if(file_locations == NULL) {
-		RA_dat_free(&dat, false);
+		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
 		return RA_FAILURE("asset groups lump not found");
 	}
@@ -66,7 +66,7 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 	for(u32 i = 0; i < asset_groups->size / 8; i++) {
 		RA_TocAssetGroup* group = &((RA_TocAssetGroup*) asset_groups->data)[i];
 		if(group->first_index + group->count > toc->asset_count) {
-			RA_dat_free(&dat, false);
+			RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 			RA_arena_destroy(&toc->arena);
 			return RA_FAILURE("asset group out of range");
 		}
@@ -75,7 +75,7 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 		}
 	}
 	
-	RA_dat_free(&dat, false);
+	RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 	return RA_SUCCESS;
 }
 

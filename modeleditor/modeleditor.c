@@ -21,6 +21,7 @@ int window_width;
 int window_height;
 f32 delta_time;
 ViewParams view;
+f32 gui_to_preview_ratio = 0.5f;
 
 u8* model_file_data;
 u32 model_file_size;
@@ -60,7 +61,8 @@ int main(int argc, char** argv) {
 		igRender();
 		glfwMakeContextCurrent(window);
 		glfwGetFramebufferSize(window, &window_width, &window_height);
-		glViewport(0, 0, window_width, window_height);
+		gui_to_preview_ratio = 640.f / window_width;
+		glViewport(0, 0, window_width * (1.f + gui_to_preview_ratio), window_height);
 		glClearColor(0, 0, 0, 0);
 		glClear(GL_COLOR_BUFFER_BIT);
 		draw_model(&render_model, &view);
@@ -154,13 +156,7 @@ static void load_model(const char* path, const char* root_asset_dir) {
 		abort();
 	}
 	
-	RA_DatFile dat;
-	if((result = RA_dat_parse(&dat, model_file_data, model_file_size, 0)) != RA_SUCCESS) {
-		fprintf(stderr, "error: Failed to parse header for model file '%s' (%s).\n", path, result->message);
-		abort();
-	}
-	
-	if((result = RA_model_parse(&model, &dat)) != RA_SUCCESS) {
+	if((result = RA_model_parse(&model, model_file_data, model_file_size)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to parse model file '%s' (%s).\n", path, result->message);
 		abort();
 	}
@@ -197,7 +193,7 @@ static void load_model(const char* path, const char* root_asset_dir) {
 }
 
 static void draw_model(RenderModel* model, ViewParams* params) {
-	vec2 view_size = {window_width, window_height};
+	vec2 view_size = {window_width * (1.f + gui_to_preview_ratio), window_height};
 	
 	vec3 bb_centre = {0.f, 0.08f, 0.f};
 	vec3 bb_size = {1.f, 1.f, 1.f};
@@ -223,7 +219,7 @@ static void draw_model(RenderModel* model, ViewParams* params) {
 	mat4x4_mul(view, view_yawed, trans);
 	
 	mat4x4 proj;
-	mat4x4_perspective(proj, RA_PI * 0.5f, view_size[X] / view_size[Y], 0.1f, 10000.0f);
+	mat4x4_perspective(proj, RA_PI * 0.5f, view_size[X] / view_size[Y], 0.01f, 1000.0f);
 	
 	renderer_draw_model(model, view, proj);
 	

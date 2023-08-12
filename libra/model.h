@@ -88,6 +88,8 @@ typedef struct {
 } RA_ModelStdVert;
 
 typedef struct {
+	u8* file_data;
+	u32 file_size;
 	RA_Arena arena;
 	RA_ModelLook* looks;
 	RA_ModelBuilt* built;
@@ -102,7 +104,7 @@ typedef struct {
 	u32 std_vert_count;
 } RA_Model;
 
-RA_Result RA_model_parse(RA_Model* model, RA_DatFile* dat);
+RA_Result RA_model_parse(RA_Model* model, u8* data, u32 size);
 void RA_model_unpack_normals(f32* x, f32* y, f32* z, u32 packed);
 void RA_model_pack_normals(u32* packed, f32 x, f32 y, f32 z);
 
