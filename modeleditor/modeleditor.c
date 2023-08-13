@@ -1,14 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#define CIMGUI_DEFINE_ENUMS_AND_STRUCTS
-#include <glad/glad.h>
-#include <cimgui.h>
-#include <cimgui_impl.h>
-#include <GLFW/glfw3.h>
 #include "../libra/util.h"
 #include "../libra/dat_container.h"
 #include "../libra/model.h"
 #include "../libra/material.h"
+#include "../gui/common.h"
+#include "../gui/menu.h"
 #include "renderer.h"
 
 typedef struct {
@@ -26,14 +21,14 @@ f32 gui_to_preview_ratio = 0.5f;
 u8* model_file_data;
 u32 model_file_size;
 RA_Model model;
+RenderModel render_model;
 RA_Material* materials;
 u32 selected_material = 0;
 
-static void startup();
+static void update(f32 frame_time);
 static void draw_gui();
 static void load_model(const char* path, const char* root_asset_dir);
 static void draw_model(RenderModel* model, ViewParams* params);
-static void shutdown();
 
 int main(int argc, char** argv) {
 	if(argc != 3) {
@@ -41,85 +36,39 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	
-	startup();
+	window = GUI_startup("Ripped Apart Model Editor", 1280, 720);
 	renderer_init();
 	
 	load_model(argv[1], argv[2]);
-	RenderModel render_model = renderer_upload_model(&model);
+	render_model = renderer_upload_model(&model);
 	
-	view.rot[X] = 0.f;
-	view.rot[Y] = 0.f;
+	view.rot[_X] = 0.f;
+	view.rot[_Y] = 0.f;
 	view.zoom = 0.5f;
 	
-	f32 prev_time = glfwGetTime();
-	while(!glfwWindowShouldClose(window)) {
-		glfwPollEvents();
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		igNewFrame();
-		draw_gui();
-		igRender();
-		glfwMakeContextCurrent(window);
-		glfwGetFramebufferSize(window, &window_width, &window_height);
-		gui_to_preview_ratio = 640.f / window_width;
-		glViewport(0, 0, window_width * (1.f + gui_to_preview_ratio), window_height);
-		glClearColor(0, 0, 0, 0);
-		glClear(GL_COLOR_BUFFER_BIT);
-		draw_model(&render_model, &view);
-		ImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
-		glfwSwapBuffers(window);
-		
-		f32 time = glfwGetTime();
-		delta_time = prev_time - time;
-		prev_time = time;
-	}
-	shutdown();
+	GUI_main_loop(window, update);
+	GUI_shutdown(window);
 }
 
-static void startup() {
-	if(!glfwInit()) {
-		fprintf(stderr, "error: Failed to load GLFW.\n");
-		abort();
-	}
-	
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-	
-	window = glfwCreateWindow(1280, 720, "RA Model Editor", NULL, NULL);
-	if(!window) {
-		fprintf(stderr, "error: Failed to open GLFW window.\n");
-		abort();
-	}
-	
+static void update(f32 frame_time) {
+	draw_gui();
+	igRender();
 	glfwMakeContextCurrent(window);
-	
-	glfwSwapInterval(1);
-	
-	if(gladLoadGL() == 0) {
-		fprintf(stderr, "error: Failed to load OpenGL.\n");
-		abort();
-	}
-	
-	igCreateContext(NULL);
-	
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
- 	ImGui_ImplOpenGL3_Init("#version 430");
-	
-	igStyleColorsDark(NULL);
+	glfwGetFramebufferSize(window, &window_width, &window_height);
+	gui_to_preview_ratio = 640.f / window_width;
+	glViewport(0, 0, window_width * (1.f + gui_to_preview_ratio), window_height);
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	draw_model(&render_model, &view);
 }
 
 static void draw_gui() {
-	ImVec2 zero = {0, 0};
 	ImVec2 eight_hundred_by_zero = {800, 0};
-	igSetNextWindowPos(zero, ImGuiCond_Always, zero);
-	ImVec2 gui_size = {640.f, window_height};
-	igSetNextWindowSize(gui_size, ImGuiCond_Always);
-	igBegin("gui", NULL, ImGuiWindowFlags_NoDecoration);
-	igSliderFloat("Zoom", &view.zoom, 0.01f, 1.f, "%.2f", ImGuiSliderFlags_None);
-	if(igCollapsingHeader_BoolPtr("Materials", NULL, ImGuiTreeNodeFlags_None)) {
+	GUI_menu_begin(640.f, window_height);
+	if(GUI_menu_tab("Home")) {
+		igSliderFloat("Zoom", &view.zoom, 0.01f, 1.f, "%.2f", ImGuiSliderFlags_None);
+	}
+	if(GUI_menu_tab("Materials")) {
 		const char* preview;
 		if(selected_material < model.material_count) {
 			preview = materials[selected_material].file_path;
@@ -145,7 +94,7 @@ static void draw_gui() {
 			}
 		}
 	}
-	igEnd();
+	GUI_menu_end();
 }
 
 static void load_model(const char* path, const char* root_asset_dir) {
@@ -207,19 +156,19 @@ static void draw_model(RenderModel* model, ViewParams* params) {
 	mat4x4_look_at(view_fixed, eye, centre, up);
 	
 	mat4x4 view_pitched;
-	mat4x4_rotate_Z(view_pitched, view_fixed, params->rot[Y]);
+	mat4x4_rotate_Z(view_pitched, view_fixed, params->rot[_Y]);
 	
 	mat4x4 view_yawed;
-	mat4x4_rotate_Y(view_yawed, view_pitched, params->rot[X]);
+	mat4x4_rotate_Y(view_yawed, view_pitched, params->rot[_X]);
 	
 	mat4x4 trans;
-	mat4x4_translate(trans, -bb_centre[X], -bb_centre[Y], -bb_centre[Z]);
+	mat4x4_translate(trans, -bb_centre[_X], -bb_centre[_Y], -bb_centre[_Z]);
 	
 	mat4x4 view;
 	mat4x4_mul(view, view_yawed, trans);
 	
 	mat4x4 proj;
-	mat4x4_perspective(proj, RA_PI * 0.5f, view_size[X] / view_size[Y], 0.01f, 1000.0f);
+	mat4x4_perspective(proj, RA_PI * 0.5f, view_size[_X] / view_size[_Y], 0.01f, 1000.0f);
 	
 	renderer_draw_model(model, view, proj);
 	
@@ -235,8 +184,8 @@ static void draw_model(RenderModel* model, ViewParams* params) {
 	if(image_hovered || is_dragging) {
 		if(igIsMouseDragging(ImGuiMouseButton_Left, 0.f)) {
 			is_dragging = true;
-			params->rot[X] += mouse_delta[X];
-			params->rot[Y] += mouse_delta[Y];
+			params->rot[_X] += mouse_delta[_X];
+			params->rot[_Y] += mouse_delta[_Y];
 		}
 		
 		params->zoom *= io->MouseWheel * delta_time * 0.0001 + 1;
@@ -247,13 +196,4 @@ static void draw_model(RenderModel* model, ViewParams* params) {
 	if(igIsMouseReleased_ID(ImGuiPopupFlags_MouseButtonLeft, 0)) {
 		is_dragging = false;
 	}
-}
-
-static void shutdown() {
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	igDestroyContext(NULL);
-	
-	glfwDestroyWindow(window);
-	glfwTerminate();
 }

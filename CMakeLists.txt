@@ -36,8 +36,11 @@ elseif(MSVC)
 	add_compile_options(/W4 /EHsc /MP)
 endif()
 
+# Libraries
 add_subdirectory(crc)
 add_subdirectory(libra)
+add_subdirectory(gui)
+# Executables
 add_subdirectory(superswizzle)
 add_subdirectory(modeleditor)
 add_subdirectory(igfile)

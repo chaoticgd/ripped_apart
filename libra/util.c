@@ -86,7 +86,7 @@ RA_Result RA_file_write(const char* path, u8* data, u32 size) {
 RA_Result RA_make_dirs(const char* file_path) {
 	// Remove filename.
 	char dir_path[RA_MAX_PATH];
-	strncpy(dir_path, file_path, RA_MAX_PATH);
+	RA_string_copy(dir_path, file_path, RA_MAX_PATH);
 	char* seperator_forward = strrchr(dir_path, '/');
 	char* seperator_backward = strrchr(dir_path, '\\');
 	if(seperator_forward && seperator_forward > seperator_backward) {
@@ -107,4 +107,13 @@ RA_Result RA_make_dirs(const char* file_path) {
 	mkdir_portable(dir_path);
 	
 	return RA_SUCCESS;
+}
+
+void RA_string_copy(char* dest, const char* src, s64 buffer_size) {
+	for(s64 i = 0; i < buffer_size; i++) {
+		*dest++ = *src;
+		if(*src == '\0') break;
+		src++;
+	}
+	dest[buffer_size - 1] = '\0';
 }

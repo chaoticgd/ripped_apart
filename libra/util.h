@@ -40,10 +40,10 @@ typedef char b8;
 #define false 0
 #define true 1
 
-#define X 0
-#define Y 1
-#define Z 2
-#define W 3
+#define _X 0
+#define _Y 1
+#define _Z 2
+#define _W 3
 
 typedef struct {
 	const char* message;
@@ -78,6 +78,8 @@ typedef enum {
 	DONT_FREE_FILE_DATA = 0,
 	FREE_FILE_DATA = 1
 } ShouldFreeFileData;
+
+void RA_string_copy(char* dest, const char* src, s64 buffer_size);
 
 #ifdef __cplusplus
 }
