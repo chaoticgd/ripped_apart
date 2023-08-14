@@ -98,6 +98,13 @@ void RA_crc_string_parse(RA_CRCString* crc_string, u8* file_data, u32 file_size)
 #endif
 #define RA_ASSERT_SIZE(type, size) __maybe_unused static char assert_size_ ##type[(sizeof(type) == size) ? 1 : -1]
 
+#ifdef WIN32
+	#define RA_sleep_thread_ms Sleep
+#else
+	#include <unistd.h>
+	#define RA_sleep_thread_ms usleep
+#endif
+
 #ifdef __cplusplus
 }
 #endif

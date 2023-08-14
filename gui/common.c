@@ -1,11 +1,5 @@
 #include "common.h"
 
-#ifndef WIN32
-#include <unistd.h>
-#else
-#include <pthread>
-#endif
-
 static void setup_style(ImGuiStyle* dst);
 
 GLFWwindow* GUI_startup(const char* window_title, s32 window_width, s32 window_height) {
@@ -59,6 +53,14 @@ void GUI_main_loop(GLFWwindow* window, void (*update)(f32 frame_time)) {
 		
 		ImGui_ImplOpenGL3_RenderDrawData(igGetDrawData());
 		glfwSwapBuffers(window);
+		
+		int window_focused = glfwGetWindowAttrib(window, GLFW_FOCUSED);
+		int window_hovered = glfwGetWindowAttrib(window, GLFW_HOVERED);
+		if(!(window_focused || window_hovered)) {
+			while(glfwGetTime() < prev_time + 0.2f) {
+				RA_sleep_thread_ms(200);
+			}
+		}
 		
 		f32 time = glfwGetTime();
 		frame_time = prev_time - time;
