@@ -17,13 +17,6 @@ GLFWwindow* GUI_startup(const char* window_title, s32 window_width, s32 window_h
 void GUI_main_loop(GLFWwindow* window, void (*update)(f32 frame_time));
 void GUI_shutdown(GLFWwindow* window);
 
-typedef enum {
-	GUI_MESSAGE_BOX_INFO,
-	GUI_MESSAGE_BOX_ERROR
-} MessageBoxType;
-
-void GUI_message_box(const char* text, const char* title, MessageBoxType type);
-
 #ifdef __cplusplus
 }
 #endif

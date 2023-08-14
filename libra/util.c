@@ -3,12 +3,7 @@
 #include <ctype.h>
 #include <stdarg.h>
 
-#ifdef WIN32
-	#define mkdir_portable(path) _mkdir(path)
-#else
-	#include <sys/stat.h>
-	#define mkdir_portable(path) mkdir(path, 0777)
-#endif
+#include "platform.h"
 
 RA_Result RA_failure(int line, const char* format, ...) {
 	va_list args;
@@ -100,11 +95,11 @@ RA_Result RA_make_dirs(const char* file_path) {
 		if(*ptr == '/' || *ptr == '\\') {
 			char seperator = *ptr;
 			*ptr = '\0';
-			mkdir_portable(dir_path);
+			RA_make_dir(dir_path);
 			*ptr = seperator;
 		}
 	}
-	mkdir_portable(dir_path);
+	RA_make_dir(dir_path);
 	
 	return RA_SUCCESS;
 }

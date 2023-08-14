@@ -1,5 +1,7 @@
 #include "common.h"
 
+#include "../libra/platform.h"
+
 static void setup_style(ImGuiStyle* dst);
 
 GLFWwindow* GUI_startup(const char* window_title, s32 window_width, s32 window_height) {
@@ -16,7 +18,7 @@ GLFWwindow* GUI_startup(const char* window_title, s32 window_width, s32 window_h
 	
 	GLFWwindow* window = glfwCreateWindow(window_width, window_height, window_title, NULL, NULL);
 	if(window == NULL) {
-		GUI_message_box("Failed to open GLFW window.", window_title, GUI_MESSAGE_BOX_ERROR);
+		RA_message_box("Failed to open GLFW window.", window_title, GUI_MESSAGE_BOX_ERROR);
 		abort();
 	}
 	
@@ -25,7 +27,7 @@ GLFWwindow* GUI_startup(const char* window_title, s32 window_width, s32 window_h
 	glfwSwapInterval(1);
 	
 	if(gladLoadGL() == 0) {
-		GUI_message_box("Failed to load OpenGL.", window_title, GUI_MESSAGE_BOX_ERROR);
+		RA_message_box("Failed to load OpenGL.", window_title, GUI_MESSAGE_BOX_ERROR);
 		abort();
 	}
 	
@@ -58,7 +60,7 @@ void GUI_main_loop(GLFWwindow* window, void (*update)(f32 frame_time)) {
 		int window_hovered = glfwGetWindowAttrib(window, GLFW_HOVERED);
 		if(!(window_focused || window_hovered)) {
 			while(glfwGetTime() < prev_time + 0.2f) {
-				RA_sleep_thread_ms(200);
+				RA_thread_sleep_ms(200);
 			}
 		}
 		
@@ -75,37 +77,6 @@ void GUI_shutdown(GLFWwindow* window) {
 	
 	glfwDestroyWindow(window);
 	glfwTerminate();
-}
-
-void GUI_message_box(const char* text, const char* title, MessageBoxType type) {
-	fprintf(stderr, "error: %s\n", text);
-#ifdef WIN32
-	MessageBoxA(NULL, text, title, MB_OK);
-#else
-	if(fork() == 0) {
-		char zenity_type[32];
-		switch(type) {
-			case GUI_MESSAGE_BOX_INFO: RA_string_copy(zenity_type, "--info", sizeof(zenity_type)); break;
-			case GUI_MESSAGE_BOX_ERROR: RA_string_copy(zenity_type, "--error", sizeof(zenity_type)); break;
-		}
-		
-		char zenity_text[1024];
-		snprintf(zenity_text, sizeof(zenity_text), "--text=%s", text);
-		
-		char zenity_title[1024];
-		snprintf(zenity_title, sizeof(zenity_title), "--title=%s", title);
-		
-		char* args[] = {
-			"/usr/bin/env",
-			"zenity",
-			zenity_type,
-			zenity_text,
-			zenity_title,
-			NULL
-		};
-		execv(args[0], args);
-	}
-#endif
 }
 
 static void setup_style(ImGuiStyle* dst) {
