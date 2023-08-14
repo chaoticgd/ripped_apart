@@ -8,6 +8,10 @@
 #include <string.h>
 #include <inttypes.h>
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 #include "../crc/crc.h"
 
 #ifdef __cplusplus
