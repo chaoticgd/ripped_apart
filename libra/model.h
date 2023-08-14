@@ -6,19 +6,6 @@
 #include "dat_container.h"
 
 typedef struct {
-	const char* name;
-} RA_ModelJoint;
-
-typedef struct {
-	const char* name;
-} RA_ModelLocator;
-
-typedef struct {
-	u16 lod_begin;
-	u16 lod_count;
-} RA_ModelLook;
-
-typedef struct {
 	/* 0x00 */ u32 unknown_0;
 	/* 0x04 */ u32 unknown_4;
 	/* 0x08 */ u32 unknown_8;
@@ -50,6 +37,35 @@ typedef struct {
 	/* 0x70 */ u32 unknown_70;
 	/* 0x74 */ u32 unknown_74;
 } RA_ModelBuilt;
+RA_ASSERT_SIZE(RA_ModelBuilt, 0x78);
+
+typedef struct {
+	/* 0x0 */ u16 parent;
+	/* 0x2 */ u16 index;
+	/* 0x4 */ u16 unknown_4;
+	/* 0x6 */ u16 unknown_6;
+	/* 0x8 */ RA_CRCString name;
+} RA_ModelJoint;
+RA_ASSERT_SIZE(RA_ModelJoint, 0x10);
+
+typedef struct {
+	RA_CRCString name;
+	u32 unknown[2+4*3];
+} RA_ModelLocator;
+RA_ASSERT_SIZE(RA_ModelLocator, 0x40);
+
+typedef struct {
+	u16 lod_begin;
+	u16 lod_count;
+} RA_ModelLook;
+
+typedef struct {
+	/* 0x000 */ RA_CRCString name;
+	/* 0x008 */ u32 unknown[0x123];
+	/* 0x494 */ u32 config_path;
+	/* 0x498 */ u32 unknown2[0x14];
+} RA_ModelSplineSubset;
+RA_ASSERT_SIZE(RA_ModelSplineSubset, 0x4e8);
 
 typedef struct {
 	/* 0x0 */ const char* path;
@@ -73,6 +89,7 @@ typedef struct {
 	/* 0x2f */ u8 vertex_info_count;
 	/* 0x30 */ u8 unknown_31[16];
 } RA_ModelSubset;
+RA_ASSERT_SIZE(RA_ModelSubset, 0x40);
 
 typedef struct {
 	/* 0x0 */ s16 pos_x;
@@ -92,13 +109,17 @@ typedef struct {
 	u32 physics_data_size;
 	RA_ModelBuilt* built;
 	RA_ModelJoint* joints;
+	RA_ModelLocator* locators;
 	RA_ModelLook* looks;
+	RA_ModelSplineSubset* spline_subsets;
 	RA_ModelMaterial* materials;
 	RA_ModelSubset* subsets;
 	u16* indices;
 	RA_ModelStdVert* std_verts;
 	u32 joint_count;
+	u32 locator_count;
 	u32 look_count;
+	u32 spline_subset_count;
 	u32 material_count;
 	u32 subset_count;
 	u32 index_count;

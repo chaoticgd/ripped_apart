@@ -1,9 +1,5 @@
 #include "model.h"
 
-static RA_Result parse_joints(RA_Model* model, RA_DatFile* dat);
-static RA_Result parse_locators(RA_Model* model, RA_DatFile* dat);
-static RA_Result parse_looks(RA_Model* model, RA_DatFile* dat);
-static RA_Result parse_splines(RA_Model* model, RA_DatFile* dat);
 
 RA_Result RA_model_parse(RA_Model* model, u8* data, u32 size) {
 	RA_Result result;
@@ -33,14 +29,37 @@ RA_Result RA_model_parse(RA_Model* model, u8* data, u32 size) {
 	}
 	model->built = (RA_ModelBuilt*) built->data;
 	
-	if((result = parse_joints(model, &dat)) != RA_SUCCESS) {
-		return result;
+	RA_DatLump* joints = RA_dat_lookup_lump(&dat, LUMP_MODEL_JOINT);
+	if(joints != NULL) {
+		model->joints = (RA_ModelJoint*) joints->data;
+		model->joint_count = joints->size / sizeof(RA_ModelJoint);
+		for(u32 i = 0; i < model->joint_count; i++) {
+			RA_crc_string_parse(&model->joints[i].name, dat.file_data, dat.file_size);
+		}
 	}
-	if((result = parse_locators(model, &dat)) != RA_SUCCESS) {
-		return result;
+	
+	RA_DatLump* locators = RA_dat_lookup_lump(&dat, LUMP_MODEL_LOCATOR);
+	if(locators != NULL) {
+		model->locators = (RA_ModelLocator*) locators->data;
+		model->locator_count = locators->size / sizeof(RA_ModelLocator);
+		for(u32 i = 0; i < model->locator_count; i++) {
+			RA_crc_string_parse(&model->locators[i].name, dat.file_data, dat.file_size);
+		}
 	}
-	if((result = parse_looks(model, &dat)) != RA_SUCCESS) {
-		return result;
+	
+	RA_DatLump* look = RA_dat_lookup_lump(&dat, LUMP_MODEL_LOOK);
+	if(look != NULL) {
+		model->looks = (RA_ModelLook*) look->data;
+		model->look_count = look->size / sizeof(RA_ModelLook);
+	}
+	
+	RA_DatLump* spline_subset = RA_dat_lookup_lump(&dat, LUMP_MODEL_SPLINE_SUBSETS);
+	if(spline_subset != NULL) {
+		model->spline_subsets = (RA_ModelSplineSubset*) spline_subset->data;
+		model->spline_subset_count = spline_subset->size / sizeof(RA_ModelSplineSubset);
+		for(u32 i = 0; i < model->spline_subset_count; i++) {
+			RA_crc_string_parse(&model->spline_subsets[i].name, dat.file_data, dat.file_size);
+		}
 	}
 	
 	for(u32 i = 0; i < dat.lump_count; i++) {
@@ -71,36 +90,4 @@ RA_Result RA_model_parse(RA_Model* model, u8* data, u32 size) {
 	RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 	
 	return RA_SUCCESS;
-}
-
-typedef struct {
-	/* 0x0 */ u16 unknown_0;
-	/* 0x2 */ u16 unknown_2;
-	/* 0x4 */ u16 unknown_4;
-	/* 0x6 */ u16 unknown_6;
-	/* 0x8 */ u32 name_crc;
-	/* 0xc */ u32 name_offset;
-} ModelJointHeader;
-
-static RA_Result parse_joints(RA_Model* model, RA_DatFile* dat) {
-	
-}
-
-static RA_Result parse_locators(RA_Model* model, RA_DatFile* dat) {
-	
-}
-
-static RA_Result parse_looks(RA_Model* model, RA_DatFile* dat) {
-	RA_DatLump* look = RA_dat_lookup_lump(dat, LUMP_MODEL_LOOK);
-	if(look == NULL) {
-		RA_dat_free(dat, DONT_FREE_FILE_DATA);
-		RA_arena_destroy(&model->arena);
-		return RA_FAILURE("missing model look lump");
-	}
-	model->looks = (RA_ModelLook*) look->data;
-	model->look_count = look->size / sizeof(RA_ModelLook);
-}
-
-static RA_Result parse_splines(RA_Model* model, RA_DatFile* dat) {
-	
 }

@@ -117,3 +117,11 @@ void RA_string_copy(char* dest, const char* src, s64 buffer_size) {
 	}
 	dest[buffer_size - 1] = '\0';
 }
+
+void RA_crc_string_parse(RA_CRCString* crc_string, u8* file_data, u32 file_size) {
+	if(crc_string->on_disk.string_offset < file_size) {
+		crc_string->string = (char*) file_data + crc_string->on_disk.string_offset;
+	} else {
+		crc_string->string = NULL;
+	}
+}

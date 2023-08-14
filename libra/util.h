@@ -81,6 +81,23 @@ typedef enum {
 
 void RA_string_copy(char* dest, const char* src, s64 buffer_size);
 
+typedef union {
+	const char* string;
+	struct {
+		u32 crc;
+		u32 string_offset;
+	} on_disk;
+} RA_CRCString;
+
+void RA_crc_string_parse(RA_CRCString* crc_string, u8* file_data, u32 file_size);
+
+#ifdef __GNUC__
+	#define __maybe_unused  __attribute__((unused))
+#else
+	#define __maybe_unused
+#endif
+#define RA_ASSERT_SIZE(type, size) __maybe_unused static char assert_size_ ##type[(sizeof(type) == size) ? 1 : -1]
+
 #ifdef __cplusplus
 }
 #endif

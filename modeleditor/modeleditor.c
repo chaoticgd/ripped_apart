@@ -68,6 +68,21 @@ static void draw_gui() {
 	if(GUI_menu_tab("Home")) {
 		igSliderFloat("Zoom", &view.zoom, 0.01f, 1.f, "%.2f", ImGuiSliderFlags_None);
 	}
+	if(model.joints != NULL && GUI_menu_tab("Joints")) {
+		for(u32 i = 0; i < model.joint_count; i++) {
+			igText(model.joints[i].name.string);
+		}
+	}
+	if(model.locators != NULL && GUI_menu_tab("Locators")) {
+		for(u32 i = 0; i < model.locator_count; i++) {
+			igText(model.locators[i].name.string);
+		}
+	}
+	if(model.spline_subsets != NULL && GUI_menu_tab("Spline Subsets")) {
+		for(u32 i = 0; i < model.spline_subset_count; i++) {
+			igText(model.spline_subsets[i].name.string);
+		}
+	}
 	if(GUI_menu_tab("Materials")) {
 		const char* preview;
 		if(selected_material < model.material_count) {
