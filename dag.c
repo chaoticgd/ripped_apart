@@ -37,7 +37,7 @@ static void list(const char* input_file) {
 	
 	for(u32 i = 0; i < dag.asset_count; i++) {
 		RA_DependencyDagAsset* asset = &dag.assets[i];
-		printf("%s\n", asset->path);
+		printf("%s\n", asset->name);
 	}
 	
 	RA_dag_free(&dag, true);
@@ -61,10 +61,10 @@ static void deps(const char* input_file) {
 	
 	for(u32 i = 0; i < dag.asset_count; i++) {
 		RA_DependencyDagAsset* asset = &dag.assets[i];
-		printf("%s\n", asset->path);
+		printf("%s\n", asset->name);
 		for(u32 j = 0; j < asset->dependency_count; j++) {
 			RA_DependencyDagAsset* dependency = &dag.assets[asset->dependencies[j]];
-			printf("\t%s\n", dependency->path);
+			printf("\t%s\n", dependency->name);
 		}
 	}
 	

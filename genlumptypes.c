@@ -32,6 +32,8 @@ int main(int argc, char** argv) {
 	
 	FILE* out_file = fopen(out_path, "w");
 	
+	fprintf(out_file, "// This file is generated from lump_types.txt by genlumptypes.\n");
+	
 	char line[1024];
 	while(fgets(line, 1024, in_file)) {
 		if(strstr(line, "//") == line) {

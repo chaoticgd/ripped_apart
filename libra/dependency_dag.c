@@ -6,6 +6,7 @@ static RA_Result alloc_assets(RA_DependencyDag* dag, u32 asset_count);
 
 RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size) {
 	RA_Result result;
+	const char* error;
 	
 	memset(dag, 0, sizeof(RA_DependencyDag));
 	RA_arena_create(&dag->arena);
@@ -18,91 +19,80 @@ RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size) {
 		return result;
 	}
 	
-	b8 has_asset_types_lump = false;
-	b8 has_hashes_lump = false;
-	b8 has_dependencies_lump = false;
-	b8 has_file_paths_lump = false;
-	b8 has_dependency_index_lump = false;
+	RA_DatLump* asset_ids = RA_dat_lookup_lump(&dat, LUMP_ASSET_IDS);
+	if(asset_ids == NULL) {
+		error = "no asset ids lump";
+		goto fail;
+	}
 	
-	s32* dependencies = NULL;
-	u32 dependency_lump_size = 0;
+	RA_DatLump* asset_names = RA_dat_lookup_lump(&dat, LUMP_ASSET_NAMES);
+	if(asset_names == NULL) {
+		error = "no asset names lump";
+		goto fail;
+	}
 	
-	for(u32 i = 0; i < dat.lump_count; i++) {
-		RA_DatLump* lump = &dat.lumps[i];
-		if(lump->type_crc == LUMP_ASSET_TYPES) {
-			if((result = alloc_assets(dag, lump->size)) != RA_SUCCESS) {
-				return result;
+	RA_DatLump* asset_types = RA_dat_lookup_lump(&dat, LUMP_ASSET_TYPES);
+	if(asset_types == NULL) {
+		error = "no asset types lump";
+		goto fail;
+	}
+	
+	RA_DatLump* dependency_index = RA_dat_lookup_lump(&dat, LUMP_DEPENDENCY_INDEX);
+	if(dependency_index == NULL) {
+		error = "no dependency index lump";
+		goto fail;
+	}
+	
+	RA_DatLump* dependency = RA_dat_lookup_lump(&dat, LUMP_DEPENDENCY);
+	if(dependency == NULL) {
+		error = "no dependency lump";
+		goto fail;
+	}
+	
+	u32 asset_count = asset_types->size;
+	if(asset_ids->size / 8 != asset_count) {
+		error = "asset names or asset ids lump has bad size";
+		goto fail;
+	}
+	if(asset_names->size / 4 != asset_count) {
+		error = "asset names or asset ids lump has bad size";
+		goto fail;
+	}
+	if(dependency_index->size / 4 != asset_count) {
+		error = "asset names or asset ids lump has bad size";
+		goto fail;
+	}
+	
+	dag->assets = RA_arena_calloc(&dag->arena, asset_count, sizeof(RA_DependencyDagAsset));
+	dag->asset_count = asset_count;
+	
+	for(u32 i = 0; i < asset_count; i++) {
+		dag->assets[i].id = ((u64*) asset_ids->data)[i];
+		dag->assets[i].name = (char*) (data + sizeof(RA_DependencyDagFileHeader) + ((u32*) asset_names->data)[i]);
+		dag->assets[i].name_crc = RA_crc64_path(dag->assets[i].name);
+		dag->assets[i].type = asset_types->data[i];
+		
+		s32 dependency_list_index = ((s32*) dependency_index->data)[i];
+		if(dependency_list_index > -1) {
+			if(dependency_list_index * 4 >= dependency->size)
+				return RA_FAILURE("dependency list index out of range (%d)", i);
+			dag->assets[i].dependencies = (u32*) &((u32*) dependency->data)[dependency_list_index];
+			s32* dep = (s32*) &((s32*) dependency->data)[dependency_list_index];
+			while(*dep > -1) {
+				if(*dep >= dag->asset_count) return RA_FAILURE("dependency out of range");
+				dag->assets[i].dependency_count++;
+				dep++;
 			}
-			for(u32 i = 0; i < dag->asset_count; i++) {
-				dag->assets[i].type = lump->data[i];
-			}
-			has_asset_types_lump = true;
-		} else if(lump->type_crc == LUMP_SPACED_OUT_HASH) {
-			if((result = alloc_assets(dag, lump->size / 8)) != RA_SUCCESS) {
-				return result;
-			}
-			u64* hashes = (u64*) lump->data;
-			for(u32 i = 0; i < dag->asset_count; i++) {
-				dag->assets[i].hash = hashes[i];
-			}
-			has_hashes_lump = true;
-		} else if(lump->type_crc == LUMP_DEPENDENCY) {
-			dependencies = RA_arena_alloc(&dag->arena, lump->size);
-			memcpy(dependencies, lump->data, lump->size);
-			dependency_lump_size = lump->size;
-			has_dependencies_lump = true;
-		} else if(lump->type_crc == LUMP_DAG_PATHS) {
-			if((result = alloc_assets(dag, lump->size / 4)) != RA_SUCCESS) {
-				return result;
-			}
-			u32* path_offsets = (u32*) lump->data;
-			for(u32 i = 0; i < dag->asset_count; i++) {
-				dag->assets[i].path = (char*) (data + sizeof(RA_DependencyDagFileHeader) + path_offsets[i]);
-				dag->assets[i].path_crc = RA_crc64_path(dag->assets[i].path);
-			}
-			has_file_paths_lump = true;
-		} else if(lump->type_crc == LUMP_DEPENDENCY_INDEX) {
-			if((result = alloc_assets(dag, lump->size / 4)) != RA_SUCCESS) {
-				return result;
-			}
-			s32* dependency_indices = (s32*) lump->data;
-			for(u32 i = 0; i < dag->asset_count; i++) {
-				s32 dependency_list_index = dependency_indices[i];
-				if(dependency_list_index > -1) {
-					if(!dependencies) return RA_FAILURE("no dependencies lump");
-					if(dependency_list_index * 4 >= dependency_lump_size)
-						return RA_FAILURE("dependency list index out of range (%d)", i);
-					dag->assets[i].dependencies = (u32*) &dependencies[dependency_list_index];
-					s32* dependency = &dependencies[dependency_list_index];
-					while(*dependency > -1) {
-						if(*dependency >= dag->asset_count) return RA_FAILURE("dependency index out of range");
-						dag->assets[i].dependency_count++;
-						dependency++;
-					}
-				}
-			}
-			has_dependency_index_lump = true;
 		}
 	}
 	
 	RA_dat_free(&dat, DONT_FREE_FILE_DATA);
-	
-	if(!(has_asset_types_lump && has_hashes_lump && has_dependencies_lump && has_file_paths_lump && has_dependency_index_lump)) {
-		RA_arena_destroy(&dat.arena);
-		return RA_FAILURE("insufficient lumpology");
-	}
-	
 	return RA_SUCCESS;
-}
-
-static RA_Result alloc_assets(RA_DependencyDag* dag, u32 asset_count) {
-	if(dag->assets == NULL) {
-		dag->assets = RA_arena_calloc(&dag->arena, asset_count, sizeof(RA_DependencyDagAsset));
-		dag->asset_count = asset_count;
-	} else if(dag->asset_count != asset_count) {
-		return RA_FAILURE("asset count mismatch");
-	}
-	return RA_SUCCESS;
+	
+fail:
+	RA_dat_free(&dat, DONT_FREE_FILE_DATA);
+	RA_arena_destroy(&dat.arena);
+	return RA_FAILURE(error);
 }
 
 RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, u32* size_dest) {
@@ -113,8 +103,8 @@ RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, u32* size_dest) {
 		dependency_count += dag->assets[i].dependency_count + 1;
 	}
 	
-	u64* hashes = RA_dat_writer_lump(writer, LUMP_SPACED_OUT_HASH, dag->asset_count * 8);
-	u32* paths = RA_dat_writer_lump(writer, LUMP_DAG_PATHS, dag->asset_count * 4);
+	u64* asset_ids = RA_dat_writer_lump(writer, LUMP_ASSET_IDS, dag->asset_count * 8);
+	u32* names = RA_dat_writer_lump(writer, LUMP_ASSET_NAMES, dag->asset_count * 4);
 	u8* asset_types = RA_dat_writer_lump(writer, LUMP_ASSET_TYPES, dag->asset_count);
 	u32* dependency_indices = RA_dat_writer_lump(writer, LUMP_DEPENDENCY_INDEX, dag->asset_count * 4);
 	s32* dependency = RA_dat_writer_lump(writer, LUMP_DEPENDENCY, dependency_count * 4);
@@ -124,8 +114,8 @@ RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, u32* size_dest) {
 	
 	for(u32 i = 0; i < dag->asset_count; i++) {
 		asset_types[i] = dag->assets[i].type;
-		hashes[i] = dag->assets[i].hash;
-		paths[i] = RA_dat_writer_string(writer, dag->assets[i].path);
+		asset_ids[i] = dag->assets[i].id;
+		names[i] = RA_dat_writer_string(writer, dag->assets[i].name);
 		for(u32 j = 0; j < dag->assets[i].dependency_count; j++) {
 			(*dependency++) = dag->assets[i].dependencies[j];
 		}
@@ -143,7 +133,7 @@ void RA_dag_free(RA_DependencyDag* dag, b8 free_file_data) {
 	}
 }
 
-RA_DependencyDagAsset* RA_dag_lookup_asset(RA_DependencyDag* dag, u64 path_crc) {
+RA_DependencyDagAsset* RA_dag_lookup_asset(RA_DependencyDag* dag, u64 name_crc) {
 	if(dag->asset_count == 0) {
 		return NULL;
 	}
@@ -154,9 +144,9 @@ RA_DependencyDagAsset* RA_dag_lookup_asset(RA_DependencyDag* dag, u64 path_crc) 
 	while(first <= last) {
 		u32 mid = (first + last) / 2;
 		RA_DependencyDagAsset* asset = &dag->assets[mid];
-		if(asset->path_crc < path_crc) {
+		if(asset->name_crc < name_crc) {
 			first = mid + 1;
-		} else if(asset->path_crc > path_crc) {
+		} else if(asset->name_crc > name_crc) {
 			last = mid - 1;
 		} else {
 			return asset;

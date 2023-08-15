@@ -11,10 +11,10 @@ typedef struct {
 } RA_DependencyDagFileHeader;
 
 typedef struct {
+	u64 id;
+	const char* name;
+	u64 name_crc;
 	u8 type;
-	u64 hash;
-	const char* path;
-	u64 path_crc;
 	u32* dependencies;
 	u32 dependency_count;
 } RA_DependencyDagAsset;
@@ -32,6 +32,6 @@ RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size);
 RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, u32* size_dest);
 void RA_dag_free(RA_DependencyDag* dag, b8 free_file_data);
 
-RA_DependencyDagAsset* RA_dag_lookup_asset(RA_DependencyDag* dag, u64 path_crc);
+RA_DependencyDagAsset* RA_dag_lookup_asset(RA_DependencyDag* dag, u64 name_crc);
 
 #endif

@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 		// Determine the relative path of the asset.
 		char asset_path[RA_MAX_PATH];
 		if(dag_asset) {
-			strncpy(asset_path, dag_asset->path, RA_MAX_PATH - 1);
+			strncpy(asset_path, dag_asset->name, RA_MAX_PATH - 1);
 		} else {
 			// We don't have a proper file path, so just use the asset hash instead.
 			if(snprintf(asset_path, RA_MAX_PATH, "%" PRIx64, toc_asset->path_hash) < 0) {
@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
 			FILE* deps_file = fopen(deps_out_path, "w");
 			for(u32 j = 0; j < dag_asset->dependency_count; j++) {
 				RA_DependencyDagAsset* dependency = &dag.assets[dag_asset->dependencies[j]];
-				if(fprintf(deps_file, "%" PRIx64 " %s\n", dependency->path_crc, dependency->path) < 0) {
+				if(fprintf(deps_file, "%" PRIx64 " %s\n", dependency->name_crc, dependency->name) < 0) {
 					fprintf(stderr, "error: Failed to write to dependencies file for asset '%s'.\n", asset_path);
 				}
 			}
