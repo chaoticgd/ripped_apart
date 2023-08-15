@@ -30,6 +30,11 @@ static void draw_gui();
 static void load_model(const char* path, const char* root_asset_dir);
 static void draw_model(RenderModel* model, ViewParams* params);
 
+#define _X 0
+#define _Y 1
+#define _Z 2
+#define _W 3
+
 int main(int argc, char** argv) {
 	if(argc != 3) {
 		printf("usage: ./modeleditor <path to .model file> <root asset directory>\n");

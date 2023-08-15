@@ -40,11 +40,6 @@ typedef char b8;
 #define false 0
 #define true 1
 
-#define _X 0
-#define _Y 1
-#define _Z 2
-#define _W 3
-
 typedef struct {
 	const char* message;
 	int line;
