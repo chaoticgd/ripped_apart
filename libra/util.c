@@ -106,7 +106,7 @@ RA_Result RA_make_dirs(const char* file_path) {
 
 void RA_string_copy(char* dest, const char* src, s64 buffer_size) {
 	for(s64 i = 0; i < buffer_size; i++) {
-		*dest++ = *src;
+		dest[i] = *src;
 		if(*src == '\0') break;
 		src++;
 	}

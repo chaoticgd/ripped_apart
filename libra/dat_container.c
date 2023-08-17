@@ -269,7 +269,7 @@ const char* RA_dat_lump_type_name(u32 type_crc) {
 
 // Testing
 
-static RA_Result diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rhs_size, u32 lump, b8 print_hex_dump_on_failure);
+static RA_Result diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rhs_size, const char* context, b8 print_hex_dump_on_failure);
 
 RA_Result RA_dat_test(const u8* original, u32 original_size, const u8* repacked, u32 repacked_size, b8 print_hex_dump_on_failure) {
 	RA_Result result;
@@ -296,7 +296,6 @@ RA_Result RA_dat_test(const u8* original, u32 original_size, const u8* repacked,
 		LumpHeader* repacked_lump = (LumpHeader*) &repacked_header->lumps[i];
 		
 		if(original_lump->type_crc != repacked_lump->type_crc) return RA_FAILURE("lump %u crcs differ", i);
-		if(original_lump->size != repacked_lump->size) return RA_FAILURE("lump %u sizes differ", i);
 		
 		if(original_lump->offset + original_lump->size > original_size) return RA_FAILURE("original lump %u out of bounds", i);
 		if(repacked_lump->offset + repacked_lump->size > original_size) return RA_FAILURE("repacked lump %u out of bounds", i);
@@ -304,15 +303,32 @@ RA_Result RA_dat_test(const u8* original, u32 original_size, const u8* repacked,
 		const u8* original_data = &original[original_lump->offset];
 		const u8* repacked_data = &repacked[repacked_lump->offset];
 		
-		if((result = diff_buffers(original_data, original_lump->size, repacked_data, repacked_lump->size, i, print_hex_dump_on_failure)) != RA_SUCCESS) {
+		RA_LumpType* lump_type = NULL;
+		for(u32 j = 0; j < lump_type_count; j++) {
+			if(lump_types[j].crc == original_lump->type_crc) {
+				lump_type = &lump_types[j];
+				break;
+			}
+		}
+		
+		char context[256];
+		if(lump_type != NULL) {
+			snprintf(context, 256, "lump %s", lump_type->name);
+		} else {
+			snprintf(context, 256, "lump %x", original_lump->type_crc);
+		}
+		if((result = diff_buffers(original_data, original_lump->size, repacked_data, repacked_lump->size, context, print_hex_dump_on_failure)) != RA_SUCCESS) {
 			return result;
 		}
 	}
 	
+	if(original_size != repacked_size) return RA_FAILURE("sections match but the file size doesn't; issue with strings or section ordering/alignment");
+	if(memcmp(original, repacked, original_size) != 0) return RA_FAILURE("sections match but the file data doesn't; issue with strings or section ordering");
+	
 	return RA_SUCCESS;
 }
 
-static RA_Result diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rhs_size, u32 lump, b8 print_hex_dump_on_failure) {
+static RA_Result diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rhs_size, const char* context, b8 print_hex_dump_on_failure) {
 	u32 min_size = MIN(lhs_size, rhs_size);
 	u32 max_size = MAX(lhs_size, rhs_size);
 	
@@ -328,7 +344,7 @@ static RA_Result diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rh
 		return RA_SUCCESS;
 	}
 	
-	RA_Result error = RA_FAILURE("lump %u differs at offset %x", lump, diff_offset);
+	RA_Result error = RA_FAILURE("%s differs at offset %x", context, diff_offset);
 	if(!print_hex_dump_on_failure) {
 		return error;
 	}

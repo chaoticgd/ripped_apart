@@ -15,7 +15,7 @@ typedef struct {
 	const char* name;
 	u64 name_crc;
 	u8 type;
-	u32* dependencies;
+	s32* dependencies;
 	u32 dependency_count;
 } RA_DependencyDagAsset;
 

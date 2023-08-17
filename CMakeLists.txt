@@ -56,6 +56,10 @@ add_executable(genlumptypes genlumptypes.c)
 target_link_libraries(genlumptypes crc)
 add_executable(extractall extractall.c)
 target_link_libraries(extractall libra)
+add_executable(printlumpcrcs printlumpcrcs.cpp)
+target_link_libraries(printlumpcrcs libra)
+add_executable(brutecrc brutecrc.c)
+target_link_libraries(brutecrc libra)
 
 # Set the windows codepage to UTF-8.
 if(WIN32)

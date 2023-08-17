@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 		sscanf(line, "%127s %127s %[^\n]\n", macro, identifier, name);
 		
 		if(strcmp(macro, "LUMP_TYPE") == 0) {
-			fprintf(out_file, "LUMP_TYPE(%s, 0x%x, \"%s\")\n", identifier, RA_crc_string(name), name);
+			fprintf(out_file, "LUMP_TYPE(%s, 0x%x, \"%s\")\n", identifier, RA_crc32_string(name), name);
 		} else if(strcmp(macro, "LUMP_TYPE_FAKE_NAME") == 0) {
 			fprintf(out_file, "LUMP_TYPE(%s, %s, \"%s\")\n", identifier, name, identifier);
 		} else {
