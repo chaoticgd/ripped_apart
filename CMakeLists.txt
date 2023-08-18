@@ -64,6 +64,8 @@ add_executable(toc toc.c)
 target_link_libraries(toc libra)
 add_executable(rebuildtoc rebuildtoc.c)
 target_link_libraries(rebuildtoc libra)
+add_executable(diffdat diffdat.c)
+target_link_libraries(diffdat libra)
 
 # Set the windows codepage to UTF-8.
 if(WIN32)
