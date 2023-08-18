@@ -52,7 +52,7 @@ static RA_Result test_file(const char* path) {
 	printf("%s: ", path);
 	u8* data;
 	u32 size;
-	RA_file_read(&data, &size, path);
+	RA_file_read(path, &data, &size);
 	
 	if(size >= 4 && *(u32*) data == FOURCC("1TAD")) {
 		if((result = test_dat_file(data, size)) != RA_SUCCESS) {

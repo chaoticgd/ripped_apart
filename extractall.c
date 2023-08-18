@@ -138,7 +138,7 @@ static void parse_dag_and_toc(RA_DependencyDag* dag, RA_TableOfContents* toc, co
 	
 	u8* dag_data;
 	u32 dag_size;
-	if((result = RA_file_read(&dag_data, &dag_size, dag_path))) {
+	if((result = RA_file_read(dag_path, &dag_data, &dag_size))) {
 		fprintf(stderr, "error: Failed to read dag file (%s).\n", result->message);
 		exit(1);
 	}
@@ -154,7 +154,7 @@ static void parse_dag_and_toc(RA_DependencyDag* dag, RA_TableOfContents* toc, co
 	
 	u8* toc_data;
 	u32 toc_size;
-	if((result = RA_file_read(&toc_data, &toc_size, toc_path)) != RA_SUCCESS) {
+	if((result = RA_file_read(toc_path, &toc_data, &toc_size)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to read toc file (%s).\n", result->message);
 		exit(1);
 	}

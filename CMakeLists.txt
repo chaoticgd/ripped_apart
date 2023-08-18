@@ -62,6 +62,8 @@ add_executable(brutecrc brutecrc.c)
 target_link_libraries(brutecrc libra)
 add_executable(toc toc.c)
 target_link_libraries(toc libra)
+add_executable(rebuildtoc rebuildtoc.c)
+target_link_libraries(rebuildtoc libra)
 
 # Set the windows codepage to UTF-8.
 if(WIN32)

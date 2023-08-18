@@ -32,7 +32,7 @@ void RA_file_fix_path(char* path) {
 	}
 }
 
-RA_Result RA_file_read(u8** data_dest, u32* size_dest, const char* path) {
+RA_Result RA_file_read(const char* path, u8** data_dest, u32* size_dest) {
 	FILE* file = fopen(path, "rb");
 	if(file == NULL) {
 		return RA_FAILURE("failed to open file for reading");

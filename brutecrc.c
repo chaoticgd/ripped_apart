@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
 	
 	u8* dictionary_data;
 	u32 dictionary_size;
-	if((result = RA_file_read(&dictionary_data, &dictionary_size, dictionary_path)) != RA_SUCCESS) {
+	if((result = RA_file_read(dictionary_path, &dictionary_data, &dictionary_size)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Cannot open dictionary file '%s' (%s).\n", dictionary_path, result->message);
 		return 1;
 	}

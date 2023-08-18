@@ -45,6 +45,9 @@ RA_Result RA_dat_parse(RA_DatFile* dat, u8* data, u32 size, u32 bytes_before_mag
 		return RA_FAILURE("lump count is too high");
 	}
 	dat->lumps = RA_arena_alloc(&dat->arena, sizeof(RA_DatLump) * header->lump_count);
+	if(dat->lumps == NULL) {
+		return RA_FAILURE("allocation failed");
+	}
 	for(s32 i = 0; i < header->lump_count; i++) {
 		dat->lumps[i].type_crc = header->lumps[i].type_crc;
 		dat->lumps[i].offset = header->lumps[i].offset;
@@ -95,6 +98,9 @@ RA_Result RA_dat_read(RA_DatFile* dat, const char* path, u32 bytes_before_magic)
 		return RA_FAILURE("lump count is too high");
 	}
 	dat->lumps = RA_arena_alloc(&dat->arena, sizeof(RA_DatLump) * header.lump_count);
+	if(dat->lumps == NULL) {
+		return RA_FAILURE("allocation failed");
+	}
 	LumpHeader* headers = malloc(sizeof(LumpHeader) * header.lump_count);
 	if(fread(headers, dat->lump_count * sizeof(LumpHeader), 1, file) != 1) return RA_FAILURE("failed to read lump header");
 	for(s32 i = 0; i < header.lump_count; i++) {
@@ -102,20 +108,20 @@ RA_Result RA_dat_read(RA_DatFile* dat, const char* path, u32 bytes_before_magic)
 		dat->lumps[i].offset = headers[i].offset;
 		dat->lumps[i].size = headers[i].size;
 		if(headers[i].size > 256 * 1024 * 1024) {
-			for(s32 j = 0; j < i; j++) {
-				free(dat->lumps[i].data);
-			}
 			free(headers);
 			RA_arena_destroy(&dat->arena);
 			fclose(file);
 			return RA_FAILURE("lump too big");
 		}
 		dat->lumps[i].data = RA_arena_alloc(&dat->arena, headers[i].size);
+		if(dat->lumps[i].data == NULL) {
+			free(headers);
+			RA_arena_destroy(&dat->arena);
+			fclose(file);
+			return RA_FAILURE("allocation failed");
+		}
 		fseek(file, bytes_before_magic + headers[i].offset, SEEK_SET);
 		if(fread(dat->lumps[i].data, headers[i].size, 1, file) != 1) {
-			for(s32 j = 0; j < i; j++) {
-				free(dat->lumps[i].data);
-			}
 			free(headers);
 			RA_arena_destroy(&dat->arena);
 			fclose(file);

@@ -17,7 +17,11 @@ void* RA_arena_alloc_aligned(RA_Arena* arena, s64 size, s64 alignment) {
 	u64 offset = ALIGN(arena->top, alignment);
 	if(!arena->head) {
 		s64 capacity = MAX(size, 1024);
-		arena->head = malloc(sizeof(RA_ArenaBlock) + capacity);
+		RA_ArenaBlock* temp = malloc(sizeof(RA_ArenaBlock) + capacity);;
+		if(temp == NULL) {
+			return NULL;
+		}
+		arena->head = temp;
 		memset(arena->head, 0, sizeof(RA_ArenaBlock));
 		arena->head->capacity = capacity;
 		arena->tail = arena->head;
@@ -25,7 +29,11 @@ void* RA_arena_alloc_aligned(RA_Arena* arena, s64 size, s64 alignment) {
 	} else if(offset + size > arena->tail->capacity) {
 		RA_ArenaBlock* prev = arena->tail;
 		s64 capacity = MAX(size, prev->capacity * 2);
-		arena->tail = malloc(sizeof(RA_ArenaBlock) + capacity);
+		RA_ArenaBlock* temp = malloc(sizeof(RA_ArenaBlock) + capacity);
+		if(temp == NULL) {
+			return NULL;
+		}
+		arena->tail = temp;
 		memset(arena->tail, 0, sizeof(RA_ArenaBlock));
 		arena->tail->prev = prev;
 		arena->tail->capacity = capacity;

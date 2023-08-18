@@ -120,7 +120,7 @@ static void draw_gui() {
 static void load_model(const char* path, const char* root_asset_dir) {
 	RA_Result result;
 	
-	if((result = RA_file_read(&model_file_data, &model_file_size, path)) != RA_SUCCESS) {
+	if((result = RA_file_read(path, &model_file_data, &model_file_size)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to read model file '%s' (%s).\n", path, result->message);
 		abort();
 	}
@@ -142,7 +142,7 @@ static void load_model(const char* path, const char* root_asset_dir) {
 			
 			u8* material_data;
 			u32 material_size;
-			if((result = RA_file_read(&material_data, &material_size, material_path)) != RA_SUCCESS) {
+			if((result = RA_file_read(material_path, &material_data, &material_size)) != RA_SUCCESS) {
 				fprintf(stderr, "error: Failed to read material file '%s' (%s).\n", material_path, result->message);
 				abort();
 			}

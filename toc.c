@@ -21,7 +21,7 @@ static void list_archives(const char* input_file) {
 	
 	u8* data;
 	u32 size;
-	if((result = RA_file_read(&data, &size, input_file)) != RA_SUCCESS) {
+	if((result = RA_file_read(input_file, &data, &size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to read input file '%s'.\n", input_file);
 		exit(1);
 	}
@@ -45,7 +45,7 @@ static void list_assets(const char* input_file) {
 	
 	u8* data;
 	u32 size;
-	if((result = RA_file_read(&data, &size, input_file)) != RA_SUCCESS) {
+	if((result = RA_file_read(input_file, &data, &size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to read input file '%s'.\n", input_file);
 		exit(1);
 	}

@@ -57,7 +57,7 @@ RA_Result RA_failure(int line, const char* format, ...);
 #define RA_PI 3.14159265358979323846
 
 void RA_file_fix_path(char* path);
-RA_Result RA_file_read(u8** data_dest, u32* size_dest, const char* path);
+RA_Result RA_file_read(const char* path, u8** data_dest, u32* size_dest);
 RA_Result RA_file_write(const char* path, u8* data, u32 size);
 RA_Result RA_make_dirs(const char* file_path);
 

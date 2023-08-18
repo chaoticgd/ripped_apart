@@ -27,7 +27,7 @@ static void list(const char* input_file) {
 	
 	u8* data;
 	u32 size;
-	if((result = RA_file_read(&data, &size, input_file)) != RA_SUCCESS) {
+	if((result = RA_file_read(input_file, &data, &size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to read input file '%s'.\n", input_file);
 		exit(1);
 	}
@@ -51,7 +51,7 @@ static void deps(const char* input_file) {
 	
 	u8* data;
 	u32 size;
-	if((result = RA_file_read(&data, &size, input_file)) != RA_SUCCESS) {
+	if((result = RA_file_read(input_file, &data, &size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to read input file '%s'.\n", input_file);
 		exit(1);
 	}
@@ -79,7 +79,7 @@ static void lookup(const char* input_file, const char* hash_str) {
 	
 	u8* data;
 	u32 size;
-	if((result = RA_file_read(&data, &size, input_file)) != RA_SUCCESS) {
+	if((result = RA_file_read(input_file, &data, &size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to read input file '%s'.\n", input_file);
 		exit(1);
 	}
@@ -106,7 +106,7 @@ static void rebuild(const char* input_file, const char* output_file) {
 	
 	u8* in_data;
 	u32 in_size;
-	if((result = RA_file_read(&in_data, &in_size, input_file)) != RA_SUCCESS) {
+	if((result = RA_file_read(input_file, &in_data, &in_size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to read input file '%s' (%s).\n", input_file, result->message);
 		exit(1);
 	}

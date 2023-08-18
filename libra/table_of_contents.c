@@ -174,8 +174,13 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, u32* size_dest) 
 	}
 	
 	RA_TocFileLocation* file_location = RA_dat_writer_lump(writer, LUMP_FILE_LOCATION, toc->asset_count * sizeof(RA_TocFileLocation));
+	u32 next_header_offset = 0;
 	for(u32 i = 0; i < toc->asset_count; i++) {
 		file_location[i] = toc->assets[i].location;
+		if(toc->assets[i].has_header) {
+			file_location[i].header_offset = next_header_offset;
+			next_header_offset += sizeof(RA_TocAssetHeader);
+		}
 	}
 	
 	RA_TocArchive* archives = RA_dat_writer_lump(writer, LUMP_ARCHIVE_FILE, toc->archive_count * sizeof(RA_TocArchive));
@@ -214,4 +219,27 @@ void RA_toc_free(RA_TableOfContents* toc, ShouldFreeFileData free_file_data) {
 	if(free_file_data == FREE_FILE_DATA && toc->file_data) {
 		free(toc->file_data);
 	}
+}
+
+RA_TocAsset* RA_toc_lookup_asset(RA_TableOfContents* toc, u64 path_hash) {
+	if(toc->asset_count == 0) {
+		return NULL;
+	}
+	
+	s64 first = 0;
+	s64 last = toc->asset_count - 1;
+	
+	while(first <= last) {
+		s64 mid = (first + last) / 2;
+		RA_TocAsset* asset = &toc->assets[mid];
+		if(asset->path_hash < path_hash) {
+			first = mid + 1;
+		} else if(asset->path_hash > path_hash) {
+			last = mid - 1;
+		} else {
+			return asset;
+		}
+	}
+	
+	return NULL;
 }

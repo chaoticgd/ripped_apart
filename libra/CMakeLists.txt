@@ -21,5 +21,9 @@ add_library(libra STATIC
 	gdeflate_wrapper.h
 	platform.c
 	platform.h
+	mod.c
+	mod.h
+	string_list.c
+	string_list.h
 )
 target_link_libraries(libra crc lz4_static GDeflate)
