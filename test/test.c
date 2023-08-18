@@ -1,6 +1,7 @@
 #include "../libra/util.h"
 #include "../libra/dat_container.h"
 #include "../libra/dependency_dag.h"
+#include "../libra/table_of_contents.h"
 #include "../libra/material.h"
 
 #include <dirent.h>
@@ -94,6 +95,24 @@ static RA_Result test_dat_file(u8* data, u32 size) {
 }
 
 static RA_Result test_toc_file(u8* data, u32 size) {
+	RA_Result result;
+	
+	RA_TableOfContents toc;
+	if((result = RA_toc_parse(&toc, data, size)) != RA_SUCCESS) {
+		return result;
+	}
+	
+	u8* out_data;
+	u32 out_size;
+	if((result = RA_toc_build(&toc, &out_data, &out_size)) != RA_SUCCESS) {
+		return result;
+	}
+	
+	if((result = RA_dat_test(data + 0x8, size - 0x8, out_data + 0x8, out_size - 0x8, true)) != RA_SUCCESS) {
+		RA_file_write("/tmp/test_toc", out_data, out_size);
+		return result;
+	}
+	
 	return RA_SUCCESS;
 }
 

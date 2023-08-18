@@ -147,11 +147,11 @@ RA_DependencyDagAsset* RA_dag_lookup_asset(RA_DependencyDag* dag, u64 name_crc) 
 		return NULL;
 	}
 	
-	u32 first = 0;
-	u32 last = dag->asset_count - 1;
+	s64 first = 0;
+	s64 last = dag->asset_count - 1;
 	
 	while(first <= last) {
-		u32 mid = (first + last) / 2;
+		s64 mid = (first + last) / 2;
 		RA_DependencyDagAsset* asset = &dag->assets[mid];
 		if(asset->name_crc < name_crc) {
 			first = mid + 1;

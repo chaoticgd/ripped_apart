@@ -51,7 +51,7 @@ RA_Result RA_failure(int line, const char* format, ...);
 
 #define MIN(x, y) (((y) < (x)) ? (y) : (x))
 #define MAX(x, y) (((y) > (x)) ? (y) : (x))
-#define ALIGN(value, alignment) (value) + (-(value) & ((alignment) - 1))
+#define ALIGN(value, alignment) ((value) + (-(value) & ((alignment) - 1)))
 #define FOURCC(string) ((string)[0] | (string)[1] << 8 | (string)[2] << 16 | (string)[3] << 24)
 
 #define RA_PI 3.14159265358979323846

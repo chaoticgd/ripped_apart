@@ -89,7 +89,7 @@ static RA_Result process_file(const char* path, bool print_lumps) {
 		for(int32_t i = 0; i < dat.lump_count; i++) {
 			RA_DatLump* lump = &dat.lumps[i];
 			
-			printf("%08x | %8x | %8x | %s\n", lump->type_crc, lump->offset, lump->size, RA_dat_lump_type_name(lump->type_crc));
+			printf("%08x | %8x | %8x | %s\n", lump->type_crc, dat.bytes_before_magic + lump->offset, lump->size, RA_dat_lump_type_name(lump->type_crc));
 		}
 	}
 	

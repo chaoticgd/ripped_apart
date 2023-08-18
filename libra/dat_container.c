@@ -28,6 +28,10 @@ RA_Result RA_dat_parse(RA_DatFile* dat, u8* data, u32 size, u32 bytes_before_mag
 	dat->file_data = data;
 	dat->file_size = size;
 	
+	if(size < bytes_before_magic + sizeof(DatHeader)) {
+		return RA_FAILURE("not enough space for header");
+	}
+	
 	DatHeader* header = (DatHeader*) &data[bytes_before_magic];
 	if(header->magic != FOURCC("1TAD")) {
 		return RA_FAILURE("bad magic bytes");
@@ -55,6 +59,7 @@ RA_Result RA_dat_parse(RA_DatFile* dat, u8* data, u32 size, u32 bytes_before_mag
 		}
 		dat->lumps[i].data = data + bytes_before_magic + header->lumps[i].offset;
 	}
+	dat->bytes_before_magic = bytes_before_magic;
 	return RA_SUCCESS;
 }
 
@@ -117,6 +122,7 @@ RA_Result RA_dat_read(RA_DatFile* dat, const char* path, u32 bytes_before_magic)
 			return RA_FAILURE("failed to read lump");
 		}
 	}
+	dat->bytes_before_magic = bytes_before_magic;
 	free(headers);
 	fclose(file);
 	return RA_SUCCESS;
@@ -135,11 +141,11 @@ RA_DatLump* RA_dat_lookup_lump(RA_DatFile* dat, u32 name_crc) {
 		return NULL;
 	}
 	
-	u32 first = 0;
-	u32 last = dat->lump_count - 1;
+	s64 first = 0;
+	s64 last = dat->lump_count - 1;
 	
 	while(first <= last) {
-		u32 mid = (first + last) / 2;
+		s64 mid = (first + last) / 2;
 		RA_DatLump* lump = &dat->lumps[mid];
 		if(lump->type_crc < name_crc) {
 			first = mid + 1;
@@ -184,16 +190,20 @@ void* RA_dat_writer_lump(RA_DatWriter* writer, u32 type_crc, s64 size) {
 		fprintf(stderr, "RA_dat_writer_lump: Called after RA_dat_writer_string!\n");
 		abort();
 	}
+	if(writer->lumps_size % 0x10 != 0) {
+		u32 padding_size = 0x10 - writer->lumps_size % 0x10;
+		RA_arena_alloc_aligned(&writer->lumps, padding_size, 1);
+		writer->lumps_size += padding_size;
+	}
 	LumpHeader* header = RA_arena_alloc_aligned(&writer->prologue, sizeof(LumpHeader), 1);
 	header->type_crc = type_crc;
 	header->offset = writer->lumps_size;
 	header->size = size;
-	s64 aligned_size = ALIGN(size, 0x10);
 	writer->prologue_size += sizeof(LumpHeader);
-	writer->lumps_size += aligned_size;
+	writer->lumps_size += size;
 	writer->lump_count++;
 	writer->write_lump_called = true;
-	return RA_arena_alloc(&writer->lumps, aligned_size);
+	return RA_arena_alloc(&writer->lumps, size);
 }
 
 u32 RA_dat_writer_string(RA_DatWriter* writer, const char* string) {
@@ -212,7 +222,7 @@ static int compare_lumps(const void* lhs, const void* rhs) {
 
 void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, u32* size_dest) {
 	if(writer->prologue_size % 0x10 != 0) {
-		u32 padding_size = 0x10 - writer->prologue_size % 0x10;
+		u32 padding_size = 0x10 - (writer->prologue_size - writer->bytes_before_magic) % 0x10;
 		RA_arena_alloc_aligned(&writer->prologue, padding_size, 1);
 		writer->prologue_size += padding_size;
 	}
@@ -233,7 +243,7 @@ void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, u32* size_dest) 
 	DatHeader* header = (DatHeader*) (*data_dest + writer->bytes_before_magic);
 	header->magic = FOURCC("1TAD");
 	header->asset_type_crc = writer->asset_type_crc;
-	header->file_size = *size_dest;
+	header->file_size = *size_dest - writer->bytes_before_magic;
 	header->lump_count = writer->lump_count;
 	header->shader_count = writer->shader_count;
 	for(u32 i = 0; i < header->lump_count; i++) {
@@ -322,8 +332,15 @@ RA_Result RA_dat_test(const u8* original, u32 original_size, const u8* repacked,
 		}
 	}
 	
-	if(original_size != repacked_size) return RA_FAILURE("sections match but the file size doesn't; issue with strings or section ordering/alignment");
-	if(memcmp(original, repacked, original_size) != 0) return RA_FAILURE("sections match but the file data doesn't; issue with strings or section ordering");
+	// Handle extra padding at the end.
+	if(repacked_size < original_size && original_size - repacked_size < 256) {
+		original_size = repacked_size;
+	}
+	
+	const char* end_context = "sections match but file data doesn't; issue with strings, lump ordering, DAT header, or alignment";
+	if((result = diff_buffers(original, original_size, repacked, repacked_size, end_context, print_hex_dump_on_failure)) != RA_SUCCESS) {
+		return result;
+	}
 	
 	return RA_SUCCESS;
 }
@@ -333,15 +350,19 @@ static RA_Result diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rh
 	u32 max_size = MAX(lhs_size, rhs_size);
 	
 	u32 diff_offset = UINT32_MAX;
-	for(u32 j = 0; j < min_size; j++) {
-		if(lhs[j] != rhs[j]) {
-			diff_offset = j;
+	for(u32 i = 0; i < min_size; i++) {
+		if(lhs[i] != rhs[i]) {
+			diff_offset = i;
 			break;
 		}
 	}
 	
-	if(lhs_size == rhs_size && diff_offset == UINT32_MAX) {
-		return RA_SUCCESS;
+	if(diff_offset == UINT32_MAX) {
+		if(lhs_size == rhs_size) {
+			return RA_SUCCESS;
+		} else {
+			diff_offset = min_size;
+		}
 	}
 	
 	RA_Result error = RA_FAILURE("%s differs at offset %x", context, diff_offset);

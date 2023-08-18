@@ -60,6 +60,8 @@ add_executable(printlumpcrcs printlumpcrcs.cpp)
 target_link_libraries(printlumpcrcs libra)
 add_executable(brutecrc brutecrc.c)
 target_link_libraries(brutecrc libra)
+add_executable(toc toc.c)
+target_link_libraries(toc libra)
 
 # Set the windows codepage to UTF-8.
 if(WIN32)

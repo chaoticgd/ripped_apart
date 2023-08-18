@@ -24,6 +24,7 @@ typedef struct {
 	s32 asset_type_crc;
 	u32 lump_count;
 	RA_DatLump* lumps;
+	u32 bytes_before_magic;
 } RA_DatFile;
 
 RA_Result RA_dat_parse(RA_DatFile* dat, u8* data, u32 size, u32 bytes_before_magic); // lumps point into file data
@@ -47,6 +48,7 @@ void RA_dat_writer_abort(RA_DatWriter* writer);                                 
 
 typedef enum {
 	RA_ASSET_TYPE_DAG = 0x2a077a51,
+	RA_ASSET_TYPE_TOC = 0x4d7cf320,
 	RA_ASSET_TYPE_MATERIAL = 0xefe35eab,
 	RA_ASSET_TYPE_TEXTURE = 0x8f53a199
 } RA_AssetType;
