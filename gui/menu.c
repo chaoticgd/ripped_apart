@@ -28,7 +28,6 @@ void GUI_menu_begin(f32 menu_width, f32 menu_height) {
 static b8 tab_button(const char* text, ImTextureID texture_id, bool selected) {
 	ImGuiID id = igGetID_Str(text);
 	
-	ImGuiContext* g = GImGui;
 	ImGuiWindow* window = igGetCurrentWindow();
 	if(window->SkipItems)
 		return false;
@@ -48,7 +47,7 @@ static b8 tab_button(const char* text, ImTextureID texture_id, bool selected) {
 	ImVec4 tint_col = {0, 0, 0, 0.f};
 	const ImU32 col = igGetColorU32_Col((held && hovered) ? ImGuiCol_ButtonActive : hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button, 0.f);
 	igRenderNavHighlight(bb, id, ImGuiNavHighlightFlags_None);
-	igRenderFrame(bb.Min, bb.Max, col, true, g->Style.FrameRounding);
+	igRenderFrame(bb.Min, bb.Max, col, true, igGetStyle()->FrameRounding);
 	ImDrawList_AddRectFilled(window->DrawList, bb.Min, bb.Max, bg_col, 4.f, ImDrawFlags_None);
 	ImDrawList_AddImage(window->DrawList, texture_id, bb.Min, bb.Max, uv0, uv1, igGetColorU32_Vec4(tint_col));
 	ImDrawList_AddText_Vec2(window->DrawList, bb.Min, 0xffffffff, text, NULL);
