@@ -76,6 +76,9 @@ if(WIN32)
 	target_sources(dsar PUBLIC ripped_apart.manifest)
 	target_sources(dag PUBLIC ripped_apart.manifest)
 	target_sources(extractall PUBLIC ripped_apart.manifest)
+	target_sources(toc PUBLIC ripped_apart.manifest)
+	target_sources(rebuildtoc PUBLIC ripped_apart.manifest)
+	target_sources(diffdat PUBLIC ripped_apart.manifest)
 endif()
 
 set(RELEASE_FILES
@@ -86,6 +89,9 @@ set(RELEASE_FILES
 	$<TARGET_FILE:dsar>
 	$<TARGET_FILE:dag>
 	$<TARGET_FILE:extractall>
+	$<TARGET_FILE:toc>
+	$<TARGET_FILE:rebuildtoc>
+	$<TARGET_FILE:diffdat>
 )
 set(RELEASE_DOCS_DIRECTORY "${CMAKE_SOURCE_DIR}/docs")
 set(RELEASE_LICENSES_DIRECTORY "${CMAKE_SOURCE_DIR}/licenses")
