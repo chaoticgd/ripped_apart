@@ -187,10 +187,9 @@ static RA_Result read_rcmod(RA_Mod* mod, u8* data, u32 size, const char* archive
 		memcpy(&mod->assets[i].toc.header, data + entry.offset, sizeof(RA_TocAssetHeader));
 		mod->assets[i].toc.location.offset = entry.offset + sizeof(RA_TocAssetHeader);
 		mod->assets[i].toc.location.size = entry.size - sizeof(RA_TocAssetHeader);
+		mod->assets[i].toc.path_hash = entry.hash;
 		mod->assets[i].toc.group = entry.group;
 		entry_offset += RCMOD_DIRENTRY_SIZE_ON_DISK;
-		
-		printf("%" PRIx64 "\n", entry.hash);
 	}
 	
 	RA_string_copy(mod->archive_path, archive_path, sizeof(mod->archive_path));
