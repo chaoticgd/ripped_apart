@@ -9,6 +9,7 @@ Ratchet & Clank: Rift Apart modding stuff.
 **The v1.x releases are not intended for use with the PC version!**
 
 Features currently include:
+- Extract the games files.
 - Install mods from .rcmod files.
 - Convert PS5 textures to .png or .exr files.
 - View 3D model wireframes.

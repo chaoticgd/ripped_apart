@@ -90,10 +90,10 @@ Command line usage:
 
 Library containing common code for parsing and rebuilding the games files, as well as utility code (platform code, memory allocators, etc).
 
-# printlumpcrcs
+### printlumpcrcs
 
 Print out all the lump name CRCs from the files in the specified directory.
 
-# toc
+### toc
 
 A tool for working with the table of contents file.
