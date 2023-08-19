@@ -2,66 +2,77 @@
 
 Ratchet & Clank: Rift Apart modding stuff.
 
+- [Releases](https://github.com/chaoticgd/ripped_apart/releases)
+- [Unstable Builds](https://github.com/chaoticgd/ripped_apart/releases/tag/unstable)
+- [Documentation](docs/README.md)
+
 **The v1.x releases are not intended for use with the PC version!**
 
-## Downloads
+Features currently include:
+- Install mods from .rcmod files.
+- Convert PS5 textures to .png or .exr files.
+- View 3D model wireframes.
+- Many miscellaneous development tools.
 
-See the [Releases](https://github.com/chaoticgd/ripped_apart/releases) page.
+## Building
 
-## superswizzle
+### Linux
 
-**Not for use with the PC version!**
+1.	Install the following dependencies and tools:
+	- git
+	- cmake
+	- g++ 8 or newer
+	- xorg-dev (needed to build GLFW)
+	- zenity
 
-Converts .texture files to .png (or .exr in the case of HDR textures), automatically handling decompression and unswizzling. Can be used by dragging a texture onto the .exe file from within Windows explorer.
+2.	cd into the directory above where you want Ripped Apart to live e.g. `cd ~/programs`.
 
-Supported texture formats:
+2.	Download the source code and additional dependencies using Git:
+	> git clone --recursive https://github.com/chaoticgd/ripped_apart
 
-- BC1
-- BC3 (since v1.3)
-- BC4 (since v1.1)
-- BC5 (since v1.3)
-- BC6 (since v1.4)
-- BC7
-- R8 (since v1.1)
-- R8G8 (since v1.2)
-- R8G8B8A8 (since v1.1)
+3.	cd into the newly created directory:
+	> cd ripped_apart
 
-Command line usage:
-
-	./superswizzle <.texture input path>
-	./superswizzle <.texture input path> <.png output path>
-	./superswizzle <.texture input path> <.stream input path> <.png output path>
-
-## igfile
-
-Prints out metadata about the specified asset or all the assets in a directory.
-
-Command line usage:
-
-	./igfile <input paths>
-
-## dag
-
-A tool for working with dependency DAG files.
-
-## dsar
-
-A tool for working with DSAR archives.
-
-## modeleditor
-
-Very unfinished tool to view model files.
-
-## libra
-
-Library containing some common code such as a DAT1 file parser and texture stuff.
-
-## Building from source
+4.	Build it with cmake:
+	> cmake . -B build/ && cmake --build build/ -j 8
 	
-	git clone https://github.com/chaoticgd/ripped_apart
-	cd ripped_apart
-	cmake -B build/
-	cmake --build build/
+	(in the above example 8 threads are used)
+
+### Windows
+
+1.	Install the following tools:
+	- git
+	- Visual Studio (with desktop C++/cmake support)
+
+2.	Open a Visual Studio developer command prompt.
+
+3.	cd into the directory above where you want Ripped Apart to live e.g. `cd c:\programs`.
+
+4.	Download the source code and dependencies using Git:
+	> git clone --recursive https://github.com/chaoticgd/ripped_apart
+
+5.	cd into the newly created directory:
+	> cd ripped_apart
+
+6.	Generate cmake files:
+	> cmake . -B build/
+	
+	This should generate `ripped_apart.sln` along with a few `.vcxproj` files. 
+	In case no such files are generated, you can explicitly specify usage of the Visual Studio generator by running the following command:
+	> cmake . -G "Visual Studio X YYYY"
+	
+	where `X` is the Visual Studio version and `YYYY` is the Visual Studio year (example: `Visual Studio 16 2019`)
+	A complete list can be obtained by running `cmake --help`.
+
+7.	**(Option A)** Build the project from the command line:
+	
+	> cmake --build build/ --config BUILD_TYPE
+	
+	where `BUILD_TYPE` is one of `Debug` (very slow - not recommended), `Release` (no symbols - not recommended), `RelWithDebInfo` (recommended) or `MinSizeRel`.
+	
+	**(Option B)** Build the project from Visual Studio:
+
+	Open the newly generated `ripped_apart.sln` in Visual Studio. In the Solution Explorer, right-click on `ripped_apart` and click `Set as Startup Project`. You should now be able to build and debug Ripped Apart using the toolbar controls and all Visual Studio features.
 
 Executable files will be written out into the bin directory.
 
