@@ -3,6 +3,7 @@
 
 static void list_archives(const char* input_file);
 static void list_assets(const char* input_file);
+static void lookup(const char* input_file, const char* asset_hash_str);
 static void print_help();
 
 int main(int argc, char** argv) {
@@ -10,6 +11,8 @@ int main(int argc, char** argv) {
 		list_archives(argv[2]);
 	} else if(argc == 3 && strcmp(argv[1], "list_assets") == 0) {
 		list_assets(argv[2]);
+	} else if(argc == 4 && strcmp(argv[1], "lookup") == 0) {
+		lookup(argv[2], argv[3]);
 	} else {
 		print_help();
 		return 1;
@@ -72,10 +75,45 @@ static void list_assets(const char* input_file) {
 	RA_toc_free(&toc, true);
 }
 
+static void lookup(const char* input_file, const char* asset_hash_str) {
+	RA_Result result;
+	
+	u8* data;
+	u32 size;
+	if((result = RA_file_read(input_file, &data, &size)) != RA_SUCCESS) {
+		fprintf(stderr, "Failed to read input file '%s'.\n", input_file);
+		exit(1);
+	}
+	
+	RA_TableOfContents toc;
+	if((result = RA_toc_parse(&toc, data, size)) != RA_SUCCESS) {
+		fprintf(stderr, "Failed to parse TOC file '%s' (%s).\n", input_file, result->message);
+		exit(1);
+	}
+	
+	u64 asset_hash = strtoull(asset_hash_str, NULL, 16);
+	
+	RA_TocAsset* asset = RA_toc_lookup_asset(&toc, asset_hash);
+	if(asset) {
+		printf("Path CRC         Offset   Size     Hdr Ofs  Arch Idx Group\n");
+		printf("========         ======   ====     =======  ======== =====\n");
+		printf("%16" PRIx64 " %8x %8x %8x %8x %8x\n",
+			asset->path_hash,
+			asset->location.offset,
+			asset->location.size,
+			asset->location.header_offset,
+			asset->location.archive_index,
+			asset->group);
+	} else {
+		fprintf(stderr, "No asset with that hash.\n");
+	}
+}
+
 static void print_help() {
 	puts("A utility for working with Insomniac Games Dependency TOC files, such as those used by the PC version of Rift Apart.");
 	puts("");
 	puts("Commands:");
 	puts("  list_archives <input file> --- List all the asset archives.");
-	puts("  list_assets <input file> --- list all the assets.");
+	puts("  list_assets <input file> --- List all the assets.");
+	puts("  lookup <input file> <asset hash> --- List an asset by its hash.");
 }
