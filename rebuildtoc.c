@@ -23,13 +23,13 @@ int main(int argc, char** argv) {
 	
 	if(!RA_file_exists(toc_backup_path)) {
 		u8* backup_data;
-		u32 backup_size;
+		s64 backup_size;
 		if((result = RA_file_read(toc_path, &backup_data, &backup_size)) != RA_SUCCESS) {
 			fprintf(stderr, "error: Failed to read toc file (%s).\n", result->message);
 			return 1;
 		}
 		
-		if((result = RA_file_write(toc_backup_path, backup_data, backup_size)) != RA_SUCCESS) {
+		if((result = RA_file_write(toc_backup_path, backup_data, (u32) backup_size)) != RA_SUCCESS) {
 			fprintf(stderr, "error: Failed to write backup toc file (%s). The table of contents has not been modified.\n", result->message);
 			return 1;
 		}
@@ -38,14 +38,14 @@ int main(int argc, char** argv) {
 	}
 	
 	u8* in_data;
-	u32 in_size;
+	s64 in_size;
 	if((result = RA_file_read(toc_backup_path, &in_data, &in_size)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to read toc file (%s).\n", result->message);
 		return 1;
 	}
 	
 	RA_TableOfContents toc;
-	if((RA_toc_parse(&toc, in_data, in_size)) != RA_SUCCESS) {
+	if((RA_toc_parse(&toc, in_data, (u32) in_size)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to parse toc file (%s). "
 			"Try restoring to the toc.bak file, or delete the toc file and validate files in Steam.\n",
 			result->message);

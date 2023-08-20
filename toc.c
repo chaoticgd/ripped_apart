@@ -27,14 +27,14 @@ static void list_archives(const char* input_file) {
 	RA_Result result;
 	
 	u8* data;
-	u32 size;
+	s64 size;
 	if((result = RA_file_read(input_file, &data, &size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to read input file '%s'.\n", input_file);
 		exit(1);
 	}
 	
 	RA_TableOfContents toc;
-	if((result = RA_toc_parse(&toc, data, size)) != RA_SUCCESS) {
+	if((result = RA_toc_parse(&toc, data, (u32) size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to parse TOC file '%s' (%s).\n", input_file, result->message);
 		exit(1);
 	}
@@ -51,14 +51,14 @@ static void list_assets(const char* input_file) {
 	RA_Result result;
 	
 	u8* data;
-	u32 size;
+	s64 size;
 	if((result = RA_file_read(input_file, &data, &size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to read input file '%s'.\n", input_file);
 		exit(1);
 	}
 	
 	RA_TableOfContents toc;
-	if((result = RA_toc_parse(&toc, data, size)) != RA_SUCCESS) {
+	if((result = RA_toc_parse(&toc, data, (u32) size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to parse TOC file '%s' (%s).\n", input_file, result->message);
 		exit(1);
 	}
@@ -83,14 +83,14 @@ static void lookup(const char* input_file, const char* asset_hash_str, u32 group
 	RA_Result result;
 	
 	u8* data;
-	u32 size;
+	s64 size;
 	if((result = RA_file_read(input_file, &data, &size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to read input file '%s'.\n", input_file);
 		exit(1);
 	}
 	
 	RA_TableOfContents toc;
-	if((result = RA_toc_parse(&toc, data, size)) != RA_SUCCESS) {
+	if((result = RA_toc_parse(&toc, data, (u32) size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to parse TOC file '%s' (%s).\n", input_file, result->message);
 		exit(1);
 	}

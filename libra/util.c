@@ -37,18 +37,14 @@ void RA_file_fix_path(char* path) {
 	}
 }
 
-RA_Result RA_file_read(const char* path, u8** data_dest, u32* size_dest) {
+RA_Result RA_file_read(const char* path, u8** data_dest, s64* size_dest) {
 	FILE* file = fopen(path, "rb");
 	if(file == NULL) {
 		return RA_FAILURE("failed to open file for reading");
 	}
 	
 	s64 size = RA_file_size(file);
-	if(size > 1024 * 1024 * 1024) {
-		fclose(file);
-		return RA_FAILURE("file too large");
-	}
-	*size_dest = (u32) size;
+	*size_dest = size;
 	
 	u8* data = malloc(size);
 	if(data == NULL) {

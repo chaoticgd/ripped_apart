@@ -59,19 +59,19 @@ static RA_Result test_file(const char* path) {
 	
 	printf("%s: ", path);
 	u8* data;
-	u32 size;
+	s64 size;
 	RA_file_read(path, &data, &size);
 	
 	if(size >= 4 && *(u32*) data == FOURCC("1TAD")) {
-		if((result = test_dat_file(data, size)) != RA_SUCCESS) {
+		if((result = test_dat_file(data, (u32) size)) != RA_SUCCESS) {
 			return result;
 		}
 	} else if(size >= 0xc && *(u32*) (data + 0x8) == FOURCC("1TAD")) {
-		if((result = test_toc_file(data, size)) != RA_SUCCESS) {
+		if((result = test_toc_file(data, (u32) size)) != RA_SUCCESS) {
 			return result;
 		}
 	} else if(size >= 0x10 && *(u32*) (data + 0xc) == FOURCC("1TAD")) {
-		if((result = test_dag_file(data, size)) != RA_SUCCESS) {
+		if((result = test_dag_file(data, (u32) size)) != RA_SUCCESS) {
 			return result;
 		}
 	} else {

@@ -19,7 +19,7 @@ ViewParams view;
 f32 gui_to_preview_ratio = 0.5f;
 
 u8* model_file_data;
-u32 model_file_size;
+s64 model_file_size;
 RA_Model model;
 RenderModel render_model;
 RA_Material* materials;
@@ -141,14 +141,14 @@ static void load_model(const char* path, const char* root_asset_dir) {
 			RA_file_fix_path(&material_path[strlen(root_asset_dir)]);
 			
 			u8* material_data;
-			u32 material_size;
+			s64 material_size;
 			if((result = RA_file_read(material_path, &material_data, &material_size)) != RA_SUCCESS) {
 				fprintf(stderr, "error: Failed to read material file '%s' (%s).\n", material_path, result->message);
 				abort();
 			}
 			
 			RA_DatFile dat;
-			if((result = RA_dat_parse(&dat, material_data, material_size, 0)) != RA_SUCCESS) {
+			if((result = RA_dat_parse(&dat, material_data, (u32) material_size, 0)) != RA_SUCCESS) {
 				fprintf(stderr, "error: Failed to parse header for material file '%s' (%s).\n", material_path, result->message);
 				abort();
 			}

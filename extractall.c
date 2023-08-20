@@ -137,13 +137,13 @@ static void parse_dag_and_toc(RA_DependencyDag* dag, RA_TableOfContents* toc, co
 	snprintf(dag_path, RA_MAX_PATH, "%s/dag", game_dir);
 	
 	u8* dag_data;
-	u32 dag_size;
+	s64 dag_size;
 	if((result = RA_file_read(dag_path, &dag_data, &dag_size))) {
 		fprintf(stderr, "error: Failed to read dag file (%s).\n", result->message);
 		exit(1);
 	}
 	
-	if((result = RA_dag_parse(dag, dag_data, dag_size)) != RA_SUCCESS) {
+	if((result = RA_dag_parse(dag, dag_data, (u32) dag_size)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to parse dag file (%s).\n", result->message);
 		exit(1);
 	}
@@ -153,13 +153,13 @@ static void parse_dag_and_toc(RA_DependencyDag* dag, RA_TableOfContents* toc, co
 	snprintf(toc_path, RA_MAX_PATH, "%s/toc", game_dir);
 	
 	u8* toc_data;
-	u32 toc_size;
+	s64 toc_size;
 	if((result = RA_file_read(toc_path, &toc_data, &toc_size)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to read toc file (%s).\n", result->message);
 		exit(1);
 	}
 	
-	if((result = RA_toc_parse(toc, toc_data, toc_size)) != RA_SUCCESS) {
+	if((result = RA_toc_parse(toc, toc_data, (u32) toc_size)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to parse toc file (%s).\n", result->message);
 		exit(1);
 	}

@@ -26,14 +26,14 @@ static void list(const char* input_file) {
 	RA_Result result;
 	
 	u8* data;
-	u32 size;
+	s64 size;
 	if((result = RA_file_read(input_file, &data, &size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to read input file '%s'.\n", input_file);
 		exit(1);
 	}
 	
 	RA_DependencyDag dag;
-	if((result = RA_dag_parse(&dag, data, size)) != RA_SUCCESS) {
+	if((result = RA_dag_parse(&dag, data, (u32) size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to parse DAG file '%s' (%s).\n", input_file, result->message);
 		exit(1);
 	}
@@ -50,14 +50,14 @@ static void deps(const char* input_file) {
 	RA_Result result;
 	
 	u8* data;
-	u32 size;
+	s64 size;
 	if((result = RA_file_read(input_file, &data, &size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to read input file '%s'.\n", input_file);
 		exit(1);
 	}
 	
 	RA_DependencyDag dag;
-	if((result = RA_dag_parse(&dag, data, size)) != RA_SUCCESS) {
+	if((result = RA_dag_parse(&dag, data, (u32) size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to parse DAG file '%s' (%s).\n", input_file, result->message);
 		exit(1);
 	}
@@ -78,14 +78,14 @@ static void lookup(const char* input_file, const char* hash_str) {
 	RA_Result result;
 	
 	u8* data;
-	u32 size;
+	s64 size;
 	if((result = RA_file_read(input_file, &data, &size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to read input file '%s'.\n", input_file);
 		exit(1);
 	}
 	
 	RA_DependencyDag dag;
-	if((result = RA_dag_parse(&dag, data, size)) != RA_SUCCESS) {
+	if((result = RA_dag_parse(&dag, data, (u32) size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to parse DAG file '%s' (%s).\n", input_file, result->message);
 		exit(1);
 	}
@@ -105,14 +105,14 @@ static void rebuild(const char* input_file, const char* output_file) {
 	RA_Result result;
 	
 	u8* in_data;
-	u32 in_size;
+	s64 in_size;
 	if((result = RA_file_read(input_file, &in_data, &in_size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to read input file '%s' (%s).\n", input_file, result->message);
 		exit(1);
 	}
 	
 	RA_DependencyDag dag;
-	if((result = RA_dag_parse(&dag, in_data, in_size)) != RA_SUCCESS) {
+	if((result = RA_dag_parse(&dag, in_data, (u32) in_size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to parse DAG file '%s' (%s).\n", input_file, result->message);
 		exit(1);
 	}

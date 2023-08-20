@@ -30,13 +30,13 @@ int main(int argc, char** argv) {
 	top++;
 	
 	u8* dictionary_data;
-	u32 dictionary_size;
+	s64 dictionary_size;
 	if((result = RA_file_read(dictionary_path, &dictionary_data, &dictionary_size)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Cannot open dictionary file '%s' (%s).\n", dictionary_path, result->message);
 		return 1;
 	}
 	
-	char** dictionary = build_dictionary_index(dictionary_data, dictionary_size);
+	char** dictionary = build_dictionary_index(dictionary_data, (u32) dictionary_size);
 	
 	u32 word_count = 0;
 	for(s32 i = 0; dictionary[i] != NULL; i++) {

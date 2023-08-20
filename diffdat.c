@@ -10,14 +10,14 @@ int main(int argc, char** argv) {
 	}
 	
 	u8* lhs_data;
-	u32 lhs_size;
+	s64 lhs_size;
 	if((result = RA_file_read(argv[1], &lhs_data, &lhs_size)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to read left file (%s).\n", result->message);
 		return 1;
 	}
 	
 	u8* rhs_data;
-	u32 rhs_size;
+	s64 rhs_size;
 	if((result = RA_file_read(argv[2], &rhs_data, &rhs_size)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to read right file (%s).\n", result->message);
 		return 1;
@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
 		rhs_size -= bytes_before_header;
 	}
 	
-	if((result = RA_dat_test(lhs_data, lhs_size, rhs_data, rhs_size, true)) != RA_SUCCESS) {
+	if((result = RA_dat_test(lhs_data, lhs_size, rhs_data, (u32) rhs_size, true)) != RA_SUCCESS) {
 		fprintf(stderr, "%s\n", result->message);
 	}
 }
