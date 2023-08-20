@@ -118,7 +118,7 @@ static void rebuild(const char* input_file, const char* output_file) {
 	}
 	
 	u8* out_data;
-	u32 out_size;
+	s64 out_size;
 	if((result = RA_dag_build(&dag, &out_data, &out_size)) != RA_SUCCESS) {
 		fprintf(stderr, "Failed to rebuild DAG file '%s' (%s).\n", output_file, result->message);
 		exit(1);

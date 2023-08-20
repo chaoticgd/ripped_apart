@@ -111,12 +111,12 @@ static RA_Result test_toc_file(u8* data, u32 size) {
 	}
 	
 	u8* out_data;
-	u32 out_size;
+	s64 out_size;
 	if((result = RA_toc_build(&toc, &out_data, &out_size)) != RA_SUCCESS) {
 		return result;
 	}
 	
-	if((result = RA_dat_test(data + 0x8, size - 0x8, out_data + 0x8, out_size - 0x8, true)) != RA_SUCCESS) {
+	if((result = RA_dat_test(data + 0x8, size - 0x8, out_data + 0x8, (u32) out_size - 0x8, true)) != RA_SUCCESS) {
 		RA_file_write("/tmp/test_toc", out_data, out_size);
 		return result;
 	}
@@ -133,12 +133,12 @@ static RA_Result test_dag_file(u8* data, u32 size) {
 	}
 	
 	u8* out_data;
-	u32 out_size;
+	s64 out_size;
 	if((result = RA_dag_build(&dag, &out_data, &out_size)) != RA_SUCCESS) {
 		return result;
 	}
 	
-	if((result = RA_dat_test(data + 0xc, size - 0xc, out_data + 0xc, out_size - 0xc, true)) != RA_SUCCESS) {
+	if((result = RA_dat_test(data + 0xc, size - 0xc, out_data + 0xc, (u32) out_size - 0xc, true)) != RA_SUCCESS) {
 		return result;
 	}
 	

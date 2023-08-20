@@ -50,7 +50,6 @@ int main(int argc, char** argv) {
 	}
 }
 
-static int sort_crc(const void* lhs, const void* rhs) { return ((RA_DatLump*) lhs)->type_crc > ((RA_DatLump*) rhs)->type_crc; }
 static int sort_offset(const void* lhs, const void* rhs) { return ((RA_DatLump*) lhs)->offset > ((RA_DatLump*) rhs)->offset; }
 static int sort_size(const void* lhs, const void* rhs) { return ((RA_DatLump*) lhs)->size > ((RA_DatLump*) rhs)->size; }
 

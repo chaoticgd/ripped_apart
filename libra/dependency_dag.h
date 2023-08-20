@@ -29,7 +29,7 @@ typedef struct {
 } RA_DependencyDag;
 
 RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size);
-RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, u32* size_dest);
+RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, s64* size_dest);
 void RA_dag_free(RA_DependencyDag* dag, b8 free_file_data);
 
 RA_DependencyDagAsset* RA_dag_lookup_asset(RA_DependencyDag* dag, u64 name_crc);

@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
 	}
 	
 	u8* out_data;
-	u32 out_size;
+	s64 out_size;
 	if((result = RA_toc_build(&toc, &out_data, &out_size)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to build toc (%s). The table of contents has not been modified.\n", result->message);
 		return 1;

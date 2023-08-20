@@ -2,8 +2,6 @@
 
 #include "dat_container.h"
 
-static RA_Result alloc_assets(RA_DependencyDag* dag, u32 asset_count);
-
 RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size) {
 	RA_Result result;
 	const char* error;
@@ -100,7 +98,7 @@ fail:
 	return RA_FAILURE(error);
 }
 
-RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, u32* size_dest) {
+RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, s64* size_dest) {
 	RA_DatWriter* writer = RA_dat_writer_begin(RA_ASSET_TYPE_DAG, 0xc);
 	
 	u32 dependency_count = 0;

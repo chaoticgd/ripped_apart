@@ -126,7 +126,7 @@ static int compare_toc_assets(const void* lhs, const void* rhs) {
 	}
 }
 
-RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, u32* size_dest) {
+RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) {
 	qsort(toc->assets, toc->asset_count, sizeof(RA_TocAsset), compare_toc_assets);
 	
 	RA_DatWriter* writer = RA_dat_writer_begin(RA_ASSET_TYPE_TOC, 0x8);

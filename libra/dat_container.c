@@ -226,7 +226,7 @@ static int compare_lumps(const void* lhs, const void* rhs) {
 	return ((LumpHeader*) lhs)->type_crc > ((LumpHeader*) rhs)->type_crc;
 }
 
-void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, u32* size_dest) {
+void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, s64* size_dest) {
 	if(writer->prologue_size % 0x10 != 0) {
 		u32 padding_size = 0x10 - (writer->prologue_size - writer->bytes_before_magic) % 0x10;
 		RA_arena_alloc_aligned(&writer->prologue, padding_size, 1);

@@ -41,7 +41,7 @@ typedef struct t_RA_DatWriter RA_DatWriter;
 RA_DatWriter* RA_dat_writer_begin(u32 asset_type_crc, u32 bytes_before_magic);   // Begin writing. Call this first.
 void* RA_dat_writer_lump(RA_DatWriter* writer, u32 type_crc, s64 size);          // Allocate memory for a lump. Call this second.
 u32 RA_dat_writer_string(RA_DatWriter* writer, const char* string);              // Allocate a string. Call this third.
-void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, u32* size_dest); // Finish writing, generate the output.
+void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, s64* size_dest); // Finish writing, generate the output.
 void RA_dat_writer_abort(RA_DatWriter* writer);                                  // Finish writing, don't generate any output.
 
 // Lump type information
