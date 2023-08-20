@@ -59,6 +59,14 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	
+	for(u32 i = 0; i < mod_count; i++) {
+		if(mods[i].name) {
+			printf("Loaded mod: %s\n", mods[i].name);
+		} else {
+			printf("Loaded mod: %s\n", mods[i].archive_path);
+		}
+	}
+	
 	if((result = RA_mod_list_rebuild_toc(mods, mod_count, &toc)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to install mods (%s). The table of contents has not been modified.\n", result->message);
 		return 1;

@@ -10,3 +10,12 @@
 [submodule "thirdparty/libdeflate"]
 	path = thirdparty/libdeflate
 	url = https://github.com/NVIDIA/libdeflate
+[submodule "thirdparty/libzip"]
+	path = thirdparty/libzip
+	url = https://github.com/nih-at/libzip
+[submodule "thirdparty/zlib"]
+	path = thirdparty/zlib
+	url = https://github.com/madler/zlib
+[submodule "thirdparty/jansson"]
+	path = thirdparty/jansson
+	url = https://github.com/akheron/jansson

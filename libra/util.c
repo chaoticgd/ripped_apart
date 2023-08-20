@@ -12,9 +12,14 @@ RA_Result RA_failure(int line, const char* format, ...) {
 	static char message[16 * 1024];
 	vsnprintf(message, 16 * 1024, format, args);
 	
+	// Copy it just in case one of the variadic arguments is a pointer to the
+	// last error message.
+	static char message_copy[16 * 1024];
+	RA_string_copy(message_copy, message, sizeof(message_copy));
+	
 	static RA_Error error;
 	memset(&error, 0, sizeof(RA_Error));
-	error.message = message;
+	error.message = message_copy;
 	error.line = line;
 	
 	va_end(args);
@@ -37,7 +42,6 @@ RA_Result RA_file_read(const char* path, u8** data_dest, u32* size_dest) {
 	if(file == NULL) {
 		return RA_FAILURE("failed to open file for reading");
 	}
-	
 	
 	s64 size = RA_file_size(file);
 	if(size > 1024 * 1024 * 1024) {

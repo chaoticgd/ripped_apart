@@ -26,4 +26,4 @@ add_library(libra STATIC
 	string_list.c
 	string_list.h
 )
-target_link_libraries(libra crc lz4_static GDeflate)
+target_link_libraries(libra crc lz4_static GDeflate zip jansson)

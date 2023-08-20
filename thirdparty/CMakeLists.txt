@@ -42,3 +42,46 @@ set_target_properties(cimgui PROPERTIES PREFIX "")
 target_link_libraries(cimgui glfw ${IMGUI_LIBRARIES})
 
 add_subdirectory(gdeflate)
+
+# zlib
+set(SKIP_INSTALL_ALL ON)
+add_subdirectory(zlib)
+include_directories(zlib)
+include_directories(${CMAKE_BINARY_DIR}/thirdparty/zlib)
+set(ZLIB_FOUND TRUE)
+set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/zlib ${CMAKE_BINARY_DIR}/thirdparty/zlib)
+# ZLIB_INCLUDE_DIRS is used by genout.cmake.in from libpng.
+set(ZLIB_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/thirdparty/zlib ${CMAKE_BINARY_DIR}/thirdparty/zlib)
+if(WIN32)
+	# ZLIB_LIBRARY is used by libzip and must be set at configuration time hence
+	# we copy the library file into a fixed location.
+	add_custom_target(copy_zlib_lib_hack
+		COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:zlibstatic>" "${CMAKE_CURRENT_BINARY_DIR}/zlib.lib"
+		BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/zlib.lib"
+	)
+	set(ZLIB_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/zlib.lib")
+endif()
+
+# libzip
+set(LIBZIP_DO_INSTALL OFF CACHE BOOL "")
+set(ENABLE_COMMONCRYPTO OFF CACHE BOOL "")
+set(ENABLE_GNUTLS OFF CACHE BOOL "")
+set(ENABLE_MBEDTLS OFF CACHE BOOL "")
+set(ENABLE_WINDOWS_CRYPTO OFF CACHE BOOL "")
+set(ENABLE_OPENSSL OFF CACHE BOOL "")
+set(ENABLE_BZIP2 OFF CACHE BOOL "")
+set(ENABLE_LZMA OFF CACHE BOOL "")
+set(ENABLE_ZSTD OFF CACHE BOOL "")
+set(BUILD_TOOLS OFF CACHE BOOL "")
+set(BUILD_REGRESS OFF CACHE BOOL "")
+set(BUILD_EXAMPLES OFF CACHE BOOL "")
+set(BUILD_DOC OFF CACHE BOOL "")
+add_subdirectory(libzip)
+if(WIN32)
+	add_dependencies(zip copy_zlib_lib_hack)
+endif()
+
+# jansson
+add_subdirectory(jansson)
+target_include_directories(jansson PUBLIC ${CMAKE_SOURCE_DIR}/thirdparty/jansson/src)
+target_include_directories(jansson PUBLIC ${CMAKE_BINARY_DIR}/thirdparty/jansson/include)
