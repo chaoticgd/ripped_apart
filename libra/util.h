@@ -58,7 +58,7 @@ RA_Result RA_failure(int line, const char* format, ...);
 
 void RA_file_fix_path(char* path);
 RA_Result RA_file_read(const char* path, u8** data_dest, s64* size_dest);
-RA_Result RA_file_write(const char* path, u8* data, u32 size);
+RA_Result RA_file_write(const char* path, u8* data, s64 size);
 s64 RA_file_size(FILE* file);
 RA_Result RA_make_dirs(const char* file_path);
 

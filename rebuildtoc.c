@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 		
-		if((result = RA_file_write(toc_backup_path, backup_data, (u32) backup_size)) != RA_SUCCESS) {
+		if((result = RA_file_write(toc_backup_path, backup_data, backup_size)) != RA_SUCCESS) {
 			fprintf(stderr, "error: Failed to write backup toc file (%s). The table of contents has not been modified.\n", result->message);
 			return 1;
 		}

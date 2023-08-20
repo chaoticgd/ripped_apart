@@ -63,7 +63,7 @@ RA_Result RA_file_read(const char* path, u8** data_dest, s64* size_dest) {
 	return RA_SUCCESS;
 }
 
-RA_Result RA_file_write(const char* path, u8* data, u32 size) {
+RA_Result RA_file_write(const char* path, u8* data, s64 size) {
 	FILE* file = fopen(path, "wb");
 	if(file == NULL) {
 		return RA_FAILURE("fopen");
