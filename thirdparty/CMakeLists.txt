@@ -83,5 +83,3 @@ endif()
 
 # jansson
 add_subdirectory(jansson)
-target_include_directories(jansson PUBLIC ${CMAKE_SOURCE_DIR}/thirdparty/jansson/src)
-target_include_directories(jansson PUBLIC ${CMAKE_BINARY_DIR}/thirdparty/jansson/include)
