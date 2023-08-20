@@ -11,6 +11,7 @@ static RA_Result test_dat_file(u8* data, u32 size);
 static RA_Result test_toc_file(u8* data, u32 size);
 static RA_Result test_dag_file(u8* data, u32 size);
 static RA_Result test_material_file(RA_DatFile* dat);
+static RA_Result test_toc_lookup_asset();
 
 int main(int argc, const char** argv) {
 	RA_Result result;
@@ -43,6 +44,13 @@ int main(int argc, const char** argv) {
 				printf("%s\n", result->message);
 			}
 		}
+	}
+	
+	printf("RA_toc_lookup_asset: ");
+	if((result = test_toc_lookup_asset()) == RA_SUCCESS) {
+		printf("success\n");
+	} else {
+		printf("%s\n", result->message);
 	}
 }
 
@@ -141,5 +149,37 @@ static RA_Result test_material_file(RA_DatFile* dat) {
 	//RA_Material material;
 	//RA_material_parse(&material, dat);
 	printf("todo\n");
+	return RA_SUCCESS;
+}
+
+static RA_Result test_toc_lookup_asset() {
+	RA_TocAsset assets[5];
+	assets[0].group = 0;
+	assets[0].path_hash = 123;
+	assets[1].group = 1;
+	assets[1].path_hash = 1;
+	assets[2].group = 1;
+	assets[2].path_hash = 123;
+	assets[3].group = 2;
+	assets[3].path_hash = 1234;
+	assets[4].group = 2;
+	assets[4].path_hash = 12345;
+	
+	if(RA_toc_lookup_asset(assets, ARRAY_SIZE(assets), 321, 1) != NULL) {
+		return RA_FAILURE("1");
+	}
+	
+	if(RA_toc_lookup_asset(assets, ARRAY_SIZE(assets), 1, 1) != &assets[1]) {
+		return RA_FAILURE("2");
+	}
+	
+	if(RA_toc_lookup_asset(assets, ARRAY_SIZE(assets), 1234, 2) != &assets[3]) {
+		return RA_FAILURE("3");
+	}
+	
+	if(RA_toc_lookup_asset(assets, ARRAY_SIZE(assets), 12345, 2) != &assets[4]) {
+		return RA_FAILURE("4");
+	}
+	
 	return RA_SUCCESS;
 }

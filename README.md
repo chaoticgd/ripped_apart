@@ -22,7 +22,7 @@ Features currently include:
 1.	Install the following dependencies and tools:
 	- git
 	- cmake
-	- g++ 8 or newer
+	- g++
 	- xorg-dev (needed to build GLFW)
 	- zenity
 

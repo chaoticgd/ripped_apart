@@ -65,6 +65,6 @@ typedef struct {
 RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size);
 RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, u32* size_dest);
 void RA_toc_free(RA_TableOfContents* toc, ShouldFreeFileData free_file_data);
-RA_TocAsset* RA_toc_lookup_asset(RA_TableOfContents* toc, u64 path_hash);
+RA_TocAsset* RA_toc_lookup_asset(RA_TocAsset* assets, u32 asset_count, u64 path_hash, u32 group);
 
 #endif

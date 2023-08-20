@@ -57,22 +57,24 @@ RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContent
 	}
 	memcpy(new_assets, toc->assets, toc->asset_count * sizeof(RA_TocAsset));
 	memset(new_assets + toc->asset_count, 0, (max_asset_count - toc->asset_count) * sizeof(RA_TocAsset));
+	
+	u32 old_asset_count = toc->asset_count;
 	toc->assets = new_assets;
-	RA_TocAsset* next_asset = toc->assets + toc->asset_count;
 	
 	for(u32 i = 0; i < mod_count; i++) {
 		if(mods[i].initialised) {
 			for(u32 j = 0; j < mods[i].asset_count; j++) {
 				RA_ModAsset* mod_asset = &mods[i].assets[j];
-				RA_TocAsset* toc_asset = RA_toc_lookup_asset(toc, mod_asset->toc.path_hash);
+				RA_TocAsset* toc_asset = RA_toc_lookup_asset(toc->assets, old_asset_count, mod_asset->toc.path_hash, mod_asset->toc.group);
 				if(toc_asset) {
 					*toc_asset = mod_asset->toc;
 					toc_asset->location.archive_index = old_archive_count + i;
 				} else {
-					*next_asset = mod_asset->toc;
-					next_asset->location.archive_index = old_archive_count + i;
-					next_asset++;
+					toc_asset = &toc->assets[toc->asset_count];
+					toc->asset_count++;
 				}
+				*toc_asset = mod_asset->toc;
+				toc_asset->location.archive_index = old_archive_count + i;
 			}
 		}
 	}

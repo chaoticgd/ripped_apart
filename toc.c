@@ -3,7 +3,7 @@
 
 static void list_archives(const char* input_file);
 static void list_assets(const char* input_file);
-static void lookup(const char* input_file, const char* asset_hash_str);
+static void lookup(const char* input_file, const char* asset_hash_str, u32 group);
 static void print_help();
 
 int main(int argc, char** argv) {
@@ -11,8 +11,12 @@ int main(int argc, char** argv) {
 		list_archives(argv[2]);
 	} else if(argc == 3 && strcmp(argv[1], "list_assets") == 0) {
 		list_assets(argv[2]);
-	} else if(argc == 4 && strcmp(argv[1], "lookup") == 0) {
-		lookup(argv[2], argv[3]);
+	} else if((argc == 4 || argc == 5) && strcmp(argv[1], "lookup") == 0) {
+		if(argc == 5) {
+			lookup(argv[2], argv[3], (u32) strtoll(argv[4], NULL, 10));
+		} else {
+			lookup(argv[2], argv[3], 0);
+		}
 	} else {
 		print_help();
 		return 1;
@@ -75,7 +79,7 @@ static void list_assets(const char* input_file) {
 	RA_toc_free(&toc, true);
 }
 
-static void lookup(const char* input_file, const char* asset_hash_str) {
+static void lookup(const char* input_file, const char* asset_hash_str, u32 group) {
 	RA_Result result;
 	
 	u8* data;
@@ -93,7 +97,7 @@ static void lookup(const char* input_file, const char* asset_hash_str) {
 	
 	u64 asset_hash = strtoull(asset_hash_str, NULL, 16);
 	
-	RA_TocAsset* asset = RA_toc_lookup_asset(&toc, asset_hash);
+	RA_TocAsset* asset = RA_toc_lookup_asset(toc.assets, toc.asset_count, asset_hash, group);
 	if(asset) {
 		printf("Path CRC         Offset   Size     Hdr Ofs  Arch Idx Group\n");
 		printf("========         ======   ====     =======  ======== =====\n");
@@ -110,10 +114,10 @@ static void lookup(const char* input_file, const char* asset_hash_str) {
 }
 
 static void print_help() {
-	puts("A utility for working with Insomniac Games Dependency TOC files, such as those used by the PC version of Rift Apart.");
+	puts("A utility for working with Insomniac Games Archive TOC files, such as those used by the PC version of Rift Apart.");
 	puts("");
 	puts("Commands:");
 	puts("  list_archives <input file> --- List all the asset archives.");
 	puts("  list_assets <input file> --- List all the assets.");
-	puts("  lookup <input file> <asset hash> --- List an asset by its hash.");
+	puts("  lookup <input file> <asset hash> [group index] --- List an asset by its hash.");
 }

@@ -221,17 +221,65 @@ void RA_toc_free(RA_TableOfContents* toc, ShouldFreeFileData free_file_data) {
 	}
 }
 
-RA_TocAsset* RA_toc_lookup_asset(RA_TableOfContents* toc, u64 path_hash) {
-	if(toc->asset_count == 0) {
+RA_TocAsset* RA_toc_lookup_asset(RA_TocAsset* assets, u32 asset_count, u64 path_hash, u32 group) {
+	s64 first;
+	s64 last;
+	s64 mid;
+	s64 range_begin = -1;
+	s64 range_end = -1;
+	RA_TocAsset* asset;
+	
+	// Find the first asset of the specified group.
+	first = 0;
+	last = (s64) asset_count - 1;
+	while(first <= last) {
+		mid = (first + last) / 2;
+		asset = &assets[mid];
+		if(asset->group < group) {
+			first = mid + 1;
+		} else if(asset->group > group) {
+			last = mid - 1;
+		} else if(mid == 0 || assets[mid - 1].group < group) {
+			range_begin = mid;
+			break;
+		} else {
+			last = mid - 1;
+		}
+	}
+	
+	if(range_begin == -1) {
 		return NULL;
 	}
 	
-	s64 first = 0;
-	s64 last = toc->asset_count - 1;
+	// Find the last asset of the specified group.
+	first = 0;
+	last = (s64) asset_count - 1;
+	while(first <= last) {
+		mid = (first + last) / 2;
+		asset = &assets[mid];
+		if(asset->group < group) {
+			first = mid + 1;
+		} else if(asset->group > group) {
+			last = mid - 1;
+		} else if(mid >= asset_count - 1 || assets[mid + 1].group > group) {
+			range_end = mid;
+			break;
+		} else {
+			first = mid + 1;
+		}
+	}
+	
+	if(range_end == -1) {
+		return NULL;
+	}
+	
+	// Find the asset from that range.
+	first = range_begin;
+	last = range_end;
 	
 	while(first <= last) {
-		s64 mid = (first + last) / 2;
-		RA_TocAsset* asset = &toc->assets[mid];
+		mid = (first + last) / 2;
+		asset = &assets[mid];
 		if(asset->path_hash < path_hash) {
 			first = mid + 1;
 		} else if(asset->path_hash > path_hash) {
