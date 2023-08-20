@@ -210,7 +210,7 @@ static RA_Result parse_stage_info(RA_Mod* mod, RA_StringList* headerless, zip_t*
 	
 	zip_stat_t stat;
 	if(zip_stat(in_archive, "info.json", 0, &stat) != 0 || !(stat.valid & ZIP_STAT_NAME) || !(stat.valid & ZIP_STAT_SIZE)) {
-		return RA_FAILURE("cannot stat entry %d", index);
+		return RA_FAILURE("cannot stat file info.json");
 	}
 	
 	zip_file_t* info_file = zip_fopen_index(in_archive, stat.index, 0);
