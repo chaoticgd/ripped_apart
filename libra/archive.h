@@ -41,6 +41,7 @@ typedef struct {
 
 RA_Result RA_archive_open(RA_Archive* archive, const char* path);
 RA_Result RA_archive_close(RA_Archive* archive);
+s64 RA_archive_get_decompressed_size(RA_Archive* archive);
 RA_Result RA_archive_read(RA_Archive* archive, u32 offset, u32 size, u8* data_dest);
 
 #endif

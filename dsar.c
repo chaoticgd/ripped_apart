@@ -3,11 +3,14 @@
 #include <lz4.h>
 
 static void ls(const char* path);
+static void decompress(const char* input_path, const char* output_path);
 static void print_help();
 
 int main(int argc, char** argv) {
 	if(argc == 3 && strcmp(argv[1], "list") == 0) {
 		ls(argv[2]);
+	} else if(argc == 4 && strcmp(argv[1], "decompress") == 0) {
+		decompress(argv[2], argv[3]);
 	} else {
 		print_help();
 		return 1;
@@ -19,7 +22,7 @@ static void ls(const char* path) {
 	
 	RA_Archive archive;
 	if((result = RA_archive_open(&archive, path)) != RA_SUCCESS) {
-		fprintf(stderr, "Failed to parse archive file '%s' (%s).\n", path, result->message);
+		fprintf(stderr, "Failed to load archive file '%s' (%s).\n", path, result->message);
 		exit(1);
 	}
 	
@@ -41,9 +44,50 @@ static void ls(const char* path) {
 	RA_archive_close(&archive);
 }
 
+static void decompress(const char* input_path, const char* output_path) {
+	RA_Result result;
+	
+	RA_Archive archive;
+	if((result = RA_archive_open(&archive, input_path)) != RA_SUCCESS) {
+		fprintf(stderr, "Failed to load archive file '%s' (%s).\n", input_path, result->message);
+		exit(1);
+	}
+	
+	if(!archive.is_dsar_archive) {
+		fprintf(stderr, "error: Input file in not a dsar archive.\n");
+		exit(1);
+	}
+	
+	s64 size = RA_archive_get_decompressed_size(&archive);
+	if(size == -1) {
+		fprintf(stderr, "error: Failed to determine decompressed size.\n");
+		exit(1);
+	}
+	
+	u8* data = malloc(size);
+	if(data == NULL) {
+		fprintf(stderr, "error: Failed to allocate memory for decompressed data.\n");
+		exit(1);
+	}
+	
+	if((result = RA_archive_read(&archive, 0, size, data)) != RA_SUCCESS) {
+		fprintf(stderr, "error: Failed to decompress data (%s).\n", result->message);
+		exit(1);
+	}
+
+	if((result = RA_file_write(output_path, data, size)) != RA_SUCCESS) {
+		fprintf(stderr, "error: Failed to write output file '%s' (%s).\n", output_path, result->message);
+		exit(1);
+	}
+	
+	free(data);
+	RA_archive_close(&archive);
+}
+
 static void print_help() {
 	puts("A utility for working with DSAR archives, such as those used by the PC version of Rift Apart.");
 	puts("");
 	puts("Commands:");
 	puts("  list <input file>");
+	puts("  decompress <input file> <output file>");
 }

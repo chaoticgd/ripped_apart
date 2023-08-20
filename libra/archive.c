@@ -52,6 +52,19 @@ RA_Result RA_archive_close(RA_Archive* archive) {
 	return RA_SUCCESS;
 }
 
+s64 RA_archive_get_decompressed_size(RA_Archive* archive) {
+	if(archive->is_dsar_archive) {
+		if(archive->dsar_block_count == 0) {
+			return 0;
+		} else {
+			RA_ArchiveBlock* block = &archive->dsar_blocks[archive->dsar_block_count - 1];
+			return block->header.decompressed_offset + block->header.decompressed_size;
+		}
+	} else {
+		return RA_file_size(archive->file);
+	}
+}
+
 RA_Result RA_archive_read(RA_Archive* archive, u32 offset, u32 size, u8* data_dest) {
 	RA_Result result;
 	

@@ -38,9 +38,8 @@ RA_Result RA_file_read(const char* path, u8** data_dest, u32* size_dest) {
 		return RA_FAILURE("failed to open file for reading");
 	}
 	
-	fseek(file, 0, SEEK_END);
-	long size = ftell(file);
-	fseek(file, 0, SEEK_SET);
+	
+	s64 size = RA_file_size(file);
 	if(size > 1024 * 1024 * 1024) {
 		fclose(file);
 		return RA_FAILURE("file too large");
@@ -69,13 +68,31 @@ RA_Result RA_file_write(const char* path, u8* data, u32 size) {
 	if(file == NULL) {
 		return RA_FAILURE("fopen");
 	}
-	if(fwrite(data, size, 1, file) != 1) {
+	if(size == 0 || fwrite(data, size, 1, file) != 1) {
 		fclose(file);
 		return RA_FAILURE("fwrite");
 	}
 	fclose(file);
 	printf("File written: %s\n", path);
 	return RA_SUCCESS;
+}
+
+s64 RA_file_size(FILE* file) {
+	long old_offset = ftell(file);
+	if(old_offset == -1) {
+		return -1;
+	}
+	if(fseek(file, 0, SEEK_END) != 0) {
+		return -1;
+	}
+	long size = ftell(file);
+	if(size == -1) {
+		return size;
+	}
+	if(fseek(file, old_offset, SEEK_SET) != 0) {
+		return -1;
+	}
+	return (s64) size;
 }
 
 RA_Result RA_make_dirs(const char* file_path) {
