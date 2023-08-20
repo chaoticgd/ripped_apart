@@ -84,7 +84,9 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	
+	free(out_data);
 	RA_mod_list_free(mods, mod_count);
+	RA_toc_free(&toc, FREE_FILE_DATA);
 }
 
 static void print_help() {
