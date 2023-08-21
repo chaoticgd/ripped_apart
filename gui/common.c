@@ -146,7 +146,7 @@ static void setup_style(ImGuiStyle* dst) {
 	
 	ImFontConfig font_cfg;
 	memset(&font_cfg, 0, sizeof(ImFontConfig));
-	font_cfg.FontDataOwnedByAtlas = true;
+	font_cfg.FontDataOwnedByAtlas = false;
 	font_cfg.OversampleH = 3;
 	font_cfg.OversampleV = 1;
 	font_cfg.GlyphMaxAdvanceX = FLT_MAX;
