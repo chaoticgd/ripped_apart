@@ -50,9 +50,12 @@ RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContent
 	toc->archives = new_archives;
 	toc->archive_count += mod_count;
 	
+	u32 archive_index = old_archive_count;
 	for(u32 i = 0; i < mod_count; i++) {
-		RA_TocArchive* archive = &toc->archives[old_archive_count + i];
-		RA_string_copy(archive->data, mods[i].archive_path, sizeof(archive->data));
+		if(mods[i].initialised && mods[i].enabled) {
+			RA_TocArchive* archive = &toc->archives[old_archive_count + archive_index++];
+			RA_string_copy(archive->data, mods[i].archive_path, sizeof(archive->data));
+		}
 	}
 	
 	// Add assets.
@@ -77,6 +80,7 @@ RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContent
 		*mod_count_dest = 0;
 	}
 	
+	archive_index = old_archive_count;
 	for(u32 i = 0; i < mod_count; i++) {
 		if(mods[i].initialised && mods[i].enabled) {
 			for(u32 j = 0; j < mods[i].asset_count; j++) {
