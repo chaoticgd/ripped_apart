@@ -25,8 +25,10 @@ RA_Result RA_mod_list_load(RA_Mod** mods_dest, u32* mod_count_dest, const char* 
 	
 	for(u32 i = 0; i < file_names.count; i++) {
 		if((result = RA_mod_read(&mods[i], game_dir, file_names.strings[i])) != RA_SUCCESS) {
-			RA_string_list_destroy(&file_names);
-			return RA_FAILURE("%s for mod %s", result->message, file_names.strings[i]);
+			if(strcmp(result->message, "unsupported format") != 0) {
+				RA_string_list_destroy(&file_names);
+				return RA_FAILURE("%s for mod %s", result->message, file_names.strings[i]);
+			}
 		}
 	}
 	
@@ -119,13 +121,14 @@ static RA_Result parse_rcmod(RA_Mod* mod, const char* game_dir, const char* mod_
 
 RA_Result RA_mod_read(RA_Mod* mod, const char* game_dir, const char* mod_file_name) {
 	const char* extension = strrchr(mod_file_name, '.');
-	
-	if(strcmp(extension, ".stage") == 0) {
-		return parse_stage(mod, game_dir, mod_file_name);
-	}
-	
-	if(strcmp(extension, ".rcmod") == 0) {
-		return parse_rcmod(mod, game_dir, mod_file_name);
+	if(extension != NULL) {
+		if(strcmp(extension, ".stage") == 0) {
+			return parse_stage(mod, game_dir, mod_file_name);
+		}
+		
+		if(strcmp(extension, ".rcmod") == 0) {
+			return parse_rcmod(mod, game_dir, mod_file_name);
+		}
 	}
 	
 	return RA_FAILURE("unsupported format");
