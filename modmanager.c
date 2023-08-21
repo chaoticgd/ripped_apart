@@ -182,7 +182,7 @@ static void mod_list() {
 		for(u32 i = 0; i < mod_count; i++) {
 			RA_Mod* mod = &mods[i];
 			
-			if(mod->initialised && RA_string_find_substring_no_case(mod->file_name, filter)) {
+			if(RA_string_find_substring_no_case(mod->file_name, filter)) {
 				igPushID_Int(i);
 				igTableNextRow(ImGuiTableFlags_None, 0.f);
 				igTableNextColumn();

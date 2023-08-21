@@ -23,9 +23,10 @@ RA_Result RA_mod_list_load(RA_Mod** mods_dest, u32* mod_count_dest, const char* 
 		return RA_FAILURE("failed to allocate mod list");
 	}
 	
+	u32 mod_count = 0;
 	for(u32 i = 0; i < file_names.count; i++) {
-		if((result = RA_mod_read(&mods[i], game_dir, file_names.strings[i])) == RA_SUCCESS) {
-			
+		if((result = RA_mod_read(&mods[mod_count], game_dir, file_names.strings[i])) == RA_SUCCESS) {
+			mod_count++;
 		} else {
 			if(strcmp(result->message, "unsupported format") != 0) {
 				error_func(file_names.strings[i], result);
@@ -34,7 +35,7 @@ RA_Result RA_mod_list_load(RA_Mod** mods_dest, u32* mod_count_dest, const char* 
 	}
 	
 	*mods_dest = mods;
-	*mod_count_dest = file_names.count;
+	*mod_count_dest = mod_count;
 	
 	RA_string_list_destroy(&file_names);
 	return RA_SUCCESS;
@@ -53,7 +54,7 @@ RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContent
 	toc->archives = new_archives;
 	
 	for(u32 i = 0; i < mod_count; i++) {
-		if(mods[i].initialised && mods[i].enabled) {
+		if(mods[i].enabled) {
 			RA_TocArchive* archive = &toc->archives[toc->archive_count];
 			RA_string_copy(archive->data, mods[i].archive_path, sizeof(archive->data));
 			toc->archive_count++;
@@ -63,7 +64,7 @@ RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContent
 	// Add assets.
 	u32 max_asset_count = toc->asset_count;
 	for(u32 i = 0; i < mod_count; i++) {
-		if(mods[i].initialised && mods[i].enabled) {
+		if(mods[i].enabled) {
 			max_asset_count += mods[i].asset_count;
 		}
 	}
@@ -84,7 +85,7 @@ RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContent
 	
 	u32 archive_index = old_archive_count;
 	for(u32 i = 0; i < mod_count; i++) {
-		if(mods[i].initialised && mods[i].enabled) {
+		if(mods[i].enabled) {
 			for(u32 j = 0; j < mods[i].asset_count; j++) {
 				RA_ModAsset* mod_asset = &mods[i].assets[j];
 				RA_TocAsset* toc_asset = RA_toc_lookup_asset(toc->assets, old_asset_count, mod_asset->toc.path_hash, mod_asset->toc.group);
@@ -136,7 +137,6 @@ RA_Result RA_mod_read(RA_Mod* mod, const char* game_dir, const char* mod_file_na
 }
 
 void RA_mod_free(RA_Mod* mod) {
-	mod->initialised = false;
 	if(mod->assets != NULL) free(mod->assets);
 	if(mod->name != NULL) free(mod->name);
 	if(mod->version != NULL) free(mod->version);
@@ -184,7 +184,7 @@ static RA_Result parse_stage(RA_Mod* mod, const char* game_dir, const char* mod_
 	// stored in the toc.
 	RA_StringList headerless;
 	if((result = parse_stage_info(mod, &headerless, in_archive)) != RA_SUCCESS) {
-		free(mod->assets);
+		RA_mod_free(mod);
 		fclose(out_file);
 		zip_close(in_archive);
 		return RA_FAILURE("cannot read info.json: %s", result->message);
@@ -201,7 +201,7 @@ static RA_Result parse_stage(RA_Mod* mod, const char* game_dir, const char* mod_
 	
 	for(s64 i = 0; i < entry_count; i++) {
 		if((result = parse_stage_entry(mod, in_archive, i, out_file, &headerless)) != RA_SUCCESS) {
-			free(mod->assets);
+			RA_mod_free(mod);
 			RA_string_list_destroy(&headerless);
 			fclose(out_file);
 			zip_close(in_archive);
@@ -215,10 +215,10 @@ static RA_Result parse_stage(RA_Mod* mod, const char* game_dir, const char* mod_
 	zip_close(in_archive);
 	
 	if(snprintf(mod->archive_path, sizeof(mod->archive_path), "modcache\\%s.cache", mod_file_name) < 0) {
+		RA_mod_free(mod);
 		return RA_FAILURE("path too long");
 	}
 	
-	mod->initialised = true;
 	return RA_SUCCESS;
 }
 
@@ -502,6 +502,5 @@ static RA_Result parse_rcmod(RA_Mod* mod, const char* game_dir, const char* mod_
 		return RA_FAILURE("path too long");
 	}
 	
-	mod->initialised = true;
 	return RA_SUCCESS;
 }
