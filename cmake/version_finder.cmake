@@ -17,6 +17,6 @@ else()
 endif()
 
 add_library(versioninfo STATIC
-	${CMAKE_SOURCE_DIR}/cmake/version_info.cpp
+	${CMAKE_SOURCE_DIR}/cmake/version_info.c
 )
 target_compile_definitions(versioninfo PRIVATE -DGIT_COMMIT="${GIT_COMMIT}" -DGIT_TAG="${GIT_TAG}")
