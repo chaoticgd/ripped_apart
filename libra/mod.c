@@ -48,13 +48,12 @@ RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContent
 	
 	u32 old_archive_count = toc->archive_count;
 	toc->archives = new_archives;
-	toc->archive_count += mod_count;
 	
-	u32 archive_index = old_archive_count;
 	for(u32 i = 0; i < mod_count; i++) {
 		if(mods[i].initialised && mods[i].enabled) {
-			RA_TocArchive* archive = &toc->archives[old_archive_count + archive_index++];
+			RA_TocArchive* archive = &toc->archives[toc->archive_count];
 			RA_string_copy(archive->data, mods[i].archive_path, sizeof(archive->data));
+			toc->archive_count++;
 		}
 	}
 	
@@ -80,7 +79,7 @@ RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContent
 		*mod_count_dest = 0;
 	}
 	
-	archive_index = old_archive_count;
+	u32 archive_index = old_archive_count;
 	for(u32 i = 0; i < mod_count; i++) {
 		if(mods[i].initialised && mods[i].enabled) {
 			for(u32 j = 0; j < mods[i].asset_count; j++) {
@@ -88,18 +87,18 @@ RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContent
 				RA_TocAsset* toc_asset = RA_toc_lookup_asset(toc->assets, old_asset_count, mod_asset->toc.path_hash, mod_asset->toc.group);
 				if(toc_asset) {
 					*toc_asset = mod_asset->toc;
-					toc_asset->location.archive_index = old_archive_count + i;
 				} else {
 					toc_asset = &toc->assets[toc->asset_count];
 					toc->asset_count++;
 				}
 				*toc_asset = mod_asset->toc;
-				toc_asset->location.archive_index = old_archive_count + i;
+				toc_asset->location.archive_index = archive_index;
 			}
 			
 			if(mod_count_dest) {
 				(*mod_count_dest)++;
 			}
+			archive_index++;
 		}
 	}
 	
@@ -277,7 +276,7 @@ static RA_Result parse_stage_info(RA_Mod* mod, RA_StringList* headerless, zip_t*
 	RA_string_list_create(headerless);
 	
 	json_object* headerless_json = json_object_object_get(root, "headerless");
-	if(headerless_json != NULL && !json_object_is_type(headerless_json, json_type_array)) {
+	if(headerless_json != NULL && json_object_is_type(headerless_json, json_type_array)) {
 		size_t count = json_object_array_length(headerless_json);
 		for(size_t i = 0; i < count; i++) {
 			json_object* element = json_object_array_get_idx(headerless_json, i);
