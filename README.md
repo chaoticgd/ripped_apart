@@ -79,4 +79,4 @@ Executable files will be written out into the bin directory.
 
 ## Credit
 
-A lot of the lump names were reverse engineered by [doesthisusername](https://github.com/doesthisusername). A large portion of the model format was reverse engineered by [thtrandomlurker](https://github.com/thtrandomlurker). Some of the swizzle tables were originally reverse engineered by Slipsy.
+A lot of the lump names were reverse engineered by [doesthisusername](https://github.com/doesthisusername). A large portion of the model format was reverse engineered by [thtrandomlurker](https://github.com/thtrandomlurker). Many bugs were pointed out by [Tkachov](https://github.com/Tkachov) who helped out by reviewing my code. Some of the swizzle tables were originally reverse engineered by Slipsy.

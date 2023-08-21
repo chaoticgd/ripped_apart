@@ -7,9 +7,9 @@ static void print_help();
 
 static int compare_toc_assets(const void* lhs, const void* rhs) {
 	if(((RA_TocAsset*) lhs)->location.archive_index != ((RA_TocAsset*) rhs)->location.archive_index) {
-		return ((RA_TocAsset*) lhs)->location.archive_index > ((RA_TocAsset*) rhs)->location.archive_index;
+		return ((RA_TocAsset*) lhs)->location.archive_index - ((RA_TocAsset*) rhs)->location.archive_index;
 	} else {
-		return ((RA_TocAsset*) lhs)->location.offset > ((RA_TocAsset*) rhs)->location.offset;
+		return ((RA_TocAsset*) lhs)->location.offset - ((RA_TocAsset*) rhs)->location.offset;
 	}
 }
 

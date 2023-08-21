@@ -119,10 +119,10 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 }
 
 static int compare_toc_assets(const void* lhs, const void* rhs) {
-	 if(((RA_TocAsset*) lhs)->group != ((RA_TocAsset*) rhs)->group) {
-		return ((RA_TocAsset*) lhs)->group > ((RA_TocAsset*) rhs)->group;
+	if(((RA_TocAsset*) lhs)->group != ((RA_TocAsset*) rhs)->group) {
+		return ((RA_TocAsset*) lhs)->group - ((RA_TocAsset*) rhs)->group;
 	} else {
-		return ((RA_TocAsset*) lhs)->path_hash > ((RA_TocAsset*) rhs)->path_hash;
+		return ((RA_TocAsset*) lhs)->path_hash - ((RA_TocAsset*) rhs)->path_hash;
 	}
 }
 
@@ -142,7 +142,7 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 	u32 asset_group_top = 0;
 	for(u32 i = 0; i <= toc->asset_count; i++) {
 		if(i == toc->asset_count || toc->assets[i].group != last_group) {
-			while(last_group != asset_group_top) {
+			while(asset_group_top != last_group) {
 				if(asset_group_top > last_group) {
 					return RA_FAILURE("asset group index mismatch");
 				}
