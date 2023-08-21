@@ -59,7 +59,7 @@ void renderer_draw_model(const RenderModel* model, const mat4x4 view, const mat4
 	}
 }
 
-#define GLSL(...) "#version 430\n" #__VA_ARGS__
+#define GLSL(...) "#version 330\n" #__VA_ARGS__
 
 static const char* main_vertex_source = GLSL(
 	uniform mat4 view_matrix;
