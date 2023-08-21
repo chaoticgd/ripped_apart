@@ -158,9 +158,6 @@ static void draw_gui() {
 			}
 		} else {
 			RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to write settings file (%s).", result->message);
-			if(settings.game_dir_valid) {
-				create_mod_dirs();
-			}
 		}
 		refresh();
 	}
