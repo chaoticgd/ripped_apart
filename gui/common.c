@@ -134,7 +134,7 @@ static void setup_style(ImGuiStyle* dst) {
 	colours[ImGuiCol_TableBorderStrong]      = (ImVec4) {0.31f, 0.31f, 0.35f, 1.00f};   // Prefer using Alpha=1.0 here
 	colours[ImGuiCol_TableBorderLight]       = (ImVec4) {0.23f, 0.23f, 0.25f, 1.00f};   // Prefer using Alpha=1.0 here
 	colours[ImGuiCol_TableRowBg]             = (ImVec4) {0.00f, 0.00f, 0.00f, 0.00f};
-	colours[ImGuiCol_TableRowBgAlt]          = (ImVec4) {1.00f, 1.00f, 1.00f, 0.06f};
+	colours[ImGuiCol_TableRowBgAlt]          = (ImVec4) {0.90f, 0.90f, 1.00f, 0.05f};
 	colours[ImGuiCol_TextSelectedBg]         = (ImVec4) {0.26f, 0.59f, 0.98f, 0.35f};
 	colours[ImGuiCol_DragDropTarget]         = (ImVec4) {1.00f, 1.00f, 0.00f, 0.90f};
 	colours[ImGuiCol_NavHighlight]           = (ImVec4) {0.26f, 0.59f, 0.98f, 1.00f};
