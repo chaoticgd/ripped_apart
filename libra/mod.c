@@ -178,6 +178,7 @@ static RA_Result parse_stage(RA_Mod* mod, const char* game_dir, const char* mod_
 	FILE* out_file = fopen(absolute_modcache_path, "wb");
 	if(out_file == NULL) {
 		zip_close(in_archive);
+		return RA_FAILURE("cannot open cache file");
 	}
 	
 	// Read metadata and determine which files lack the "header" that would be
