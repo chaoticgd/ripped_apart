@@ -110,7 +110,7 @@ static void setup_style(ImGuiStyle* dst) {
 	colours[ImGuiCol_Button]                 = (ImVec4) {0.20f, 0.25f, 0.35f, 1.00f};
 	colours[ImGuiCol_ButtonHovered]          = (ImVec4) {0.25f, 0.30f, 0.40f, 1.00f};
 	colours[ImGuiCol_ButtonActive]           = (ImVec4) {0.10f, 0.15f, 0.20f, 1.00f};
-	colours[ImGuiCol_Header]                 = (ImVec4) {0.26f, 0.59f, 0.98f, 0.31f};
+	colours[ImGuiCol_Header]                 = (ImVec4) {0.30f, 0.35f, 0.45f, 1.00f};
 	colours[ImGuiCol_HeaderHovered]          = (ImVec4) {0.25f, 0.30f, 0.40f, 1.00f};
 	colours[ImGuiCol_HeaderActive]           = colours[ImGuiCol_ButtonActive];
 	colours[ImGuiCol_Separator]              = colours[ImGuiCol_Border];
