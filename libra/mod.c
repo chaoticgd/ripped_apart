@@ -57,7 +57,7 @@ RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContent
 	// Add assets.
 	u32 max_asset_count = toc->asset_count;
 	for(u32 i = 0; i < mod_count; i++) {
-		if(mods[i].initialised) {
+		if(mods[i].initialised && mods[i].enabled) {
 			max_asset_count += mods[i].asset_count;
 		}
 	}
@@ -73,7 +73,7 @@ RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContent
 	toc->assets = new_assets;
 	
 	for(u32 i = 0; i < mod_count; i++) {
-		if(mods[i].initialised) {
+		if(mods[i].initialised && mods[i].enabled) {
 			for(u32 j = 0; j < mods[i].asset_count; j++) {
 				RA_ModAsset* mod_asset = &mods[i].assets[j];
 				RA_TocAsset* toc_asset = RA_toc_lookup_asset(toc->assets, old_asset_count, mod_asset->toc.path_hash, mod_asset->toc.group);
@@ -132,6 +132,7 @@ static RA_Result parse_stage(RA_Mod* mod, const char* game_dir, const char* mod_
 	RA_Result result;
 	
 	memset(mod, 0, sizeof(RA_Mod));
+	RA_string_copy(mod->file_name, mod_file_name, sizeof(mod->file_name));
 	
 	// Build the file paths.
 	char absolute_mod_path[RA_MAX_PATH];
@@ -210,23 +211,23 @@ static RA_Result parse_stage_info(RA_Mod* mod, RA_StringList* headerless, zip_t*
 	
 	zip_stat_t stat;
 	if(zip_stat(in_archive, "info.json", 0, &stat) != 0 || !(stat.valid & ZIP_STAT_NAME) || !(stat.valid & ZIP_STAT_SIZE)) {
-		return RA_FAILURE("cannot stat file info.json");
+		return RA_FAILURE("cannot stat file");
 	}
 	
 	zip_file_t* info_file = zip_fopen_index(in_archive, stat.index, 0);
 	if(info_file == NULL) {
-		return RA_FAILURE("info.json missing");
+		return RA_FAILURE("file missing");
 	}
 	
 	u8* json_data = malloc(stat.size);
 	if(json_data == NULL) {
 		zip_fclose(info_file);
-		return RA_FAILURE("cannot allocate space for info.json");
+		return RA_FAILURE("cannot allocate space");
 	}
 	if(zip_fread(info_file, json_data, stat.size) != stat.size) {
 		free(json_data);
 		zip_fclose(info_file);
-		return RA_FAILURE("cannot read info.json");
+		return RA_FAILURE("cannot read");
 	}
 	
 	json_error_t error;
@@ -239,48 +240,49 @@ static RA_Result parse_stage_info(RA_Mod* mod, RA_StringList* headerless, zip_t*
 	free(json_data);
 	
 	json_t* name_json = json_object_get(root, "name");
-	if(name_json == NULL) {
-	json_decref(root);
-		zip_fclose(info_file);
-		return RA_FAILURE("missing name property in info.json");
+	if(name_json != NULL) {
+		const char* name_str = json_string_value(name_json);
+		if(name_str != NULL) {
+			mod->name = malloc(strlen(name_str) + 1);
+			if(mod->name != NULL) {
+				RA_string_copy(mod->name, name_str, strlen(name_str) + 1);
+			}
+		}
 	}
 	
-	const char* name_str = json_string_value(name_json);
-	if(name_str == NULL) {
-	json_decref(root);
-		zip_fclose(info_file);
-		return RA_FAILURE("invalid name property in info.json");
-	}
-	mod->name = malloc(strlen(name_str) + 1);
-	if(mod->name == NULL) {
-		json_decref(root);
-		zip_fclose(info_file);
-		return RA_FAILURE("cannot allocate name string");
-	}
-	RA_string_copy(mod->name, name_str, strlen(name_str) + 1);
-	
-	json_t* headerless_json = json_object_get(root, "headerless");
-	if(headerless_json == NULL || !json_is_array(headerless_json)) {
-		json_decref(root);
-		zip_fclose(info_file);
-		return RA_FAILURE("missing headerless property in info.json");
+	json_t* author_json = json_object_get(root, "author");
+	if(author_json != NULL) {
+		const char* author_str = json_string_value(author_json);
+		if(author_str != NULL) {
+			mod->author = malloc(strlen(author_str) + 1);
+			if(mod->author != NULL) {
+				RA_string_copy(mod->author, author_str, strlen(author_str) + 1);
+			}
+		}
 	}
 	
 	RA_string_list_create(headerless);
 	
-	size_t index;
-	json_t* value;
-	json_array_foreach(headerless_json, index, value) {
-		const char* headerless_path = json_string_value(value);
-		if(headerless_path == NULL) {
-			json_decref(root);
-			zip_fclose(info_file);
-			return RA_FAILURE("bad headerless property in info.json");
-		}
-		if((result = RA_string_list_add(headerless, headerless_path)) != RA_SUCCESS) {
-			json_decref(root);
-			zip_fclose(info_file);
-			return result;
+	json_t* headerless_json = json_object_get(root, "headerless");
+	if(headerless_json != NULL && !json_is_array(headerless_json)) {
+		json_decref(root);
+		zip_fclose(info_file);
+		return RA_FAILURE("missing headerless property");
+	
+		size_t index;
+		json_t* value;
+		json_array_foreach(headerless_json, index, value) {
+			const char* headerless_path = json_string_value(value);
+			if(headerless_path == NULL) {
+				json_decref(root);
+				zip_fclose(info_file);
+				return RA_FAILURE("bad headerless property");
+			}
+			if((result = RA_string_list_add(headerless, headerless_path)) != RA_SUCCESS) {
+				json_decref(root);
+				zip_fclose(info_file);
+				return result;
+			}
 		}
 	}
 	
@@ -339,7 +341,7 @@ static RA_Result parse_stage_entry(RA_Mod* mod, zip_t* in_archive, s64 index, FI
 	}
 	
 	u32 file_size = stat.size - header_size;
-	u32 allocation_size = ALIGN(file_size, 0x10);
+	u32 allocation_size = ALIGN(file_size, 0x40);
 	u8* file_data = calloc(1, allocation_size);
 	if(file_data == NULL) {
 		zip_fclose(file);
@@ -402,6 +404,7 @@ static char* read_rcmod_string(FILE* file) {
 
 static RA_Result parse_rcmod(RA_Mod* mod, const char* game_dir, const char* mod_file_name) {
 	memset(mod, 0, sizeof(RA_Mod));
+	RA_string_copy(mod->file_name, mod_file_name, sizeof(mod->file_name));
 	
 	char absolute_mod_path[RA_MAX_PATH];
 	snprintf(absolute_mod_path, RA_MAX_PATH, "%s/mods/%s", game_dir, mod_file_name);

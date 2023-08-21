@@ -95,6 +95,17 @@ s64 RA_file_size(FILE* file) {
 	return (s64) size;
 }
 
+void RA_remove_file_name(char* dest, s64 buffer_size, const char* src) {
+	RA_string_copy(dest, src, buffer_size);
+	char* seperator_forward = strrchr(dest, '/');
+	char* seperator_backward = strrchr(dest, '\\');
+	if(seperator_forward && seperator_forward > seperator_backward) {
+		*seperator_forward = '\0';
+	} else if(seperator_backward) {
+		*seperator_backward = '\0';
+	}
+}
+
 RA_Result RA_make_dirs(const char* file_path) {
 	// Remove filename.
 	char dir_path[RA_MAX_PATH];
@@ -128,6 +139,23 @@ void RA_string_copy(char* dest, const char* src, s64 buffer_size) {
 		src++;
 	}
 	dest[buffer_size - 1] = '\0';
+}
+
+const char* RA_string_find_substring_no_case(const char* haystack, const char* needle) {
+	s64 haystack_size = strlen(haystack);
+	s64 needle_size = strlen(needle);
+	for(s64 i = 0; i < haystack_size - needle_size + 1; i++) {
+		s64 j;
+		for(j = 0; j < needle_size; j++) {
+			if(toupper(needle[j]) != toupper(haystack[i + j])) {
+				break;
+			}
+		}
+		if(j == needle_size) {
+			return &haystack[i];
+		}
+	}
+	return NULL;
 }
 
 void RA_crc_string_parse(RA_CRCString* crc_string, u8* file_data, u32 file_size) {

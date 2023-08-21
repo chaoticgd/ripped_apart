@@ -66,6 +66,8 @@ add_executable(rebuildtoc rebuildtoc.c)
 target_link_libraries(rebuildtoc libra)
 add_executable(diffdat diffdat.c)
 target_link_libraries(diffdat libra)
+add_executable(modmanagergui modmanagergui.c)
+target_link_libraries(modmanagergui libra gui versioninfo)
 
 # Set the windows codepage to UTF-8.
 if(WIN32)
@@ -78,6 +80,7 @@ if(WIN32)
 	target_sources(toc PUBLIC ripped_apart.manifest)
 	target_sources(rebuildtoc PUBLIC ripped_apart.manifest)
 	target_sources(diffdat PUBLIC ripped_apart.manifest)
+	target_sources(modmanagergui PUBLIC ripped_apart.manifest)
 endif()
 
 set(RELEASE_FILES
@@ -90,6 +93,7 @@ set(RELEASE_FILES
 	$<TARGET_FILE:toc>
 	$<TARGET_FILE:rebuildtoc>
 	$<TARGET_FILE:diffdat>
+	$<TARGET_FILE:modmanagergui>
 )
 set(RELEASE_DOCS_DIRECTORY "${CMAKE_SOURCE_DIR}/docs")
 set(RELEASE_LICENSES_DIRECTORY "${CMAKE_SOURCE_DIR}/licenses")

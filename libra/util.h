@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <inttypes.h>
 
 #include "../crc/crc.h"
@@ -36,9 +37,7 @@ typedef uint64_t u64;
 typedef float f32;
 typedef float f64;
 
-typedef char b8;
-#define false 0
-#define true 1
+typedef bool b8;
 
 typedef struct {
 	const char* message;
@@ -60,6 +59,7 @@ void RA_file_fix_path(char* path);
 RA_Result RA_file_read(const char* path, u8** data_dest, s64* size_dest);
 RA_Result RA_file_write(const char* path, u8* data, s64 size);
 s64 RA_file_size(FILE* file);
+void RA_remove_file_name(char* dest, s64 buffer_size, const char* src);
 RA_Result RA_make_dirs(const char* file_path);
 
 #define RA_MAX_PATH 1024
@@ -76,6 +76,7 @@ typedef enum {
 } ShouldFreeFileData;
 
 void RA_string_copy(char* dest, const char* src, s64 buffer_size);
+const char* RA_string_find_substring_no_case(const char* haystack, const char* needle);
 
 typedef union {
 	const char* string;

@@ -60,6 +60,7 @@ int main(int argc, char** argv) {
 	}
 	
 	for(u32 i = 0; i < mod_count; i++) {
+		mods[i].enabled = true;
 		if(mods[i].name) {
 			printf("Loaded mod: %s\n", mods[i].name);
 		} else {

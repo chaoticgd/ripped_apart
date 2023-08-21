@@ -1,12 +1,17 @@
 #include "platform.h"
 
 #include <dirent.h>
+#include <stdarg.h>
 
 #include "arena.h"
 
 #ifdef WIN32
 	#include <windows.h>
+#include <shellapi.h>
 	#include <io.h>
+#define popen _popen
+#define pclose _pclose
+#define setenv(name, value, overwrite) (_putenv_s(name, value) == 0 ? 0 : -1)
 #else
 	#include <unistd.h>
 	#include <sys/stat.h>
@@ -56,6 +61,16 @@ RA_Result RA_enumerate_directory(RA_StringList* file_names_dest, const char* dir
 	return RA_SUCCESS;
 }
 
+void RA_open_file_path_or_url(const char* path_or_url) {
+#ifdef _WIN32
+	ShellExecuteA(nullptr, "open", path_or_url, nullptr, nullptr, SW_SHOWDEFAULT);
+#else
+	setenv("WRENCH_ARG_0", "xdg-open", 1);
+	setenv("WRENCH_ARG_1", path_or_url, 1);
+	system("\"$WRENCH_ARG_0\" \"$WRENCH_ARG_1\"");
+#endif
+}
+
 void RA_thread_sleep_ms(s32 milliseconds) {
 	#ifdef WIN32
 		Sleep(milliseconds);
@@ -64,8 +79,14 @@ void RA_thread_sleep_ms(s32 milliseconds) {
 	#endif
 }
 
-void RA_message_box(const char* text, const char* title, MessageBoxType type) {
-	fprintf(stderr, "error: %s\n", text);
+void RA_message_box(MessageBoxType type, const char* title, const char* format, ...) {
+	va_list args;
+	va_start(args, format);
+	static char text[16 * 1024];
+	vsnprintf(text, sizeof(text), format, args);
+	va_end(args);
+	
+	puts(text);
 #ifdef WIN32
 	MessageBoxA(NULL, text, title, MB_OK);
 #else

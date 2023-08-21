@@ -3,6 +3,10 @@ add_library(gui STATIC
 	common.h
 	menu.c
 	menu.h
+	font.c
+	font.h
+	settings.c
+	settings.h
 )
 target_link_libraries(gui libra glfw glad cimgui)
 target_compile_definitions(gui PUBLIC -DCIMGUI_USE_OPENGL3 -DCIMGUI_USE_GLFW)
