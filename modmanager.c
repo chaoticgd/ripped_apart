@@ -21,6 +21,7 @@ static void mod_list();
 static void refresh();
 static void install_mods();
 static void no_game_folder_message();
+static void create_mod_dirs();
 
 int main(int argc, char** argv) {
 	RA_Result result;
@@ -39,6 +40,7 @@ int main(int argc, char** argv) {
 	}
 	
 	if(settings.game_dir_valid) {
+		create_mod_dirs();
 		if((result = RA_mod_list_load(&mods, &mod_count, settings.game_dir)) != RA_SUCCESS) {
 			RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", result->message);
 		}
@@ -150,18 +152,15 @@ static void draw_gui() {
 	}
 	
 	if(GUI_settings_draw(&settings, window_width, window_height)) {
-		if((result = GUI_settings_write(&settings, settings_path)) != RA_SUCCESS) {
+		if((result = GUI_settings_write(&settings, settings_path)) == RA_SUCCESS) {
+			if(settings.game_dir_valid) {
+				create_mod_dirs();
+			}
+		} else {
 			RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to write settings file (%s).", result->message);
-			char mods_dir[RA_MAX_PATH];
-			if(snprintf(mods_dir, RA_MAX_PATH, "%s/mods", settings.game_dir) < 0) {
-				RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Path for 'mods' folder too long.");
+			if(settings.game_dir_valid) {
+				create_mod_dirs();
 			}
-			RA_make_dir(mods_dir);
-			char modcache_dir[RA_MAX_PATH];
-			if(snprintf(modcache_dir, RA_MAX_PATH, "%s/modcache", settings.game_dir) < 0) {
-				RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Path for 'modcache' folder too long.");
-			}
-			RA_make_dir(modcache_dir);
 		}
 		refresh();
 	}
@@ -288,4 +287,19 @@ static void install_mods() {
 
 static void no_game_folder_message() {
 	RA_message_box(GUI_MESSAGE_BOX_INFO, "No Game Folder", "No valid game folder set. Click on 'Settings' to specify one.");
+}
+
+static void create_mod_dirs() {
+	char mods_dir[RA_MAX_PATH];
+	if(snprintf(mods_dir, RA_MAX_PATH, "%s/mods", settings.game_dir) >= 0) {
+		RA_make_dir(mods_dir);
+	} else {
+		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Path for 'mods' folder too long.");
+	}
+	char modcache_dir[RA_MAX_PATH];
+	if(snprintf(modcache_dir, RA_MAX_PATH, "%s/modcache", settings.game_dir) >= 0) {
+		RA_make_dir(modcache_dir);
+	} else {
+		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Path for 'modcache' folder too long.");
+	}
 }
