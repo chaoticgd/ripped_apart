@@ -37,7 +37,7 @@ RA_Result RA_mod_list_load(RA_Mod** mods_dest, u32* mod_count_dest, const char* 
 	return RA_SUCCESS;
 }
 
-RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContents* toc) {
+RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContents* toc, u32* mod_count_dest) {
 	// Add archives.
 	RA_TocArchive* new_archives = RA_arena_alloc(&toc->arena, (toc->archive_count + mod_count) * sizeof(RA_TocArchive));
 	if(new_archives == NULL) {
@@ -73,6 +73,10 @@ RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContent
 	u32 old_asset_count = toc->asset_count;
 	toc->assets = new_assets;
 	
+	if(mod_count_dest) {
+		*mod_count_dest = 0;
+	}
+	
 	for(u32 i = 0; i < mod_count; i++) {
 		if(mods[i].initialised && mods[i].enabled) {
 			for(u32 j = 0; j < mods[i].asset_count; j++) {
@@ -87,6 +91,10 @@ RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContent
 				}
 				*toc_asset = mod_asset->toc;
 				toc_asset->location.archive_index = old_archive_count + i;
+			}
+			
+			if(mod_count_dest) {
+				(*mod_count_dest)++;
 			}
 		}
 	}

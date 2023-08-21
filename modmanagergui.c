@@ -232,7 +232,8 @@ static void install_mods() {
 		return;
 	}
 	
-	if((result = RA_mod_list_rebuild_toc(mods, mod_count, &toc)) != RA_SUCCESS) {
+	u32 enabled_mod_count;
+	if((result = RA_mod_list_rebuild_toc(mods, mod_count, &toc, &enabled_mod_count)) != RA_SUCCESS) {
 		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to install mods (%s). The table of contents has not been modified.\n", result->message);
 		RA_toc_free(&toc, FREE_FILE_DATA);
 		return;
@@ -252,6 +253,8 @@ static void install_mods() {
 		RA_toc_free(&toc, FREE_FILE_DATA);
 		return;
 	}
+	
+	RA_message_box(GUI_MESSAGE_BOX_INFO, "Success", "Installed %u mods successfully.", enabled_mod_count);
 }
 
 static void no_game_folder_message() {

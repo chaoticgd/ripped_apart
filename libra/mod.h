@@ -22,7 +22,7 @@ typedef struct {
 } RA_Mod;
 
 RA_Result RA_mod_list_load(RA_Mod** mods_dest, u32* mod_count_dest, const char* game_dir);
-RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContents* toc);
+RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContents* toc, u32* mod_count_dest);
 void RA_mod_list_free(RA_Mod* mods, u32 mod_count);
 
 RA_Result RA_mod_read(RA_Mod* mod, const char* game_dir, const char* mod_file_name);

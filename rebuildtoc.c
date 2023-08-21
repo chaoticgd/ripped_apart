@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
 		}
 	}
 	
-	if((result = RA_mod_list_rebuild_toc(mods, mod_count, &toc)) != RA_SUCCESS) {
+	if((result = RA_mod_list_rebuild_toc(mods, mod_count, &toc, NULL)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to install mods (%s). The table of contents has not been modified.\n", result->message);
 		return 1;
 	}
