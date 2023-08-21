@@ -280,7 +280,7 @@ static void install_mods() {
 		return;
 	}
 	
-	RA_message_box(GUI_MESSAGE_BOX_INFO, "Success", "Installed %u mods successfully.", enabled_mod_count);
+	RA_message_box(GUI_MESSAGE_BOX_INFO, "Success", "Installed %u mod%s successfully.", enabled_mod_count, enabled_mod_count == 1 ? "" : "s");
 	
 	free(out_data);
 	RA_toc_free(&toc, FREE_FILE_DATA);
