@@ -6,7 +6,7 @@
 
 #include "platform.h"
 
-RA_Result RA_mod_list_load(RA_Mod** mods_dest, u32* mod_count_dest, const char* game_dir) {
+RA_Result RA_mod_list_load(RA_Mod** mods_dest, u32* mod_count_dest, const char* game_dir, ModLoadErrorFunc* error_func) {
 	RA_Result result;
 	
 	char mods_dir[RA_MAX_PATH];
@@ -24,10 +24,11 @@ RA_Result RA_mod_list_load(RA_Mod** mods_dest, u32* mod_count_dest, const char* 
 	}
 	
 	for(u32 i = 0; i < file_names.count; i++) {
-		if((result = RA_mod_read(&mods[i], game_dir, file_names.strings[i])) != RA_SUCCESS) {
+		if((result = RA_mod_read(&mods[i], game_dir, file_names.strings[i])) == RA_SUCCESS) {
+			
+		} else {
 			if(strcmp(result->message, "unsupported format") != 0) {
-				RA_string_list_destroy(&file_names);
-				return RA_FAILURE("%s for mod %s", result->message, file_names.strings[i]);
+				error_func(file_names.strings[i], result);
 			}
 		}
 	}
@@ -216,8 +217,8 @@ static RA_Result parse_stage(RA_Mod* mod, const char* game_dir, const char* mod_
 	if(snprintf(mod->archive_path, sizeof(mod->archive_path), "modcache\\%s.cache", mod_file_name) < 0) {
 		return RA_FAILURE("path too long");
 	}
-	mod->initialised = true;
 	
+	mod->initialised = true;
 	return RA_SUCCESS;
 }
 
@@ -500,7 +501,7 @@ static RA_Result parse_rcmod(RA_Mod* mod, const char* game_dir, const char* mod_
 		RA_mod_free(mod);
 		return RA_FAILURE("path too long");
 	}
-	mod->initialised = true;
 	
+	mod->initialised = true;
 	return RA_SUCCESS;
 }

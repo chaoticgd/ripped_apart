@@ -23,6 +23,12 @@ static void install_mods();
 static void no_game_folder_message();
 static void create_mod_dirs();
 
+static void report_mod_load_error(const char* file_name, RA_Result result) {
+	if(result != RA_SUCCESS) {
+		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to load mod '%s' (%s).", file_name, result->message);
+	}
+}
+
 int main(int argc, char** argv) {
 	RA_Result result;
 	
@@ -41,7 +47,7 @@ int main(int argc, char** argv) {
 	
 	if(settings.game_dir_valid) {
 		create_mod_dirs();
-		if((result = RA_mod_list_load(&mods, &mod_count, settings.game_dir)) != RA_SUCCESS) {
+		if((result = RA_mod_list_load(&mods, &mod_count, settings.game_dir, report_mod_load_error)) != RA_SUCCESS) {
 			RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", result->message);
 		}
 	} else {
@@ -202,7 +208,7 @@ static void refresh() {
 	RA_Result result;
 	
 	RA_mod_list_free(mods, mod_count);
-	if((result = RA_mod_list_load(&mods, &mod_count, settings.game_dir))) {
+	if((result = RA_mod_list_load(&mods, &mod_count, settings.game_dir, report_mod_load_error))) {
 		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to load mod (%s).", result->message);
 	}
 }

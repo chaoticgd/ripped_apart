@@ -6,6 +6,12 @@
 
 static void print_help();
 
+static void report_mod_load_error(const char* file_name, RA_Result result) {
+	if(result != RA_SUCCESS) {
+		fprintf(stderr, "error: Failed to load mod '%s' (%s).", file_name, result->message);
+	}
+}
+
 int main(int argc, char** argv) {
 	RA_Result result;
 	
@@ -54,7 +60,7 @@ int main(int argc, char** argv) {
 	
 	RA_Mod* mods;
 	u32 mod_count;
-	if((result = RA_mod_list_load(&mods, &mod_count, game_dir)) != RA_SUCCESS) {
+	if((result = RA_mod_list_load(&mods, &mod_count, game_dir, report_mod_load_error)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to load mods (%s). The table of contents has not been modified.\n", result->message);
 		return 1;
 	}
