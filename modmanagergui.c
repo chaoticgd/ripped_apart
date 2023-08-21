@@ -9,6 +9,8 @@ static int window_width;
 static int window_height;
 
 static char bin_dir[RA_MAX_PATH];
+static char settings_path[RA_MAX_PATH];
+static Settings settings;
 static RA_Mod* mods;
 static u32 mod_count;
 static char filter[1024];
@@ -23,9 +25,18 @@ static void no_game_folder_message();
 int main(int argc, char** argv) {
 	RA_Result result;
 	
-	RA_remove_file_name(bin_dir, RA_MAX_PATH, argv[0]);
-	
 	window = GUI_startup("Ripped Apart Mod Manager", 960, 600);
+	
+	RA_remove_file_name(bin_dir, RA_MAX_PATH, argv[0]);
+	if(snprintf(settings_path, sizeof(settings_path), "%s/settings.json", bin_dir) < 0) {
+		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Settings file path too long.");
+	}
+	
+	if(RA_file_exists(settings_path)) {
+		if((result = GUI_settings_read(&settings, settings_path)) != RA_SUCCESS) {
+			RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to read settings file (%s).", result->message);
+		}
+	}
 	
 	if(settings.game_dir_valid) {
 		if((result = RA_mod_list_load(&mods, &mod_count, settings.game_dir)) != RA_SUCCESS) {
@@ -50,6 +61,8 @@ extern const char* git_commit;
 extern const char* git_tag;
 
 static void draw_gui() {
+	RA_Result result;
+	
 	f32 button_height = igGetFont()->FontSize + igGetStyle()->FramePadding.y * 2.f;
 	f32 buttons_window_height = button_height + igGetStyle()->WindowPadding.y * 2.f;
 	
@@ -70,7 +83,7 @@ static void draw_gui() {
 	igBegin("buttons", NULL, ImGuiWindowFlags_NoDecoration);
 	
 	if(igButton("Settings", (ImVec2) {0, 0})) {
-		GUI_settings_open();
+		GUI_settings_open(&settings);
 	}
 	
 	igSameLine(0.f, -1.f);
@@ -136,7 +149,10 @@ static void draw_gui() {
 		igEndPopup();
 	}
 	
-	if(GUI_settings_draw(window_width, window_height)) {
+	if(GUI_settings_draw(&settings, window_width, window_height)) {
+		if((result = GUI_settings_write(&settings, settings_path)) != RA_SUCCESS) {
+			RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to write settings file (%s).", result->message);
+		}
 		refresh();
 	}
 	

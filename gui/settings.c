@@ -1,16 +1,20 @@
 #include "settings.h"
 
+#include <json_object.h>
+#include <json_tokener.h>
+
 #include "../libra/platform.h"
 
-Settings settings;
 static Settings settings_scratch;
 
-void GUI_settings_open() {
+static b8 is_valid_game_dir(const char* game_dir);
+
+void GUI_settings_open(Settings* settings) {
 	igOpenPopup_Str("Settings", ImGuiPopupFlags_None);
-	settings_scratch = settings;
+	settings_scratch = *settings;
 }
 
-b8 GUI_settings_draw(f32 window_width, f32 window_height) {
+b8 GUI_settings_draw(Settings* settings, f32 window_width, f32 window_height) {
 	b8 settings_modified = false;
 	
 	ImVec2 zero = {0, 0};
@@ -21,12 +25,7 @@ b8 GUI_settings_draw(f32 window_width, f32 window_height) {
 	igSetNextWindowFocus();
 	if(igBeginPopupModal("Settings", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse)) {
 		if(igInputText("Game Folder", settings_scratch.game_dir, sizeof(settings_scratch.game_dir), ImGuiInputTextFlags_None, NULL, NULL)) {
-			char exe_path[RA_MAX_PATH];
-			if(snprintf(exe_path, RA_MAX_PATH, "%s/RiftApart.exe", settings_scratch.game_dir) >= 0) {
-				settings_scratch.game_dir_valid = RA_file_exists(exe_path);
-			} else {
-				settings_scratch.game_dir_valid = false;
-			}
+			settings_scratch.game_dir_valid = is_valid_game_dir(settings_scratch.game_dir);
 		}
 		
 		if(settings_scratch.game_dir_valid == false) {
@@ -40,7 +39,7 @@ b8 GUI_settings_draw(f32 window_width, f32 window_height) {
 		f32 button_height = igGetFont()->FontSize + igGetStyle()->FramePadding.y * 2.f;
 		igSetCursorPosY(size.y - (button_height + igGetStyle()->WindowPadding.y));
 		if(igButton("Okay", zero)) {
-			settings = settings_scratch;
+			*settings = settings_scratch;
 			settings_modified = true;
 			igCloseCurrentPopup();
 		}
@@ -58,10 +57,55 @@ b8 GUI_settings_draw(f32 window_width, f32 window_height) {
 	return settings_modified;
 }
 
-void GUI_settings_read(Settings* settings, const char* path) {
+RA_Result GUI_settings_read(Settings* settings, const char* path) {
+	RA_Result result;
 	
+	u8* data;
+	s64 size;
+	if((result = RA_file_read(path, &data, &size)) != RA_SUCCESS) {
+		return result;
+	}
+	
+	json_object* root = json_tokener_parse((char*) data);
+	if(root == NULL) {
+		free(data);
+		return RA_FAILURE("failed to parse settings file");
+	}
+	free(data);
+	
+	json_object* game_dir_json = json_object_object_get(root, "game_dir");
+	const char* game_dir = json_object_get_string(game_dir_json);
+	if(game_dir) {
+		RA_string_copy(settings->game_dir, game_dir, sizeof(settings->game_dir));
+		settings->game_dir_valid = is_valid_game_dir(settings->game_dir);
+	}
+	
+	json_object_put(root);
+	return RA_SUCCESS;
 }
 
-void GUI_settings_write(Settings* settings, const char* path) {
+RA_Result GUI_settings_write(Settings* settings, const char* path) {
+	RA_Result result;
 	
+	json_object* root = json_object_new_object();
+	
+	json_object* game_dir = json_object_new_string(settings->game_dir);
+	json_object_object_add(root, "game_dir", game_dir);
+	
+	const char* string = json_object_to_json_string(root);
+	if((result = RA_file_write(path, (u8*) string, strlen(string))) != RA_SUCCESS) {
+		return result;
+	}
+	
+	json_object_put(root);
+	return RA_SUCCESS;
+}
+
+static b8 is_valid_game_dir(const char* game_dir) {
+	char exe_path[RA_MAX_PATH];
+	if(snprintf(exe_path, RA_MAX_PATH, "%s/RiftApart.exe", game_dir) >= 0) {
+		return RA_file_exists(exe_path);
+	} else {
+		return false;
+	}
 }

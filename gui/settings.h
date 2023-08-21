@@ -8,11 +8,9 @@ typedef struct {
 	char game_dir[RA_MAX_PATH];
 } Settings;
 
-extern Settings settings;
-
-void GUI_settings_open();
-b8 GUI_settings_draw(f32 window_width, f32 window_height);
-void GUI_settings_read(Settings* settings, const char* path);
-void GUI_settings_write(Settings* settings, const char* path);
+void GUI_settings_open(Settings* settings);
+b8 GUI_settings_draw(Settings* settings, f32 window_width, f32 window_height);
+RA_Result GUI_settings_read(Settings* settings, const char* path);
+RA_Result GUI_settings_write(Settings* settings, const char* path);
 
 #endif

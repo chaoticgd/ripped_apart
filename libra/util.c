@@ -46,7 +46,7 @@ RA_Result RA_file_read(const char* path, u8** data_dest, s64* size_dest) {
 	s64 size = RA_file_size(file);
 	*size_dest = size;
 	
-	u8* data = malloc(size);
+	u8* data = malloc(size + 1);
 	if(data == NULL) {
 		fclose(file);
 		return RA_FAILURE("failed to allocate memory for file contents");
@@ -56,6 +56,7 @@ RA_Result RA_file_read(const char* path, u8** data_dest, s64* size_dest) {
 		fclose(file);
 		return RA_FAILURE("failed to read file");
 	}
+	data[size] = '\0';
 	*data_dest = data;
 	
 	fclose(file);
