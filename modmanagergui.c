@@ -152,6 +152,16 @@ static void draw_gui() {
 	if(GUI_settings_draw(&settings, window_width, window_height)) {
 		if((result = GUI_settings_write(&settings, settings_path)) != RA_SUCCESS) {
 			RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to write settings file (%s).", result->message);
+			char mods_dir[RA_MAX_PATH];
+			if(snprintf(mods_dir, RA_MAX_PATH, "%s/mods", settings.game_dir) < 0) {
+				RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Path for 'mods' folder too long.");
+			}
+			RA_make_dir(mods_dir);
+			char modcache_dir[RA_MAX_PATH];
+			if(snprintf(modcache_dir, RA_MAX_PATH, "%s/modcache", settings.game_dir) < 0) {
+				RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Path for 'modcache' folder too long.");
+			}
+			RA_make_dir(modcache_dir);
 		}
 		refresh();
 	}
