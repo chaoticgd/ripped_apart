@@ -7,30 +7,8 @@ static GLuint program;
 static GLuint view_matrix_uniform;
 static GLuint proj_matrix_uniform;
 
-static void error_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
-	static b8 had_errors = false;
-	if(type == GL_DEBUG_TYPE_OTHER && !had_errors) {
-		return;
-	}
-	
-	const char* type_string = "Unexpected OpenGL Message";
-	switch(type) {
-		case GL_DEBUG_TYPE_ERROR: type_string = "OpenGL Error"; had_errors = true; break;
-		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: type_string = "OpenGL Deprecation Warning"; break;
-		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: type_string = "OpenGL Undefined Behaviour Warning"; break;
-		case GL_DEBUG_TYPE_PORTABILITY: type_string = "OpenGL Portability Warning"; break;
-		case GL_DEBUG_TYPE_PERFORMANCE: type_string = "OpenGL Performance Warning"; break;
-		case GL_DEBUG_TYPE_OTHER: type_string = "OpenGL Message"; break;
-	}
-	
-	fprintf(stderr, "%s: type = 0x%x, severity = 0x%x, message = %s\n",
-		type_string, type, severity, message);
-}
-
 void renderer_init() {
 	build_shaders();
-	glEnable(GL_DEBUG_OUTPUT);
-	glDebugMessageCallback(error_callback, 0);
 }
 
 RenderModel renderer_upload_model(RA_Model* model) {
