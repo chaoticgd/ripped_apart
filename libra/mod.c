@@ -319,16 +319,30 @@ static RA_Result parse_stage_entry(RA_Mod* mod, zip_t* in_archive, s64 index, FI
 		return RA_SUCCESS;
 	}
 	
-	char* dag_path;
-	u32 group = (u32) strtoll(name, &dag_path, 10);
-	if(dag_path == name || dag_path == NULL || *dag_path == '\0') {
+	char* relative_path;
+	u32 group = (u32) strtoll(name, &relative_path, 10);
+	if(relative_path == name || relative_path == NULL || *relative_path == '\0') {
 		// Not an asset.
 		return RA_SUCCESS;
 	}
-	dag_path++; // Skip past '/'.
+	relative_path++; // Skip past '/'.
+	
+	b8 is_hash_path = true;
+	if(strlen(relative_path) == 16) {
+		for(u32 i = 0; i < 16; i++) {
+			b8 is_digit = relative_path[i] >= '0' && relative_path[i] <= '9';
+			b8 is_upper_hex = relative_path[i] >= 'A' && relative_path[i] <= 'F';
+			b8 is_lower_hex = relative_path[i] >= 'a' && relative_path[i] <= 'f';
+			if(!is_digit && !is_upper_hex && !is_lower_hex) {
+				is_hash_path = false;
+			}
+		}
+	} else {
+		is_hash_path = false;
+	}
 	
 	RA_ModAsset* asset = &mod->assets[mod->asset_count++];
-	asset->toc.path_hash = RA_crc64_path(dag_path);
+	asset->toc.path_hash = is_hash_path ? strtoull(relative_path, NULL, 16) : RA_crc64_path(relative_path);
 	asset->toc.group = group;
 	
 	b8 has_header = true;
