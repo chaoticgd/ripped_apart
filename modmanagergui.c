@@ -271,6 +271,9 @@ static void install_mods() {
 	}
 	
 	RA_message_box(GUI_MESSAGE_BOX_INFO, "Success", "Installed %u mods successfully.", enabled_mod_count);
+	
+	free(out_data);
+	RA_toc_free(&toc, FREE_FILE_DATA);
 }
 
 static void no_game_folder_message() {
