@@ -63,7 +63,7 @@ RA_Result RA_enumerate_directory(RA_StringList* file_names_dest, const char* dir
 
 void RA_open_file_path_or_url(const char* path_or_url) {
 #ifdef _WIN32
-	ShellExecuteA(nullptr, "open", path_or_url, nullptr, nullptr, SW_SHOWDEFAULT);
+	ShellExecuteA(NULL, "open", path_or_url, NULL, NULL, SW_SHOWDEFAULT);
 #else
 	setenv("WRENCH_ARG_0", "xdg-open", 1);
 	setenv("WRENCH_ARG_1", path_or_url, 1);
