@@ -6,6 +6,10 @@
 
 #include "platform.h"
 
+static int compare_mods(const void* lhs, const void* rhs) {
+	return strcmp(((RA_Mod*) lhs)->file_name, ((RA_Mod*) rhs)->file_name);
+}
+
 RA_Result RA_mod_list_load(RA_Mod** mods_dest, u32* mod_count_dest, const char* game_dir, ModLoadErrorFunc* error_func) {
 	RA_Result result;
 	
@@ -33,6 +37,8 @@ RA_Result RA_mod_list_load(RA_Mod** mods_dest, u32* mod_count_dest, const char* 
 			}
 		}
 	}
+	
+	qsort(mods, mod_count, sizeof(RA_Mod), compare_mods);
 	
 	*mods_dest = mods;
 	*mod_count_dest = mod_count;
