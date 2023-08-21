@@ -120,8 +120,8 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 
 static int compare_toc_assets(const void* lhs, const void* rhs) {
 	if(((RA_TocAsset*) lhs)->group != ((RA_TocAsset*) rhs)->group) {
-		s64 lhs_group = ((RA_TocAsset*) lhs)->group;
-		s64 rhs_group = ((RA_TocAsset*) rhs)->group;
+		u32 lhs_group = ((RA_TocAsset*) lhs)->group;
+		u32 rhs_group = ((RA_TocAsset*) rhs)->group;
 		if(lhs_group < rhs_group) {
 			return -1;
 		} else if(lhs_group > rhs_group) {
@@ -130,8 +130,8 @@ static int compare_toc_assets(const void* lhs, const void* rhs) {
 			return 0;
 		}
 	} else {
-		s64 lhs_path_hash = ((RA_TocAsset*) lhs)->path_hash;
-		s64 rhs_path_hash = ((RA_TocAsset*) rhs)->path_hash;
+		u64 lhs_path_hash = ((RA_TocAsset*) lhs)->path_hash;
+		u64 rhs_path_hash = ((RA_TocAsset*) rhs)->path_hash;
 		if(lhs_path_hash < rhs_path_hash) {
 			return -1;
 		} else if(lhs_path_hash > rhs_path_hash) {

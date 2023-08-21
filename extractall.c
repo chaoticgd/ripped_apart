@@ -7,8 +7,8 @@ static void print_help();
 
 static int compare_toc_assets(const void* lhs, const void* rhs) {
 	if(((RA_TocAsset*) lhs)->location.archive_index != ((RA_TocAsset*) rhs)->location.archive_index) {
-		s64 index_lhs = ((RA_TocAsset*) lhs)->location.archive_index;
-		s64 index_rhs = ((RA_TocAsset*) rhs)->location.archive_index;
+		u32 index_lhs = ((RA_TocAsset*) lhs)->location.archive_index;
+		u32 index_rhs = ((RA_TocAsset*) rhs)->location.archive_index;
 		if(index_lhs < index_rhs) {
 			return -1;
 		} else if(index_lhs > index_rhs) {
@@ -17,8 +17,8 @@ static int compare_toc_assets(const void* lhs, const void* rhs) {
 			return 0;
 		}
 	} else {
-		s64 offset_lhs = ((RA_TocAsset*) lhs)->location.offset;
-		s64 offset_rhs = ((RA_TocAsset*) rhs)->location.offset;
+		u32 offset_lhs = ((RA_TocAsset*) lhs)->location.offset;
+		u32 offset_rhs = ((RA_TocAsset*) rhs)->location.offset;
 		if(offset_lhs < offset_rhs) {
 			return -1;
 		} else if(offset_lhs > offset_rhs) {

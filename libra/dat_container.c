@@ -223,8 +223,8 @@ u32 RA_dat_writer_string(RA_DatWriter* writer, const char* string) {
 }
 
 static int compare_lumps(const void* lhs, const void* rhs) {
-	s64 lhs_type = ((LumpHeader*) lhs)->type_crc;
-	s64 rhs_type = ((LumpHeader*) rhs)->type_crc;
+	u32 lhs_type = ((LumpHeader*) lhs)->type_crc;
+	u32 rhs_type = ((LumpHeader*) rhs)->type_crc;
 	if(lhs_type < rhs_type) {
 		return -1;
 	} else if(lhs_type > rhs_type) {
