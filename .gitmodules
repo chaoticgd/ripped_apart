@@ -16,6 +16,3 @@
 [submodule "thirdparty/zlib"]
 	path = thirdparty/zlib
 	url = https://github.com/madler/zlib
-[submodule "thirdparty/jansson"]
-	path = thirdparty/jansson
-	url = https://github.com/akheron/jansson

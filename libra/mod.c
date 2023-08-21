@@ -1,7 +1,8 @@
 #include "mod.h"
 
 #include <zip.h>
-#include <jansson.h>
+#include <json_object.h>
+#include <json_tokener.h>
 
 #include "platform.h"
 
@@ -219,7 +220,7 @@ static RA_Result parse_stage_info(RA_Mod* mod, RA_StringList* headerless, zip_t*
 		return RA_FAILURE("file missing");
 	}
 	
-	u8* json_data = malloc(stat.size);
+	u8* json_data = malloc(stat.size + 1);
 	if(json_data == NULL) {
 		zip_fclose(info_file);
 		return RA_FAILURE("cannot allocate space");
@@ -229,19 +230,19 @@ static RA_Result parse_stage_info(RA_Mod* mod, RA_StringList* headerless, zip_t*
 		zip_fclose(info_file);
 		return RA_FAILURE("cannot read");
 	}
+	json_data[stat.size] = '\0';
 	
-	json_error_t error;
-	json_t* root = json_loads((char*) json_data, 0, &error);
+	json_object* root = json_tokener_parse((char*) json_data);
 	if(root == NULL) {
 		free(json_data);
 		zip_fclose(info_file);
-		return RA_FAILURE("cannot parse json on line %d: %s", error.line, error.text);
+		return RA_FAILURE("parsing failed");
 	}
 	free(json_data);
 	
-	json_t* name_json = json_object_get(root, "name");
+	json_object* name_json = json_object_object_get(root, "name");
 	if(name_json != NULL) {
-		const char* name_str = json_string_value(name_json);
+		const char* name_str = json_object_get_string(name_json);
 		if(name_str != NULL) {
 			mod->name = malloc(strlen(name_str) + 1);
 			if(mod->name != NULL) {
@@ -250,9 +251,9 @@ static RA_Result parse_stage_info(RA_Mod* mod, RA_StringList* headerless, zip_t*
 		}
 	}
 	
-	json_t* author_json = json_object_get(root, "author");
+	json_object* author_json = json_object_object_get(root, "author");
 	if(author_json != NULL) {
-		const char* author_str = json_string_value(author_json);
+		const char* author_str = json_object_get_string(author_json);
 		if(author_str != NULL) {
 			mod->author = malloc(strlen(author_str) + 1);
 			if(mod->author != NULL) {
@@ -263,30 +264,26 @@ static RA_Result parse_stage_info(RA_Mod* mod, RA_StringList* headerless, zip_t*
 	
 	RA_string_list_create(headerless);
 	
-	json_t* headerless_json = json_object_get(root, "headerless");
-	if(headerless_json != NULL && !json_is_array(headerless_json)) {
-		json_decref(root);
-		zip_fclose(info_file);
-		return RA_FAILURE("missing headerless property");
-	
-		size_t index;
-		json_t* value;
-		json_array_foreach(headerless_json, index, value) {
-			const char* headerless_path = json_string_value(value);
+	json_object* headerless_json = json_object_object_get(root, "headerless");
+	if(headerless_json != NULL && !json_object_is_type(headerless_json, json_type_array)) {
+		size_t count = json_object_array_length(headerless_json);
+		for(size_t i = 0; i < count; i++) {
+			json_object* element = json_object_array_get_idx(headerless_json, i);
+			const char* headerless_path = json_object_get_string(element);
 			if(headerless_path == NULL) {
-				json_decref(root);
+				json_object_put(root);
 				zip_fclose(info_file);
 				return RA_FAILURE("bad headerless property");
 			}
 			if((result = RA_string_list_add(headerless, headerless_path)) != RA_SUCCESS) {
-				json_decref(root);
+				json_object_put(root);
 				zip_fclose(info_file);
 				return result;
 			}
 		}
 	}
 	
-	json_decref(root);
+	json_object_put(root);
 	zip_fclose(info_file);
 	
 	if((result = RA_string_list_finish(headerless))) {

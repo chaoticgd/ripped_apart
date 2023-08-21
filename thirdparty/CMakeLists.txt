@@ -81,5 +81,6 @@ if(WIN32)
 	add_dependencies(zip copy_zlib_lib_hack)
 endif()
 
-# jansson
-add_subdirectory(jansson)
+# json-c
+cmake_policy(SET CMP0002 NEW)
+add_subdirectory(json-c)

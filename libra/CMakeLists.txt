@@ -26,6 +26,4 @@ add_library(libra STATIC
 	string_list.c
 	string_list.h
 )
-target_link_libraries(libra crc lz4_static GDeflate zip jansson)
-target_include_directories(libra PUBLIC ${CMAKE_SOURCE_DIR}/thirdparty/jansson/src)
-target_include_directories(libra PUBLIC ${CMAKE_BINARY_DIR}/thirdparty/jansson/include)
+target_link_libraries(libra crc lz4_static GDeflate zip json-c)

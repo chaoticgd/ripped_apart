@@ -181,7 +181,7 @@ static void refresh() {
 	
 	RA_mod_list_free(mods, mod_count);
 	if((result = RA_mod_list_load(&mods, &mod_count, settings.game_dir))) {
-		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", result->message);
+		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to load mod (%s).", result->message);
 	}
 }
 
