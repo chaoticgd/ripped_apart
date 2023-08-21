@@ -144,8 +144,7 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 		if(i == toc->asset_count || toc->assets[i].group != last_group) {
 			while(last_group != asset_group_top) {
 				if(asset_group_top > last_group) {
-					fprintf(stderr, "RA_toc_build: Asset group index mismatch (1).\n");
-					exit(1);
+					return RA_FAILURE("asset group index mismatch");
 				}
 				asset_groups[asset_group_top].first_index = group_begin;
 				asset_groups[asset_group_top].count = 0;

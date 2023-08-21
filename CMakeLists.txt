@@ -69,8 +69,8 @@ target_link_libraries(diffdat libra)
 add_executable(modmanager modmanager.c)
 target_link_libraries(modmanager libra gui versioninfo)
 
-# Set the windows codepage to UTF-8.
 if(WIN32)
+	# Set the windows codepage to UTF-8.
 	target_sources(superswizzle PUBLIC ripped_apart.manifest)
 	target_sources(igfile PUBLIC ripped_apart.manifest)
 	target_sources(igcrc PUBLIC ripped_apart.manifest)
@@ -81,6 +81,9 @@ if(WIN32)
 	target_sources(rebuildtoc PUBLIC ripped_apart.manifest)
 	target_sources(diffdat PUBLIC ripped_apart.manifest)
 	target_sources(modmanager PUBLIC ripped_apart.manifest)
+	
+	# Have the mod manager run under the windows subsystem.
+	target_link_options(modmanager PUBLIC /subsystem:windows /ENTRY:mainCRTStartup)
 endif()
 
 set(RELEASE_FILES
