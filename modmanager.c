@@ -207,9 +207,14 @@ static void mod_list() {
 static void refresh() {
 	RA_Result result;
 	
-	RA_mod_list_free(mods, mod_count);
+	if(mods != NULL) {
+		RA_mod_list_free(mods, mod_count);
+	}
+	create_mod_dirs();
 	if((result = RA_mod_list_load(&mods, &mod_count, settings.game_dir, report_mod_load_error))) {
 		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to load mod (%s).", result->message);
+		mods = NULL;
+		mod_count = 0;
 	}
 }
 
