@@ -1,19 +1,22 @@
 # Ripped Apart
 
-Ratchet & Clank: Rift Apart modding stuff.
+A collection of modding tools for Ratchet & Clank: Rift Apart including a GUI mod manager and a set of command line tools for development.
 
 - [Releases](https://github.com/chaoticgd/ripped_apart/releases)
 - [Unstable Builds](https://github.com/chaoticgd/ripped_apart/releases/tag/unstable)
 - [Documentation](docs/README.md)
 
-**The v1.x releases are not intended for use with the PC version!**
-
 Features currently include:
-- Support for Linux.
+- Install mods from .rcmod and .stage files.
+- Support for Windows and Linux.
 - Extract the games files.
-- Install mods from .rcmod or .stage files.
 - Convert PS5 textures to .png or .exr files.
 - Many miscellaneous development tools.
+- Free and open source.
+
+## Screenshot
+
+![Mod Manager Screenshot](mod_manager_screenshot.png)
 
 ## Building
 
