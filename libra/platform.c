@@ -38,8 +38,8 @@ RA_Result RA_enumerate_directory(RA_StringList* file_names_dest, const char* dir
 	RA_string_list_create(file_names_dest);
 	
 	DIR* directory = opendir(dir_path);
-	if(!directory) {
-		return RA_FAILURE("failed to open directory '%s'", dir_path);
+	if(directory == NULL) {
+		return RA_FAILURE("cannot open directory '%s'", dir_path);
 	}
 	struct dirent* entry;
 	while((entry = readdir(directory)) != NULL) {
@@ -109,6 +109,7 @@ void RA_message_box(MessageBoxType type, const char* title, const char* format, 
 			zenity_type,
 			zenity_text,
 			zenity_title,
+			"--no-markup",
 			NULL
 		};
 		execv(args[0], args);
