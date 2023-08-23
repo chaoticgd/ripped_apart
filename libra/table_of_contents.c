@@ -48,6 +48,11 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 	
 	toc->asset_count = file_locations->size / sizeof(RA_TocFileLocation);
 	toc->assets = RA_arena_alloc(&toc->arena, toc->asset_count * sizeof(RA_TocAsset));
+	if(toc->assets == NULL) {
+		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
+		RA_arena_destroy(&toc->arena);
+		return RA_FAILURE("arena allocation failed");
+	}
 	
 	for(u32 i = 0; i < toc->asset_count; i++) {
 		toc->assets[i].location = ((RA_TocFileLocation*) file_locations->data)[i];
@@ -143,15 +148,52 @@ static int compare_toc_assets(const void* lhs, const void* rhs) {
 }
 
 RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) {
-	qsort(toc->assets, toc->asset_count, sizeof(RA_TocAsset), compare_toc_assets);
+	RA_Result result;
 	
-	RA_DatWriter* writer = RA_dat_writer_begin(RA_ASSET_TYPE_TOC, 0x8);
+	qsort(toc->assets, toc->asset_count, sizeof(RA_TocAsset), compare_toc_assets);
 	
 	u32 group_count = 256;
 	for(u32 i = 0; i < toc->asset_count; i++) {
 		group_count = MAX(toc->assets[i].group + 1, group_count);
 	}
+	
+	u32 header_count = 0;
+	for(u32 i = 0; i < toc->asset_count; i++) {
+		if(toc->assets[i].has_header) {
+			header_count++;
+		}
+	}
+	
+	RA_DatWriter* writer = RA_dat_writer_begin(RA_ASSET_TYPE_TOC, 0x8);
+	if(writer == NULL) {
+		return RA_FAILURE("cannot allocate dat writer");
+	}
+	
 	RA_TocAssetGroup* asset_groups = RA_dat_writer_lump(writer, LUMP_ASSET_GROUPING, group_count * sizeof(RA_TocAssetGroup));
+	u64* asset_hashes = RA_dat_writer_lump(writer, LUMP_ASSET_HASH, toc->asset_count * sizeof(u64));
+	RA_TocFileLocation* file_location = RA_dat_writer_lump(writer, LUMP_FILE_LOCATION, toc->asset_count * sizeof(RA_TocFileLocation));
+	RA_TocArchive* archives = RA_dat_writer_lump(writer, LUMP_ARCHIVE_FILE, toc->archive_count * sizeof(RA_TocArchive));
+	u8* unk_36 = RA_dat_writer_lump(writer, LUMP_TOC_UNKNOWN_36, toc->unknown_36_size);
+	u8* unk_c9 = RA_dat_writer_lump(writer, LUMP_TOC_UNKNOWN_C9, toc->unknown_c9_size);
+	u8* unk_62 = RA_dat_writer_lump(writer, LUMP_TOC_UNKNOWN_62, toc->unknown_62_size);
+	RA_TocAssetHeader* asset_headers = RA_dat_writer_lump(writer, LUMP_ASSET_HEADERS, header_count * sizeof(RA_TocAssetHeader));
+	u32 archive_toc_string_offset = RA_dat_writer_string(writer, "ArchiveTOC");
+	
+	b8 allocation_failed =
+		asset_groups == NULL ||
+		asset_hashes == NULL ||
+		file_location == NULL ||
+		archives == NULL ||
+		unk_36 == NULL ||
+		unk_c9 == NULL ||
+		unk_62 == NULL ||
+		asset_headers == NULL ||
+		archive_toc_string_offset == 0;
+	if(allocation_failed) {
+		RA_dat_writer_abort(writer);
+		return RA_FAILURE("cannot allocate lumps");
+	}
+	
 	memset(asset_groups, 0, group_count * sizeof(RA_TocAssetGroup));
 	u32 last_group = 0;
 	u32 group_begin = 0;
@@ -183,12 +225,10 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 		asset_group_top++;
 	}
 	
-	u64* asset_hashes = RA_dat_writer_lump(writer, LUMP_ASSET_HASH, toc->asset_count * sizeof(u64));
 	for(u32 i = 0; i < toc->asset_count; i++) {
 		asset_hashes[i] = toc->assets[i].path_hash;
 	}
 	
-	RA_TocFileLocation* file_location = RA_dat_writer_lump(writer, LUMP_FILE_LOCATION, toc->asset_count * sizeof(RA_TocFileLocation));
 	u32 next_header_offset = 0;
 	for(u32 i = 0; i < toc->asset_count; i++) {
 		file_location[i] = toc->assets[i].location;
@@ -198,33 +238,24 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 		}
 	}
 	
-	RA_TocArchive* archives = RA_dat_writer_lump(writer, LUMP_ARCHIVE_FILE, toc->archive_count * sizeof(RA_TocArchive));
 	memcpy(archives, toc->archives, toc->archive_count * sizeof(RA_TocArchive));
 	
-	u8* unk_36 = RA_dat_writer_lump(writer, LUMP_TOC_UNKNOWN_36, toc->unknown_36_size);
 	memcpy(unk_36, toc->unknown_36, toc->unknown_36_size);
-	u8* unk_c9 = RA_dat_writer_lump(writer, LUMP_TOC_UNKNOWN_C9, toc->unknown_c9_size);
 	memcpy(unk_c9, toc->unknown_c9, toc->unknown_c9_size);
-	u8* unk_62 = RA_dat_writer_lump(writer, LUMP_TOC_UNKNOWN_62, toc->unknown_62_size);
 	memcpy(unk_62, toc->unknown_62, toc->unknown_62_size);
 	
-	u32 header_count = 0;
-	for(u32 i = 0; i < toc->asset_count; i++) {
-		if(toc->assets[i].has_header) {
-			header_count++;
-		}
-	}
-	
-	RA_TocAssetHeader* asset_headers = RA_dat_writer_lump(writer, LUMP_ASSET_HEADERS, header_count * sizeof(RA_TocAssetHeader));
 	for(u32 i = 0; i < toc->asset_count; i++) {
 		if(toc->assets[i].has_header) {
 			*asset_headers++ = toc->assets[i].header;
 		}
 	}
 	
-	RA_dat_writer_string(writer, "ArchiveTOC");
+	if((result = RA_dat_writer_finish(writer, data_dest, size_dest)) != RA_SUCCESS) {
+		RA_dat_writer_abort(writer);
+		return RA_FAILURE(result->message);
+	}
 	
-	RA_dat_writer_finish(writer, data_dest, size_dest);
+	
 	memcpy(*data_dest, &toc->file_header, sizeof(RA_TocFileHeader));
 	return RA_SUCCESS;
 }

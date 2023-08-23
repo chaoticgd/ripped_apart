@@ -205,6 +205,12 @@ static RA_Result parse_stage(RA_Mod* mod, const char* game_dir, const char* mod_
 		return RA_FAILURE("zip_get_num_entries returned -1");
 	}
 	mod->assets = calloc(entry_count, sizeof(RA_ModAsset));
+	if(mod->assets == NULL) {
+		RA_string_list_destroy(&headerless);
+		fclose(out_file);
+		zip_close(in_archive);
+		return RA_FAILURE("cannot allocate asset list");
+	}
 	
 	for(s64 i = 0; i < entry_count; i++) {
 		if((result = parse_stage_entry(mod, in_archive, i, out_file, &headerless)) != RA_SUCCESS) {
@@ -470,17 +476,25 @@ static RA_Result parse_rcmod(RA_Mod* mod, const char* game_dir, const char* mod_
 	
 	mod->asset_count = (file_size - directory_offset) / RCMOD_DIRENTRY_SIZE_ON_DISK;
 	mod->assets = calloc(mod->asset_count, sizeof(RA_ModAsset));
+	if(mod->assets == NULL) {
+		RA_mod_free(mod);
+		return RA_FAILURE("cannot allocate assets list");
+	}
 	
 	if(fseek(file, directory_offset, SEEK_SET) != 0) {
 		RA_mod_free(mod);
-		return RA_FAILURE("can't seek to directory entries");
+		return RA_FAILURE("cannot seek to directory entries");
 	}
 	RCMOD_DirEntry* entries = malloc(mod->asset_count * sizeof(RCMOD_DirEntry));
+	if(entries == NULL) {
+		RA_mod_free(mod);
+		return RA_FAILURE("cannot allocate directory entries");
+	}
 	for(u32 i = 0; i < mod->asset_count; i++) {
 		if(fread(&entries[i], RCMOD_DIRENTRY_SIZE_ON_DISK, 1, file) != 1) {
 			free(entries);
 			RA_mod_free(mod);
-			return RA_FAILURE("can't read directory entries");
+			return RA_FAILURE("cannot read directory entries");
 		}
 	}
 	

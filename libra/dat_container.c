@@ -182,9 +182,14 @@ struct t_RA_DatWriter {
 
 RA_DatWriter* RA_dat_writer_begin(u32 asset_type_crc, u32 bytes_before_magic) {
 	RA_DatWriter* writer = calloc(1, sizeof(RA_DatWriter));
+	if(writer == NULL) {
+		return NULL;
+	}
 	RA_arena_create(&writer->prologue);
 	RA_arena_create(&writer->lumps);
-	RA_arena_alloc_aligned(&writer->prologue, bytes_before_magic + sizeof(DatHeader), 1);
+	if(RA_arena_alloc_aligned(&writer->prologue, bytes_before_magic + sizeof(DatHeader), 1) == NULL) {
+		return NULL;
+	}
 	writer->bytes_before_magic = bytes_before_magic;
 	writer->prologue_size = bytes_before_magic + sizeof(DatHeader);
 	writer->asset_type_crc = asset_type_crc;
@@ -198,10 +203,15 @@ void* RA_dat_writer_lump(RA_DatWriter* writer, u32 type_crc, s64 size) {
 	}
 	if(writer->lumps_size % 0x10 != 0) {
 		u32 padding_size = 0x10 - writer->lumps_size % 0x10;
-		RA_arena_alloc_aligned(&writer->lumps, padding_size, 1);
+		if(RA_arena_alloc_aligned(&writer->lumps, padding_size, 1) == NULL) {
+			return NULL;
+		}
 		writer->lumps_size += padding_size;
 	}
 	LumpHeader* header = RA_arena_alloc_aligned(&writer->prologue, sizeof(LumpHeader), 1);
+	if(header == NULL) {
+		return NULL;
+	}
 	header->type_crc = type_crc;
 	header->offset = writer->lumps_size;
 	header->size = size;
@@ -215,6 +225,9 @@ void* RA_dat_writer_lump(RA_DatWriter* writer, u32 type_crc, s64 size) {
 u32 RA_dat_writer_string(RA_DatWriter* writer, const char* string) {
 	u32 string_size = strlen(string) + 1;
 	char* allocation = RA_arena_alloc_aligned(&writer->prologue, string_size, 1);
+	if(allocation == NULL) {
+		return 0;
+	}
 	strcpy(allocation, string);
 	u32 offset = writer->prologue_size;
 	writer->prologue_size += string_size;
@@ -234,23 +247,26 @@ static int compare_lumps(const void* lhs, const void* rhs) {
 	}
 }
 
-void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, s64* size_dest) {
+RA_Result RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, s64* size_dest) {
 	if(writer->prologue_size % 0x10 != 0) {
 		u32 padding_size = 0x10 - (writer->prologue_size - writer->bytes_before_magic) % 0x10;
-		RA_arena_alloc_aligned(&writer->prologue, padding_size, 1);
+		if(RA_arena_alloc_aligned(&writer->prologue, padding_size, 1) == NULL) {
+			return RA_FAILURE("cannot allocate padding");
+		}
 		writer->prologue_size += padding_size;
 	}
 	*size_dest = writer->prologue_size + writer->lumps_size;
 	*data_dest = malloc(*size_dest);
+	if(*data_dest == NULL) {
+		return RA_FAILURE("cannot allocate output");
+	}
 	s64 prologue_size = RA_arena_copy(&writer->prologue, *data_dest, *size_dest);
 	if(prologue_size != writer->prologue_size) {
-		fprintf(stderr, "RA_dat_writer_finish: Prologue size mismatch (%d, expected %d)!\n", (u32) prologue_size, writer->prologue_size);
-		abort();
+		return RA_FAILURE("prologue size mismatch (%u, expected %u)", (u32) prologue_size, writer->prologue_size);
 	}
 	s64 lumps_size = RA_arena_copy(&writer->lumps, *data_dest + prologue_size, *size_dest - prologue_size);
 	if(lumps_size != writer->lumps_size) {
-		fprintf(stderr, "RA_dat_writer_finish: Lump size mismatch (%d, expected %d)!\n", (u32) lumps_size, writer->lumps_size);
-		abort();
+		return RA_FAILURE("lump size mismatch (%u, expected %u)", (u32) lumps_size, writer->lumps_size);
 	}
 	RA_arena_destroy(&writer->prologue);
 	RA_arena_destroy(&writer->lumps);
@@ -265,6 +281,7 @@ void RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, s64* size_dest) 
 	}
 	qsort(header->lumps, header->lump_count, sizeof(LumpHeader), compare_lumps);
 	free(writer);
+	return RA_SUCCESS;
 }
 
 void RA_dat_writer_abort(RA_DatWriter* writer) {

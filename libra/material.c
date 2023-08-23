@@ -34,6 +34,9 @@ RA_Result RA_material_parse(RA_Material* material, const RA_DatFile* dat, const 
 	RA_arena_create(&material->arena);
 	
 	char* path_copy = RA_arena_alloc(&material->arena, strlen(path) + 1);
+	if(path_copy == NULL) {
+		return RA_FAILURE("allocation failed");
+	}
 	strcpy(path_copy, path);
 	material->file_path = path_copy;
 	
@@ -48,6 +51,10 @@ RA_Result RA_material_parse(RA_Material* material, const RA_DatFile* dat, const 
 			MaterialTextureLumpTypeAHeader* header = (MaterialTextureLumpTypeAHeader*) dat->lumps[i].data;
 			TextureTableEntry* textures = (TextureTableEntry*) (dat->lumps[i].data + header->texture_table_offset);
 			material->textures = RA_arena_alloc(&material->arena, header->texture_count * sizeof(RA_MaterialTexture));
+			if(material->textures == NULL) {
+				RA_arena_destroy(&material->arena);
+				return RA_FAILURE("allocation failed");
+			}
 			material->texture_count = header->texture_count;
 			for(u32 j = 0; j < header->texture_count; j++) {
 				TextureTableEntry* texture = &textures[j];

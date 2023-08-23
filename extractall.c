@@ -95,6 +95,10 @@ int main(int argc, char** argv) {
 		// Read and decompress blocks as necessary, and assemble the asset.
 		u8* data = calloc(1, toc_asset->location.size);
 		u32 size = toc_asset->location.size;
+		if(data == NULL) {
+			fprintf(stderr, "error: Failed allocate memory for asset '%s'.\n", asset_path);
+			return 1;
+		}
 		if((result = RA_archive_read(&archive, toc_asset->location.offset, size, data)) != RA_SUCCESS) {
 			fprintf(stderr, "error: Failed to read block for asset '%s' (%s).\n", asset_path, result->message);
 			return 1;

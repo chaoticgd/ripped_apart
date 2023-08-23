@@ -9,7 +9,7 @@ RA_Result RA_string_list_add(RA_StringList* string_list, const char* string) {
 	s64 string_size = strlen(string) + 1;
 	char* string_alloc = RA_arena_alloc_aligned(&string_list->arena, string_size, 1);
 	if(string_alloc == NULL) {
-		return RA_FAILURE("arena allocation failed");
+		return RA_FAILURE("cannot allocate memory");
 	}
 	memcpy(string_alloc, string, string_size);
 	string_list->count++;
@@ -19,7 +19,7 @@ RA_Result RA_string_list_add(RA_StringList* string_list, const char* string) {
 RA_Result RA_string_list_finish(RA_StringList* string_list) {
 	string_list->strings = RA_arena_alloc(&string_list->arena, string_list->count * sizeof(char*));
 	if(string_list->strings == NULL) {
-		return RA_FAILURE("arena allocation failed");
+		return RA_FAILURE("cannot allocate memory");
 	}
 	RA_ArenaBlock* block = string_list->arena.head;
 	u32 offset = 0;

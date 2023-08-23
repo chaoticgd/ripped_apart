@@ -68,6 +68,10 @@ RA_Result RA_model_parse(RA_Model* model, u8* data, u32 size) {
 			u64* src = (u64*) lump->data;
 			u32 count = lump->size / 32;
 			model->materials = RA_arena_alloc(&model->arena, count * sizeof(RA_ModelMaterial));
+			if(model->materials == NULL) {
+				RA_dat_free(&dat, DONT_FREE_FILE_DATA);
+				return RA_FAILURE("allocation failed");
+			}
 			model->material_count = count;
 			for(u32 j = 0; j < count; j++) {
 				u64 path_offset = *src++;

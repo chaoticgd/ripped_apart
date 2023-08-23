@@ -52,6 +52,9 @@ void* RA_arena_alloc(RA_Arena* arena, s64 size) {
 void* RA_arena_calloc(RA_Arena* arena, s64 element_count, s64 element_size) {
 	s64 allocation_size = element_count * element_size;
 	void* ptr = RA_arena_alloc(arena, allocation_size);
+	if(ptr == NULL) {
+		return NULL;
+	}
 	memset(ptr, 0, allocation_size);
 	return ptr;
 }

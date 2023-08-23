@@ -97,10 +97,10 @@ RA_Result RA_archive_read(RA_Archive* archive, u32 offset, u32 size, u8* data_de
 		}
 	} else {
 		if(fseek(archive->file, offset, SEEK_SET) != 0) {
-			return RA_FAILURE("fseek failed");
+			return RA_FAILURE("cannot seek to asset");
 		}
 		if(fread(data_dest, size, 1, archive->file) != 1) {
-			return RA_FAILURE("fread failed");
+			return RA_FAILURE("cannot read asset");
 		}
 	}
 	
@@ -109,18 +109,25 @@ RA_Result RA_archive_read(RA_Archive* archive, u32 offset, u32 size, u8* data_de
 
 static RA_Result load_dsar_block(RA_Archive* archive, RA_ArchiveBlock* block) {
 	if(fseek(archive->file, block->header.compressed_offset, SEEK_SET) != 0) {
-		return RA_FAILURE("fseek");
+		return RA_FAILURE("cannot seek to block");
 	}
 	u8* compressed_data = malloc(block->header.compressed_size);
 	u32 compressed_size = block->header.compressed_size;
+	if(compressed_data == NULL) {
+		return RA_FAILURE("cannot allocate memory for compressed block");
+	}
 	if(fread(compressed_data, compressed_size, 1, archive->file) != 1) {
 		free(compressed_data);
-		return RA_FAILURE("fread");
+		return RA_FAILURE("cannot read block");
 	}
 	
 	switch(block->header.compression_mode) {
 		case RA_ARCHIVE_COMPRESSION_GDEFLATE: {
 			block->decompressed_data = malloc(block->header.decompressed_size);
+			if(block->decompressed_data == NULL) {
+				free(compressed_data);
+				return RA_FAILURE("cannot allocate memory for decompressed blcok");
+			}
 			if(!gdeflate_decompress(block->decompressed_data, block->header.decompressed_size, compressed_data, compressed_size, 8)) {
 				free(compressed_data);
 				free(block->decompressed_data);
@@ -131,6 +138,10 @@ static RA_Result load_dsar_block(RA_Archive* archive, RA_ArchiveBlock* block) {
 		}
 		case RA_ARCHIVE_COMPRESSION_LZ4: {
 			block->decompressed_data = malloc(block->header.decompressed_size);
+			if(block->decompressed_data == NULL) {
+				free(compressed_data);
+				return RA_FAILURE("cannot allocate memory for decompressed blcok");
+			}
 			s32 bytes_written = LZ4_decompress_safe((char*) compressed_data, (char*) block->decompressed_data, compressed_size, block->header.decompressed_size);
 			if(bytes_written != block->header.decompressed_size) {
 				free(compressed_data);

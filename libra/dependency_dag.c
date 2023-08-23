@@ -63,6 +63,10 @@ RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size) {
 	
 	dag->assets = RA_arena_calloc(&dag->arena, asset_count, sizeof(RA_DependencyDagAsset));
 	dag->asset_count = asset_count;
+	if(dag->assets == NULL) {
+		error = "cannot allocate asset list";
+		goto fail;
+	}
 	
 	for(u32 i = 0; i < asset_count; i++) {
 		dag->assets[i].id = ((u64*) asset_ids->data)[i];
@@ -99,7 +103,7 @@ fail:
 }
 
 RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, s64* size_dest) {
-	RA_DatWriter* writer = RA_dat_writer_begin(RA_ASSET_TYPE_DAG, 0xc);
+	RA_Result result;
 	
 	u32 dependency_count = 0;
 	for(u32 i = 0; i < dag->asset_count; i++) {
@@ -108,14 +112,31 @@ RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, s64* size_dest) {
 		}
 	}
 	
+	RA_DatWriter* writer = RA_dat_writer_begin(RA_ASSET_TYPE_DAG, 0xc);
+	if(writer == NULL) {
+		return RA_FAILURE("cannot allocate dat writer");
+	}
+	
 	u64* asset_ids = RA_dat_writer_lump(writer, LUMP_ASSET_IDS, dag->asset_count * 8);
 	u32* names = RA_dat_writer_lump(writer, LUMP_ASSET_NAMES, dag->asset_count * 4);
 	u8* asset_types = RA_dat_writer_lump(writer, LUMP_ASSET_TYPES, dag->asset_count);
 	u32* dependency_indices = RA_dat_writer_lump(writer, LUMP_DEPENDENCY_INDEX, dag->asset_count * 4);
 	s32* dependency = RA_dat_writer_lump(writer, LUMP_DEPENDENCY, dependency_count * 4);
 	u32* unk = RA_dat_writer_lump(writer, LUMP_DAG_UNKNOWN, 1);
+	u32 dependency_dag_string_offset = RA_dat_writer_string(writer, "DependencyDAG");
 	
-	RA_dat_writer_string(writer, "DependencyDAG");
+	b8 allocation_failed =
+		asset_ids == NULL ||
+		names == NULL ||
+		asset_types == NULL ||
+		dependency_indices == NULL ||
+		dependency == NULL ||
+		unk == NULL ||
+		dependency_dag_string_offset == 0;
+	if(allocation_failed) {
+		RA_dat_writer_abort(writer);
+		return RA_FAILURE("cannot allocate lumps");
+	}
 	
 	for(u32 i = 0; i < dag->asset_count; i++) {
 		asset_types[i] = dag->assets[i].type;
@@ -129,7 +150,11 @@ RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, s64* size_dest) {
 		}
 	}
 	
-	RA_dat_writer_finish(writer, data_dest, size_dest);
+	if((result = RA_dat_writer_finish(writer, data_dest, size_dest)) != RA_SUCCESS) {
+		RA_dat_writer_abort(writer);
+		return RA_FAILURE(result->message);
+	}
+	
 	return RA_SUCCESS;
 }
 
