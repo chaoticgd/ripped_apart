@@ -2,6 +2,7 @@
 
 ## v2.0.2
 
+- Fixed installation of certain headerless assets (e.g. high-resolution textures).
 - Create cache files at mod installation time instead of while loading the mod list.
 - Automatically delete old cache files.
 - Fixed file handle leak when loading the mod list.

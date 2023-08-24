@@ -117,10 +117,13 @@ RA_Result RA_install_mods(RA_Mod* mods, u32 mod_count, RA_TableOfContents* toc, 
 		return RA_FAILURE("RiftApart.exe not found");
 	}
 	
+	// Create the modcache directory if it doesn't already exist and delete any
+	// old cache files from last time.
 	char cache_dir[RA_MAX_PATH];
 	if(snprintf(cache_dir, sizeof(cache_dir), "%s/modcache", game_dir) < 0) {
 		return RA_FAILURE("path too long");
 	}
+	RA_make_dir(cache_dir);
 	if((result = delete_old_cache_files(cache_dir)) != RA_SUCCESS) {
 		return RA_FAILURE(result->message);
 	}
@@ -154,8 +157,12 @@ RA_Result RA_install_mods(RA_Mod* mods, u32 mod_count, RA_TableOfContents* toc, 
 		}
 	}
 	
+	for(u32 i = 0; i < loaded_mod_count; i++) {
+		free(loaded_mods[i].assets);
+	}
+	free(loaded_mods);
+	
 	if((result = update_table_of_contents(loaded_mods, loaded_mod_count, toc)) != RA_SUCCESS) {
-		free(loaded_mods);
 		return result;
 	}
 	
@@ -492,11 +499,13 @@ static RA_Result parse_stage_entry(RA_LoadedMod* mod, zip_t* in_archive, s64 ind
 	asset->toc.path_hash = is_hash_path ? strtoull(relative_path, NULL, 16) : RA_crc64_path(relative_path);
 	asset->toc.group = group;
 	
-	b8 has_header = true;
-	for(u32 i = 0; i < headerless->count; i++) {
-		if(strcmp(headerless->strings[i], name) == 0) {
-			has_header = false;
-			break;
+	b8 has_header = (asset->toc.group % 8) == 0;
+	if(has_header) {
+		for(u32 i = 0; i < headerless->count; i++) {
+			if(strcmp(headerless->strings[i], name) == 0) {
+				has_header = false;
+				break;
+			}
 		}
 	}
 	
@@ -641,21 +650,25 @@ static RA_Result load_rcmod(RA_LoadedMod* dest, RA_Mod* src, const char* mod_pat
 	}
 	
 	for(u32 i = 0; i < dest->asset_count; i++) {
-		dest->assets[i].toc.has_header = true;
-		if(fseek(file, entries[i].offset, SEEK_SET) != 0) {
-			free(entries);
-			free(dest->assets);
-			fclose(file);
-			return RA_FAILURE("can't seek to asset header");
+		s32 header_size = 0;
+		if((entries[i].group % 8) == 0) {
+			dest->assets[i].toc.has_header = true;
+			header_size = sizeof(RA_TocAssetHeader);
+			if(fseek(file, entries[i].offset, SEEK_SET) != 0) {
+				free(entries);
+				free(dest->assets);
+				fclose(file);
+				return RA_FAILURE("can't seek to asset header");
+			}
+			if(fread(&dest->assets[i].toc.header, sizeof(RA_TocAssetHeader), 1, file) != 1) {
+				free(entries);
+				free(dest->assets);
+				fclose(file);
+				return RA_FAILURE("can't read asset header");
+			}
 		}
-		if(fread(&dest->assets[i].toc.header, sizeof(RA_TocAssetHeader), 1, file) != 1) {
-			free(entries);
-			free(dest->assets);
-			fclose(file);
-			return RA_FAILURE("can't read asset header");
-		}
-		dest->assets[i].toc.location.offset = entries[i].offset + sizeof(RA_TocAssetHeader);
-		dest->assets[i].toc.location.size = entries[i].size - sizeof(RA_TocAssetHeader);
+		dest->assets[i].toc.location.offset = entries[i].offset + header_size;
+		dest->assets[i].toc.location.size = entries[i].size - header_size;
 		dest->assets[i].toc.path_hash = entries[i].hash;
 		dest->assets[i].toc.group = entries[i].group;
 	}
