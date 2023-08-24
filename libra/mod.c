@@ -157,14 +157,18 @@ RA_Result RA_install_mods(RA_Mod* mods, u32 mod_count, RA_TableOfContents* toc, 
 		}
 	}
 	
+	if((result = update_table_of_contents(loaded_mods, loaded_mod_count, toc)) != RA_SUCCESS) {
+		for(u32 i = 0; i < loaded_mod_count; i++) {
+			RA_free(loaded_mods[i].assets);
+		}
+		RA_free(loaded_mods);
+		return result;
+	}
+	
 	for(u32 i = 0; i < loaded_mod_count; i++) {
 		RA_free(loaded_mods[i].assets);
 	}
 	RA_free(loaded_mods);
-	
-	if((result = update_table_of_contents(loaded_mods, loaded_mod_count, toc)) != RA_SUCCESS) {
-		return result;
-	}
 	
 	*success_count_dest = success_count;
 	*fail_count_dest = fail_count;

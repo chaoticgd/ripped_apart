@@ -157,6 +157,10 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 		group_count = MAX(toc->assets[i].group + 1, group_count);
 	}
 	
+	if(group_count > 65535) {
+		return RA_FAILURE("asset has bad group/span");
+	}
+	
 	u32 header_count = 0;
 	for(u32 i = 0; i < toc->asset_count; i++) {
 		if(toc->assets[i].has_header) {
