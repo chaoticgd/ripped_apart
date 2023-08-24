@@ -8,7 +8,13 @@ static void print_help();
 
 static void report_mod_load_error(const char* file_name, RA_Result result) {
 	if(result != RA_SUCCESS) {
-		fprintf(stderr, "error: Failed to load mod '%s' (%s).", file_name, result->message);
+		fprintf(stderr, "error: Failed to load mod '%s' (%s). The table of contents has not been modified.\n", file_name, result->message);
+	}
+}
+
+static void report_mod_install_error(const char* file_name, RA_Result result) {
+	if(result != RA_SUCCESS) {
+		fprintf(stderr, "error: Failed to install mod '%s' (%s).\b", file_name, result->message);
 	}
 }
 
@@ -67,14 +73,12 @@ int main(int argc, char** argv) {
 	
 	for(u32 i = 0; i < mod_count; i++) {
 		mods[i].enabled = true;
-		if(mods[i].name) {
-			printf("Loaded mod: %s\n", mods[i].name);
-		} else {
-			printf("Loaded mod: %s\n", mods[i].archive_path);
-		}
+		printf("Loaded mod: %s\n", mods[i].file_name);
 	}
 	
-	if((result = RA_mod_list_rebuild_toc(mods, mod_count, &toc, NULL)) != RA_SUCCESS) {
+	u32 success_count;
+	u32 fail_count;
+	if((result = RA_install_mods(mods, mod_count, &toc, &success_count, &fail_count, game_dir, report_mod_install_error)) != RA_SUCCESS) {
 		fprintf(stderr, "error: Failed to install mods (%s). The table of contents has not been modified.\n", result->message);
 		return 1;
 	}
@@ -90,6 +94,8 @@ int main(int argc, char** argv) {
 		fprintf(stderr, "error: Failed to write toc file (%s).\n", result->message);
 		return 1;
 	}
+	
+	printf("%u mods installed successfully, %u mods failed to install.\n", success_count, fail_count);
 	
 	free(out_data);
 	RA_mod_list_free(mods, mod_count);

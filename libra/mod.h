@@ -4,16 +4,15 @@
 #include "util.h"
 #include "table_of_contents.h"
 
-typedef struct {
-	RA_TocAsset toc;
-} RA_ModAsset;
+typedef enum {
+	RA_MOD_FORMAT_STAGE,
+	RA_MOD_FORMAT_RCMOD
+} RA_ModFormat;
 
 typedef struct {
 	b8 enabled;
 	char file_name[RA_MAX_PATH];
-	char archive_path[0x42];
-	RA_ModAsset* assets;
-	u32 asset_count;
+	RA_ModFormat format;
 	char* name;
 	char* version;
 	char* description;
@@ -22,10 +21,8 @@ typedef struct {
 
 typedef void (ModLoadErrorFunc)(const char* file_name, RA_Result result);
 RA_Result RA_mod_list_load(RA_Mod** mods_dest, u32* mod_count_dest, const char* game_dir, ModLoadErrorFunc* error_func);
-RA_Result RA_mod_list_rebuild_toc(RA_Mod* mods, u32 mod_count, RA_TableOfContents* toc, u32* mod_count_dest);
 void RA_mod_list_free(RA_Mod* mods, u32 mod_count);
 
-RA_Result RA_mod_read(RA_Mod* mod, const char* game_dir, const char* mod_file_name);
-void RA_mod_free(RA_Mod* mod);
+RA_Result RA_install_mods(RA_Mod* mods, u32 mod_count, RA_TableOfContents* toc, u32* success_count_dest, u32* fail_count_dest, const char* game_dir, ModLoadErrorFunc* error_func);
 
 #endif

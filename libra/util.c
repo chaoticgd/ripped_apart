@@ -79,21 +79,21 @@ RA_Result RA_file_write(const char* path, u8* data, s64 size) {
 }
 
 s64 RA_file_size(FILE* file) {
-	long old_offset = ftell(file);
+	s64 old_offset = ftell(file);
 	if(old_offset == -1) {
 		return -1;
 	}
 	if(fseek(file, 0, SEEK_END) != 0) {
 		return -1;
 	}
-	long size = ftell(file);
+	s64 size = ftell(file);
 	if(size == -1) {
 		return size;
 	}
 	if(fseek(file, old_offset, SEEK_SET) != 0) {
 		return -1;
 	}
-	return (s64) size;
+	return size;
 }
 
 void RA_remove_file_name(char* dest, s64 buffer_size, const char* src) {

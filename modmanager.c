@@ -23,12 +23,6 @@ static void install_mods();
 static void no_game_folder_message();
 static void create_mod_dirs();
 
-static void report_mod_load_error(const char* file_name, RA_Result result) {
-	if(result != RA_SUCCESS) {
-		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to load mod '%s' (%s).", file_name, result->message);
-	}
-}
-
 int main(int argc, char** argv) {
 	RA_Result result;
 	
@@ -45,14 +39,7 @@ int main(int argc, char** argv) {
 		}
 	}
 	
-	if(settings.game_dir_valid) {
-		create_mod_dirs();
-		if((result = RA_mod_list_load(&mods, &mod_count, settings.game_dir, report_mod_load_error)) != RA_SUCCESS) {
-			RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to load mod list (%s).", result->message);
-		}
-	} else {
-		no_game_folder_message();
-	}
+	refresh();
 	
 	GUI_main_loop(window, update);
 	GUI_shutdown(window);
@@ -108,11 +95,7 @@ static void draw_gui() {
 	
 	igSameLine(0.f, -1.f);
 	if(igButton("Refresh", (ImVec2) {0, 0})) {
-		if(settings.game_dir_valid) {
-			refresh();
-		} else {
-			no_game_folder_message();
-		}
+		refresh();
 	}
 	
 	igSameLine(0.f, -1.f);
@@ -204,6 +187,12 @@ static void mod_list() {
 	igEndChild();
 }
 
+static void report_mod_load_error(const char* file_name, RA_Result result) {
+	if(result != RA_SUCCESS) {
+		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to load mod '%s' (%s).", file_name, result->message);
+	}
+}
+
 static void refresh() {
 	RA_Result result;
 	
@@ -217,6 +206,14 @@ static void refresh() {
 			mods = NULL;
 			mod_count = 0;
 		}
+	} else {
+		no_game_folder_message();
+	}
+}
+
+static void report_mod_install_error(const char* file_name, RA_Result result) {
+	if(result != RA_SUCCESS) {
+		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to install mod '%s' (%s).", file_name, result->message);
 	}
 }
 
@@ -267,8 +264,9 @@ static void install_mods() {
 		return;
 	}
 	
-	u32 enabled_mod_count;
-	if((result = RA_mod_list_rebuild_toc(mods, mod_count, &toc, &enabled_mod_count)) != RA_SUCCESS) {
+	u32 success_count;
+	u32 fail_count;
+	if((result = RA_install_mods(mods, mod_count, &toc, &success_count, &fail_count, settings.game_dir, report_mod_install_error)) != RA_SUCCESS) {
 		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to install mods (%s). The table of contents has not been modified.\n", result->message);
 		RA_toc_free(&toc, FREE_FILE_DATA);
 		return;
@@ -289,7 +287,9 @@ static void install_mods() {
 		return;
 	}
 	
-	RA_message_box(GUI_MESSAGE_BOX_INFO, "Success", "Installed %u mod%s successfully.", enabled_mod_count, enabled_mod_count == 1 ? "" : "s");
+	if(fail_count == 0) {
+		RA_message_box(GUI_MESSAGE_BOX_INFO, "Success", "Installed %u mod%s successfully.", success_count, success_count == 1 ? "" : "s");
+	}
 	
 	free(out_data);
 	RA_toc_free(&toc, FREE_FILE_DATA);

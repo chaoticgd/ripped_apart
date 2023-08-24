@@ -121,13 +121,14 @@ static RA_Result load_dsar_block(RA_Archive* archive, RA_ArchiveBlock* block) {
 		return RA_FAILURE("cannot read block");
 	}
 	
+	block->decompressed_data = malloc(block->header.decompressed_size);
+	if(block->decompressed_data == NULL) {
+		free(compressed_data);
+		return RA_FAILURE("cannot allocate memory for decompressed blcok");
+	}
+	
 	switch(block->header.compression_mode) {
 		case RA_ARCHIVE_COMPRESSION_GDEFLATE: {
-			block->decompressed_data = malloc(block->header.decompressed_size);
-			if(block->decompressed_data == NULL) {
-				free(compressed_data);
-				return RA_FAILURE("cannot allocate memory for decompressed blcok");
-			}
 			if(!gdeflate_decompress(block->decompressed_data, block->header.decompressed_size, compressed_data, compressed_size, 8)) {
 				free(compressed_data);
 				free(block->decompressed_data);
@@ -137,11 +138,6 @@ static RA_Result load_dsar_block(RA_Archive* archive, RA_ArchiveBlock* block) {
 			break;
 		}
 		case RA_ARCHIVE_COMPRESSION_LZ4: {
-			block->decompressed_data = malloc(block->header.decompressed_size);
-			if(block->decompressed_data == NULL) {
-				free(compressed_data);
-				return RA_FAILURE("cannot allocate memory for decompressed blcok");
-			}
 			s32 bytes_written = LZ4_decompress_safe((char*) compressed_data, (char*) block->decompressed_data, compressed_size, block->header.decompressed_size);
 			if(bytes_written != block->header.decompressed_size) {
 				free(compressed_data);
@@ -152,6 +148,7 @@ static RA_Result load_dsar_block(RA_Archive* archive, RA_ArchiveBlock* block) {
 			break;
 		}
 		default: {
+			free(block->decompressed_data);
 			free(compressed_data);
 			return RA_FAILURE("unknown compression mode %hhd", block->header.compression_mode);
 		}

@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.0.2
+
+- Create cache files at mod installation time instead of while loading the mod list.
+- Automatically delete old cache files.
+- Fixed file handle leak when loading the mod list.
+
 ## v2.0.1
 
 - Fixed a crash when the mods folder is deleted while the mod manager is running.
