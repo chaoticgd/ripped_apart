@@ -128,6 +128,21 @@ RA_Result RA_install_mods(RA_Mod* mods, u32 mod_count, RA_TableOfContents* toc, 
 		return RA_FAILURE(result->message);
 	}
 	
+	// If one of the mods doesn't exist, bail out. This prevents the user from
+	// being spammed with dialog boxes when they delete all their mods, and
+	// click 'Install Mods' without first clicking 'Refresh'.
+	for(u32 i = 0; i < mod_count; i++) {
+		if(mods[i].enabled) {
+			char mod_path[RA_MAX_PATH];
+			if(snprintf(mod_path, sizeof(mod_path), "%s/mods/%s", game_dir, mods[i].file_name) < 0) {
+				return RA_FAILURE("path too long");
+			}
+			if(!RA_file_exists(mod_path)) {
+				return RA_FAILURE("mod '%s' doesn't exist", mods[i].file_name);
+			}
+		}
+	}
+	
 	RA_LoadedMod* loaded_mods = RA_malloc(mod_count * sizeof(RA_LoadedMod));
 	u32 loaded_mod_count = 0;
 	u32 success_count = 0;

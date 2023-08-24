@@ -289,6 +289,10 @@ static void install_mods() {
 	
 	if(fail_count == 0) {
 		RA_message_box(GUI_MESSAGE_BOX_INFO, "Success", "Installed %u mod%s successfully.", success_count, success_count == 1 ? "" : "s");
+	} else {
+		RA_message_box(GUI_MESSAGE_BOX_INFO, "Error", "%u mod%s were installed successfully, %u mod%s failed to install.",
+			success_count, success_count == 1 ? "" : "s",
+			fail_count, fail_count == 1 ? "" : "s");
 	}
 	
 	RA_free(out_data);
