@@ -26,10 +26,6 @@ RA_Result RA_failure(int line, const char* format, ...) {
 	return &error;
 }
 
-#undef malloc
-#undef free
-#undef calloc
-
 static int alloc_dummy;
 
 void* RA_malloc(size_t size) {

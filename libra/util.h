@@ -62,10 +62,6 @@ void* RA_malloc(size_t size);
 void RA_free(void* ptr);
 void* RA_calloc(size_t nmemb, size_t size);
 
-#define malloc use_RA_malloc_instead
-#define free use_RA_free_instead
-#define calloc use_RA_calloc_instead
-
 void RA_file_fix_path(char* path);
 RA_Result RA_file_read(const char* path, u8** data_dest, s64* size_dest);
 RA_Result RA_file_write(const char* path, u8* data, s64 size);
