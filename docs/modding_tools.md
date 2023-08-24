@@ -14,7 +14,7 @@ Command line usage:
 
 ## rebuildtoc
 
-Installs mods. Currently supports the .rcmod format.
+Installs mods from the command line. Currently supports the .stage and .rcmod formats.
 
 Command line usage:
 
