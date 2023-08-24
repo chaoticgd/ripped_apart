@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
 		}
 		
 		// Read and decompress blocks as necessary, and assemble the asset.
-		u8* data = calloc(1, toc_asset->location.size);
+		u8* data = RA_calloc(1, toc_asset->location.size);
 		u32 size = toc_asset->location.size;
 		if(data == NULL) {
 			fprintf(stderr, "error: Failed allocate memory for asset '%s'.\n", asset_path);
@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 		
-		free(data);
+		RA_free(data);
 		
 		// Write out the list of dependencies for the file.
 		if(dag_asset) {

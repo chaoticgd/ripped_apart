@@ -26,6 +26,32 @@ RA_Result RA_failure(int line, const char* format, ...) {
 	return &error;
 }
 
+#undef malloc
+#undef free
+#undef calloc
+
+static int alloc_dummy;
+
+void* RA_malloc(size_t size) {
+	if(size == 0) {
+		return (void*) &alloc_dummy;
+	}
+	return malloc(size);
+}
+
+void RA_free(void* ptr) {
+	if(ptr != (void*) &alloc_dummy) {
+		free(ptr);
+	}
+}
+
+void* RA_calloc(size_t nmemb, size_t size) {
+	if(nmemb == 0 || size == 0) {
+		return &alloc_dummy;
+	}
+	return calloc(nmemb, size);
+}
+
 void RA_file_fix_path(char* path) {
 	u64 path_size = strlen(path);
 	for(u64 i = 0; i < path_size; i++) {
@@ -46,13 +72,13 @@ RA_Result RA_file_read(const char* path, u8** data_dest, s64* size_dest) {
 	s64 size = RA_file_size(file);
 	*size_dest = size;
 	
-	u8* data = malloc(size + 1);
+	u8* data = RA_malloc(size + 1);
 	if(data == NULL) {
 		fclose(file);
 		return RA_FAILURE("failed to allocate memory for file contents");
 	}
 	if(fread(data, size, 1, file) != 1) {
-		free(data);
+		RA_free(data);
 		fclose(file);
 		return RA_FAILURE("failed to read file");
 	}

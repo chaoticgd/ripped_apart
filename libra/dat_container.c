@@ -101,35 +101,35 @@ RA_Result RA_dat_read(RA_DatFile* dat, const char* path, u32 bytes_before_magic)
 	if(dat->lumps == NULL) {
 		return RA_FAILURE("allocation failed");
 	}
-	LumpHeader* headers = malloc(sizeof(LumpHeader) * header.lump_count);
+	LumpHeader* headers = RA_malloc(sizeof(LumpHeader) * header.lump_count);
 	if(fread(headers, dat->lump_count * sizeof(LumpHeader), 1, file) != 1) return RA_FAILURE("failed to read lump header");
 	for(s32 i = 0; i < header.lump_count; i++) {
 		dat->lumps[i].type_crc = headers[i].type_crc;
 		dat->lumps[i].offset = headers[i].offset;
 		dat->lumps[i].size = headers[i].size;
 		if(headers[i].size > 256 * 1024 * 1024) {
-			free(headers);
+			RA_free(headers);
 			RA_arena_destroy(&dat->arena);
 			fclose(file);
 			return RA_FAILURE("lump too big");
 		}
 		dat->lumps[i].data = RA_arena_alloc(&dat->arena, headers[i].size);
 		if(dat->lumps[i].data == NULL) {
-			free(headers);
+			RA_free(headers);
 			RA_arena_destroy(&dat->arena);
 			fclose(file);
 			return RA_FAILURE("allocation failed");
 		}
 		fseek(file, bytes_before_magic + headers[i].offset, SEEK_SET);
 		if(fread(dat->lumps[i].data, headers[i].size, 1, file) != 1) {
-			free(headers);
+			RA_free(headers);
 			RA_arena_destroy(&dat->arena);
 			fclose(file);
 			return RA_FAILURE("failed to read lump");
 		}
 	}
 	dat->bytes_before_magic = bytes_before_magic;
-	free(headers);
+	RA_free(headers);
 	fclose(file);
 	return RA_SUCCESS;
 }
@@ -137,7 +137,7 @@ RA_Result RA_dat_read(RA_DatFile* dat, const char* path, u32 bytes_before_magic)
 RA_Result RA_dat_free(RA_DatFile* dat, ShouldFreeFileData free_file_data) {
 	RA_arena_destroy(&dat->arena);
 	if(free_file_data == FREE_FILE_DATA && dat->file_data != NULL) {
-		free(dat->file_data);
+		RA_free(dat->file_data);
 	}
 	return RA_SUCCESS;
 }
@@ -181,7 +181,7 @@ struct t_RA_DatWriter {
 };
 
 RA_DatWriter* RA_dat_writer_begin(u32 asset_type_crc, u32 bytes_before_magic) {
-	RA_DatWriter* writer = calloc(1, sizeof(RA_DatWriter));
+	RA_DatWriter* writer = RA_calloc(1, sizeof(RA_DatWriter));
 	if(writer == NULL) {
 		return NULL;
 	}
@@ -256,7 +256,7 @@ RA_Result RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, s64* size_d
 		writer->prologue_size += padding_size;
 	}
 	*size_dest = writer->prologue_size + writer->lumps_size;
-	*data_dest = malloc(*size_dest);
+	*data_dest = RA_malloc(*size_dest);
 	if(*data_dest == NULL) {
 		return RA_FAILURE("cannot allocate output");
 	}
@@ -280,14 +280,14 @@ RA_Result RA_dat_writer_finish(RA_DatWriter* writer, u8** data_dest, s64* size_d
 		header->lumps[i].offset += writer->prologue_size - writer->bytes_before_magic;
 	}
 	qsort(header->lumps, header->lump_count, sizeof(LumpHeader), compare_lumps);
-	free(writer);
+	RA_free(writer);
 	return RA_SUCCESS;
 }
 
 void RA_dat_writer_abort(RA_DatWriter* writer) {
 	RA_arena_destroy(&writer->prologue);
 	RA_arena_destroy(&writer->lumps);
-	free(writer);
+	RA_free(writer);
 }
 
 // Lump type information

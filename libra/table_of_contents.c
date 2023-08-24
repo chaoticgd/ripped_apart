@@ -263,7 +263,7 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 void RA_toc_free(RA_TableOfContents* toc, ShouldFreeFileData free_file_data) {
 	RA_arena_destroy(&toc->arena);
 	if(free_file_data == FREE_FILE_DATA && toc->file_data) {
-		free(toc->file_data);
+		RA_free(toc->file_data);
 	}
 }
 

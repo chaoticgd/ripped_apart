@@ -20,15 +20,15 @@ RA_Result RA_archive_open(RA_Archive* archive, const char* path) {
 	if(header.magic == FOURCC("DSAR")) {
 		archive->is_dsar_archive = true;
 		
-		archive->dsar_blocks = calloc(header.block_count, sizeof(RA_ArchiveBlock));
+		archive->dsar_blocks = RA_calloc(header.block_count, sizeof(RA_ArchiveBlock));
 		archive->dsar_block_count = header.block_count;
 		if(archive->dsar_blocks == NULL) {
-			return RA_FAILURE("malloc");
+			return RA_FAILURE("RA_malloc");
 		}
 		
 		for(u32 i = 0; i < archive->dsar_block_count; i++) {
 			if(fread(&archive->dsar_blocks[i].header, sizeof(RA_ArchiveBlockHeader), 1, archive->file) != 1) {
-				free(archive->dsar_blocks);
+				RA_free(archive->dsar_blocks);
 				return RA_FAILURE("fread block header");
 			}
 		}
@@ -44,10 +44,10 @@ RA_Result RA_archive_close(RA_Archive* archive) {
 	if(archive->is_dsar_archive) {
 		for(u32 i = 0; i < archive->dsar_block_count; i++) {
 			if(archive->dsar_blocks[i].decompressed_data != NULL) {
-				free(archive->dsar_blocks[i].decompressed_data);
+				RA_free(archive->dsar_blocks[i].decompressed_data);
 			}
 		}
-		free(archive->dsar_blocks);
+		RA_free(archive->dsar_blocks);
 	}
 	return RA_SUCCESS;
 }
@@ -90,7 +90,7 @@ RA_Result RA_archive_read(RA_Archive* archive, u32 offset, u32 size, u8* data_de
 				
 				memcpy(data_dest + dest_offset, block->decompressed_data + src_offset, copy_size);
 			} else if(block->decompressed_data != NULL) {
-				free(block->decompressed_data);
+				RA_free(block->decompressed_data);
 				block->decompressed_data = NULL;
 				block->decompressed_size = 0;
 			}
@@ -111,27 +111,27 @@ static RA_Result load_dsar_block(RA_Archive* archive, RA_ArchiveBlock* block) {
 	if(fseek(archive->file, block->header.compressed_offset, SEEK_SET) != 0) {
 		return RA_FAILURE("cannot seek to block");
 	}
-	u8* compressed_data = malloc(block->header.compressed_size);
+	u8* compressed_data = RA_malloc(block->header.compressed_size);
 	u32 compressed_size = block->header.compressed_size;
 	if(compressed_data == NULL) {
 		return RA_FAILURE("cannot allocate memory for compressed block");
 	}
 	if(fread(compressed_data, compressed_size, 1, archive->file) != 1) {
-		free(compressed_data);
+		RA_free(compressed_data);
 		return RA_FAILURE("cannot read block");
 	}
 	
-	block->decompressed_data = malloc(block->header.decompressed_size);
+	block->decompressed_data = RA_malloc(block->header.decompressed_size);
 	if(block->decompressed_data == NULL) {
-		free(compressed_data);
+		RA_free(compressed_data);
 		return RA_FAILURE("cannot allocate memory for decompressed blcok");
 	}
 	
 	switch(block->header.compression_mode) {
 		case RA_ARCHIVE_COMPRESSION_GDEFLATE: {
 			if(!gdeflate_decompress(block->decompressed_data, block->header.decompressed_size, compressed_data, compressed_size, 8)) {
-				free(compressed_data);
-				free(block->decompressed_data);
+				RA_free(compressed_data);
+				RA_free(block->decompressed_data);
 				return RA_FAILURE("failed to decompress gdeflate block");
 			}
 			block->decompressed_size = block->header.decompressed_size;
@@ -140,21 +140,21 @@ static RA_Result load_dsar_block(RA_Archive* archive, RA_ArchiveBlock* block) {
 		case RA_ARCHIVE_COMPRESSION_LZ4: {
 			s32 bytes_written = LZ4_decompress_safe((char*) compressed_data, (char*) block->decompressed_data, compressed_size, block->header.decompressed_size);
 			if(bytes_written != block->header.decompressed_size) {
-				free(compressed_data);
-				free(block->decompressed_data);
+				RA_free(compressed_data);
+				RA_free(block->decompressed_data);
 				return RA_FAILURE("failed to decompress lz4 block");
 			}
 			block->decompressed_size = block->header.decompressed_size;
 			break;
 		}
 		default: {
-			free(block->decompressed_data);
-			free(compressed_data);
+			RA_free(block->decompressed_data);
+			RA_free(compressed_data);
 			return RA_FAILURE("unknown compression mode %hhd", block->header.compression_mode);
 		}
 	}
 	
-	free(compressed_data);
+	RA_free(compressed_data);
 	
 	return RA_SUCCESS;
 }

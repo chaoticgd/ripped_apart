@@ -102,13 +102,13 @@ int main(int argc, char** argv) {
 	const char* extension = is_hdr ? ".exr" : ".png";
 	
 	if(argc == 2 || argc == 3) {
-		char* stream_file_auto = malloc(strlen(texture_file) + strlen(".stream") + 1);
+		char* stream_file_auto = RA_malloc(strlen(texture_file) + strlen(".stream") + 1);
 		strcpy(stream_file_auto, texture_file);
 		memcpy(stream_file_auto + strlen(stream_file_auto), ".stream", strlen(".stream") + 1);
 		stream_file = stream_file_auto;
 		
 		if(argc == 2) {
-			char* output_file_auto = malloc(strlen(texture_file) + strlen(extension) + 1);
+			char* output_file_auto = RA_malloc(strlen(texture_file) + strlen(extension) + 1);
 			strcpy(output_file_auto, texture_file);
 			memcpy(output_file_auto + strlen(output_file_auto), extension, strlen(extension) + 1);
 			output_file = output_file_auto;
@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
 	
 	//test_all_possible_swizzle_patterns(output_file, compressed, tex_header->width, tex_header->height, real_width, real_height, tex_header->format, texture_size);
 	
-	free(compressed);
+	RA_free(compressed);
 	
 	return 0;
 }
@@ -260,7 +260,7 @@ static uint8_t* load_last_n_bytes(const char* path, int32_t n) {
 	}
 	fseek(file, -n, SEEK_END);
 	printf("mip @ %lx\n", ftell(file));
-	uint8_t* buffer = malloc(n);
+	uint8_t* buffer = RA_malloc(n);
 	check_fread(fread(buffer, n, 1, file));
 	fclose(file);
 	return buffer;
@@ -268,8 +268,8 @@ static uint8_t* load_last_n_bytes(const char* path, int32_t n) {
 
 static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size, int32_t block_size, const char* pattern) {
 	// Allocate memory for decompression and unswizzling.
-	uint8_t* decompressed = malloc(real_width * real_height * 4);
-	uint8_t* unswizzled = malloc(real_width * real_height * 4);
+	uint8_t* decompressed = RA_malloc(real_width * real_height * 4);
+	uint8_t* unswizzled = RA_malloc(real_width * real_height * 4);
 	
 	// Decompress and unswizzle the textures.
 	switch(format) {
@@ -347,7 +347,7 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 		}
 	}
 	
-	free(decompressed);
+	RA_free(decompressed);
 	
 	if(real_width != width || real_height != height) {
 		assert(real_width >= width && real_height >= height);
@@ -357,13 +357,13 @@ static void decode_and_write_png(const char* output_file, uint8_t* src, int32_t 
 	// Write the output file.
 	lodepng_encode32_file(output_file, unswizzled, width, height);
 	
-	free(unswizzled);
+	RA_free(unswizzled);
 }
 
 static void decode_and_write_exr(const char* output_file, uint8_t* src, int32_t width, int32_t height, int32_t real_width, int32_t real_height, int32_t format, int32_t texture_size, int32_t block_size, const char* pattern) {
 	// Allocate memory for decompression and unswizzling.
-	uint8_t* decompressed = malloc(real_width * real_height * 16);
-	uint8_t* unswizzled = malloc(real_width * real_height * 16);
+	uint8_t* decompressed = RA_malloc(real_width * real_height * 16);
+	uint8_t* unswizzled = RA_malloc(real_width * real_height * 16);
 	int8_t is_half = 0;
 	
 	// Decompress and unswizzle the textures.
@@ -388,7 +388,7 @@ static void decode_and_write_exr(const char* output_file, uint8_t* src, int32_t 
 		}
 	}
 	
-	free(decompressed);
+	RA_free(decompressed);
 	
 	if(real_width != width || real_height != height) {
 		assert(real_width >= width && real_height >= height);
@@ -398,7 +398,7 @@ static void decode_and_write_exr(const char* output_file, uint8_t* src, int32_t 
 	// Write the output file.
 	write_exr(output_file, unswizzled, width, height, is_half);
 	
-	free(unswizzled);
+	RA_free(unswizzled);
 }
 
 static void crop_image_in_place(uint8_t* image, int32_t new_width, int32_t new_height, int32_t old_width, int32_t old_height, int32_t pixel_size) {
@@ -647,7 +647,7 @@ static void write_exr(const char* output_path, const uint8_t* src, int32_t width
 	int32_t max_rows_per_chunk = deflate ? 16 : 1;
 	int32_t chunk_count = (height + max_rows_per_chunk - 1) / max_rows_per_chunk;
 	int32_t offset_table_size = chunk_count * 8;
-	int64_t* offset_table = malloc(offset_table_size);
+	int64_t* offset_table = RA_malloc(offset_table_size);
 	int64_t offset_table_pos = ftell(file);
 	check_fseek(fseek(file, offset_table_size, SEEK_CUR));
 	
@@ -656,8 +656,8 @@ static void write_exr(const char* output_path, const uint8_t* src, int32_t width
 	int32_t bytes_per_pixel = is_half ? 8 : 16;
 	int32_t row_size = width * bytes_per_pixel;
 	int32_t chunk_data_size = row_size * max_rows_per_chunk;
-	uint8_t* chunk_data = malloc(row_size * max_rows_per_chunk);
-	uint8_t* reordered_chunk_data = malloc(row_size * max_rows_per_chunk);
+	uint8_t* chunk_data = RA_malloc(row_size * max_rows_per_chunk);
+	uint8_t* reordered_chunk_data = RA_malloc(row_size * max_rows_per_chunk);
 	LodePNGCompressSettings compression_settings;
 	lodepng_compress_settings_init(&compression_settings);
 	for(int32_t chunk = 0; chunk < chunk_count; chunk++) {
@@ -690,20 +690,20 @@ static void write_exr(const char* output_path, const uint8_t* src, int32_t width
 			check_fwrite(fwrite(&compressed_chunk_data_size, 4, 1, file));
 			check_fwrite(fwrite(compressed_chunk_data, compressed_chunk_data_size, 1, file));
 			
-			free(compressed_chunk_data);
+			RA_free(compressed_chunk_data);
 		} else {
 			check_fwrite(fwrite(&chunk_data_size, sizeof(chunk_data_size), 1, file));
 			check_fwrite(fwrite(chunk_data, chunk_data_size, 1, file));
 		}
 	}
 	
-	free(chunk_data);
-	free(reordered_chunk_data);
+	RA_free(chunk_data);
+	RA_free(reordered_chunk_data);
 	
 	// write offset table
 	check_fseek(fseek(file, offset_table_pos, SEEK_SET));
 	check_fwrite(fwrite(offset_table, offset_table_size, 1, file));
-	free(offset_table);
+	RA_free(offset_table);
 	
 	fclose(file);
 }
@@ -771,7 +771,7 @@ static void test_all_possible_swizzle_patterns(const char* output_file, uint8_t*
 		if(pattern[3] != 'Z')return;
 		
 		pattern[ofs] = '\0';
-		char* testout = malloc(strlen(output_file)+sizeof(pattern)+4+1);
+		char* testout = RA_malloc(strlen(output_file)+sizeof(pattern)+4+1);
 		memcpy(testout, output_file, strlen(output_file));
 		memcpy(testout+strlen(output_file), pattern, strlen(pattern));
 		memcpy(testout+strlen(output_file)+strlen(pattern), ".exr", 5);

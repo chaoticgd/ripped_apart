@@ -241,11 +241,11 @@ static void install_mods() {
 		
 		if((result = RA_file_write(toc_backup_path, backup_data, backup_size)) != RA_SUCCESS) {
 			RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to write backup toc file (%s). The table of contents has not been modified.\n", result->message);
-			free(backup_data);
+			RA_free(backup_data);
 			return;
 		}
 		
-		free(backup_data);
+		RA_free(backup_data);
 	}
 	
 	u8* in_data;
@@ -260,7 +260,7 @@ static void install_mods() {
 		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to parse toc file (%s). "
 			"Try restoring to the toc.bak file, or delete the toc file and validate files in Steam.\n",
 			result->message);
-		free(in_data);
+		RA_free(in_data);
 		return;
 	}
 	
@@ -282,7 +282,7 @@ static void install_mods() {
 	
 	if((result = RA_file_write(toc_path, out_data, out_size)) != RA_SUCCESS) {
 		RA_message_box(GUI_MESSAGE_BOX_ERROR, "Error", "Failed to write toc file (%s).\n", result->message);
-		free(out_data);
+		RA_free(out_data);
 		RA_toc_free(&toc, FREE_FILE_DATA);
 		return;
 	}
@@ -291,7 +291,7 @@ static void install_mods() {
 		RA_message_box(GUI_MESSAGE_BOX_INFO, "Success", "Installed %u mod%s successfully.", success_count, success_count == 1 ? "" : "s");
 	}
 	
-	free(out_data);
+	RA_free(out_data);
 	RA_toc_free(&toc, FREE_FILE_DATA);
 }
 

@@ -161,7 +161,7 @@ RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, s64* size_dest) {
 void RA_dag_free(RA_DependencyDag* dag, b8 free_file_data) {
 	RA_arena_destroy(&dag->arena);
 	if(free_file_data && dag->file_data) {
-		free(dag->file_data);
+		RA_free(dag->file_data);
 	}
 }
 

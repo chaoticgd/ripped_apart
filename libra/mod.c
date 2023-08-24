@@ -47,7 +47,7 @@ RA_Result RA_mod_list_load(RA_Mod** mods_dest, u32* mod_count_dest, const char* 
 		return result;
 	}
 	
-	RA_Mod* mods = calloc(file_names.count, sizeof(RA_Mod));
+	RA_Mod* mods = RA_calloc(file_names.count, sizeof(RA_Mod));
 	if(mods == NULL) {
 		RA_string_list_destroy(&file_names);
 		return RA_FAILURE("failed to allocate mod list");
@@ -77,7 +77,7 @@ void RA_mod_list_free(RA_Mod* mods, u32 mod_count) {
 	for(u32 i = 0; i < mod_count; i++) {
 		free_mod(&mods[i]);
 	}
-	free(mods);
+	RA_free(mods);
 }
 
 RA_Result parse_mod(RA_Mod* mod, const char* game_dir, const char* mod_file_name) {
@@ -96,10 +96,10 @@ RA_Result parse_mod(RA_Mod* mod, const char* game_dir, const char* mod_file_name
 }
 
 static void free_mod(RA_Mod* mod) {
-	if(mod->name != NULL) free(mod->name);
-	if(mod->version != NULL) free(mod->version);
-	if(mod->description != NULL) free(mod->description);
-	if(mod->author != NULL) free(mod->author);
+	if(mod->name != NULL) RA_free(mod->name);
+	if(mod->version != NULL) RA_free(mod->version);
+	if(mod->description != NULL) RA_free(mod->description);
+	if(mod->author != NULL) RA_free(mod->author);
 }
 
 // *****************************************************************************
@@ -128,7 +128,7 @@ RA_Result RA_install_mods(RA_Mod* mods, u32 mod_count, RA_TableOfContents* toc, 
 		return RA_FAILURE(result->message);
 	}
 	
-	RA_LoadedMod* loaded_mods = malloc(mod_count * sizeof(RA_LoadedMod));
+	RA_LoadedMod* loaded_mods = RA_malloc(mod_count * sizeof(RA_LoadedMod));
 	u32 loaded_mod_count = 0;
 	u32 success_count = 0;
 	u32 fail_count = 0;
@@ -158,9 +158,9 @@ RA_Result RA_install_mods(RA_Mod* mods, u32 mod_count, RA_TableOfContents* toc, 
 	}
 	
 	for(u32 i = 0; i < loaded_mod_count; i++) {
-		free(loaded_mods[i].assets);
+		RA_free(loaded_mods[i].assets);
 	}
-	free(loaded_mods);
+	RA_free(loaded_mods);
 	
 	if((result = update_table_of_contents(loaded_mods, loaded_mod_count, toc)) != RA_SUCCESS) {
 		return result;
@@ -337,7 +337,7 @@ static RA_Result load_stage(RA_LoadedMod* dest, RA_Mod* src, const char* mod_pat
 		zip_close(in_archive);
 		return RA_FAILURE("zip_get_num_entries returned -1");
 	}
-	dest->assets = calloc(entry_count, sizeof(RA_LoadedModAsset));
+	dest->assets = RA_calloc(entry_count, sizeof(RA_LoadedModAsset));
 	if(dest->assets == NULL) {
 		RA_string_list_destroy(&headerless);
 		fclose(out_file);
@@ -347,7 +347,7 @@ static RA_Result load_stage(RA_LoadedMod* dest, RA_Mod* src, const char* mod_pat
 	
 	for(s64 i = 0; i < entry_count; i++) {
 		if((result = parse_stage_entry(dest, in_archive, i, out_file, &headerless)) != RA_SUCCESS) {
-			free(dest->assets);
+			RA_free(dest->assets);
 			RA_string_list_destroy(&headerless);
 			fclose(out_file);
 			zip_close(in_archive);
@@ -361,7 +361,7 @@ static RA_Result load_stage(RA_LoadedMod* dest, RA_Mod* src, const char* mod_pat
 	zip_close(in_archive);
 	
 	if(snprintf(dest->archive_path, sizeof(dest->archive_path), "modcache\\%s.cache", src->file_name) < 0) {
-		free(dest->assets);
+		RA_free(dest->assets);
 		return RA_FAILURE("path too long");
 	}
 	
@@ -381,13 +381,13 @@ static RA_Result parse_stage_info(RA_Mod* mod, RA_StringList* headerless, zip_t*
 		return RA_FAILURE("file missing");
 	}
 	
-	u8* json_data = malloc(stat.size + 1);
+	u8* json_data = RA_malloc(stat.size + 1);
 	if(json_data == NULL) {
 		zip_fclose(info_file);
 		return RA_FAILURE("cannot allocate space");
 	}
 	if(zip_fread(info_file, json_data, stat.size) != stat.size) {
-		free(json_data);
+		RA_free(json_data);
 		zip_fclose(info_file);
 		return RA_FAILURE("cannot read");
 	}
@@ -395,18 +395,18 @@ static RA_Result parse_stage_info(RA_Mod* mod, RA_StringList* headerless, zip_t*
 	
 	json_object* root = json_tokener_parse((char*) json_data);
 	if(root == NULL) {
-		free(json_data);
+		RA_free(json_data);
 		zip_fclose(info_file);
 		return RA_FAILURE("parsing failed");
 	}
-	free(json_data);
+	RA_free(json_data);
 	
 	if(mod != NULL) {
 		json_object* name_json = json_object_object_get(root, "name");
 		if(name_json != NULL) {
 			const char* name_str = json_object_get_string(name_json);
 			if(name_str != NULL) {
-				mod->name = malloc(strlen(name_str) + 1);
+				mod->name = RA_malloc(strlen(name_str) + 1);
 				if(mod->name != NULL) {
 					RA_string_copy(mod->name, name_str, strlen(name_str) + 1);
 				}
@@ -417,7 +417,7 @@ static RA_Result parse_stage_info(RA_Mod* mod, RA_StringList* headerless, zip_t*
 		if(author_json != NULL) {
 			const char* author_str = json_object_get_string(author_json);
 			if(author_str != NULL) {
-				mod->author = malloc(strlen(author_str) + 1);
+				mod->author = RA_malloc(strlen(author_str) + 1);
 				if(mod->author != NULL) {
 					RA_string_copy(mod->author, author_str, strlen(author_str) + 1);
 				}
@@ -523,20 +523,20 @@ static RA_Result parse_stage_entry(RA_LoadedMod* mod, zip_t* in_archive, s64 ind
 	
 	u32 file_size = stat.size - header_size;
 	u32 allocation_size = ALIGN(file_size, 0x40);
-	u8* file_data = calloc(1, allocation_size);
+	u8* file_data = RA_calloc(1, allocation_size);
 	if(file_data == NULL) {
 		zip_fclose(file);
 		return RA_FAILURE("cannot allocate file data for asset %s", name);
 	}
 	if(zip_fread(file, file_data, file_size) != file_size) {
-		free(file_data);
+		RA_free(file_data);
 		zip_fclose(file);
 		return RA_FAILURE("cannot read data for asset %s", name);
 	}
 	
 	s64 begin_offset = ftell(out_file);
 	if(fwrite(file_data, allocation_size, 1, out_file) != 1) {
-		free(file_data);
+		RA_free(file_data);
 		zip_fclose(file);
 		return RA_FAILURE("cannot write data to cache file for asset %s", name);
 	}
@@ -545,7 +545,7 @@ static RA_Result parse_stage_entry(RA_LoadedMod* mod, zip_t* in_archive, s64 ind
 	asset->toc.location.offset = (u32) begin_offset;
 	asset->toc.location.size = (u32) (end_offset - begin_offset);
 	
-	free(file_data);
+	RA_free(file_data);
 	zip_fclose(file);
 	
 	return RA_SUCCESS;
@@ -623,27 +623,27 @@ static RA_Result load_rcmod(RA_LoadedMod* dest, RA_Mod* src, const char* mod_pat
 	}
 	
 	dest->asset_count = (file_size - directory_offset) / RCMOD_DIRENTRY_SIZE_ON_DISK;
-	dest->assets = calloc(dest->asset_count, sizeof(RA_LoadedModAsset));
+	dest->assets = RA_calloc(dest->asset_count, sizeof(RA_LoadedModAsset));
 	if(dest->assets == NULL) {
 		fclose(file);
 		return RA_FAILURE("cannot allocate assets list");
 	}
 	
 	if(fseek(file, directory_offset, SEEK_SET) != 0) {
-		free(dest->assets);
+		RA_free(dest->assets);
 		fclose(file);
 		return RA_FAILURE("cannot seek to directory entries");
 	}
-	RCMOD_DirEntry* entries = malloc(dest->asset_count * sizeof(RCMOD_DirEntry));
+	RCMOD_DirEntry* entries = RA_malloc(dest->asset_count * sizeof(RCMOD_DirEntry));
 	if(entries == NULL) {
-		free(dest->assets);
+		RA_free(dest->assets);
 		fclose(file);
 		return RA_FAILURE("cannot allocate directory entries");
 	}
 	for(u32 i = 0; i < dest->asset_count; i++) {
 		if(fread(&entries[i], RCMOD_DIRENTRY_SIZE_ON_DISK, 1, file) != 1) {
-			free(entries);
-			free(dest->assets);
+			RA_free(entries);
+			RA_free(dest->assets);
 			fclose(file);
 			return RA_FAILURE("cannot read directory entries");
 		}
@@ -655,14 +655,14 @@ static RA_Result load_rcmod(RA_LoadedMod* dest, RA_Mod* src, const char* mod_pat
 			dest->assets[i].toc.has_header = true;
 			header_size = sizeof(RA_TocAssetHeader);
 			if(fseek(file, entries[i].offset, SEEK_SET) != 0) {
-				free(entries);
-				free(dest->assets);
+				RA_free(entries);
+				RA_free(dest->assets);
 				fclose(file);
 				return RA_FAILURE("can't seek to asset header");
 			}
 			if(fread(&dest->assets[i].toc.header, sizeof(RA_TocAssetHeader), 1, file) != 1) {
-				free(entries);
-				free(dest->assets);
+				RA_free(entries);
+				RA_free(dest->assets);
 				fclose(file);
 				return RA_FAILURE("can't read asset header");
 			}
@@ -673,11 +673,11 @@ static RA_Result load_rcmod(RA_LoadedMod* dest, RA_Mod* src, const char* mod_pat
 		dest->assets[i].toc.group = entries[i].group;
 	}
 	
-	free(entries);
+	RA_free(entries);
 	fclose(file);
 	
 	if(snprintf(dest->archive_path, sizeof(dest->archive_path), "mods\\%s", src->file_name) < 0) {
-		free(dest->assets);
+		RA_free(dest->assets);
 		return RA_FAILURE("path too long");
 	}
 	
@@ -687,7 +687,7 @@ static RA_Result load_rcmod(RA_LoadedMod* dest, RA_Mod* src, const char* mod_pat
 static char* read_rcmod_string(FILE* file) {
 	static char* scratchpad = NULL;
 	if(scratchpad == NULL) {
-		scratchpad = malloc(1024 * 1024);
+		scratchpad = RA_malloc(1024 * 1024);
 		if(scratchpad == NULL) {
 			return NULL;
 		}
@@ -697,7 +697,7 @@ static char* read_rcmod_string(FILE* file) {
 			return NULL;
 		}
 		if(scratchpad[i] == '\0') {
-			char* string = malloc(i + 1);
+			char* string = RA_malloc(i + 1);
 			if(string == NULL) {
 				return NULL;
 			}

@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 		
-		free(backup_data);
+		RA_free(backup_data);
 	}
 	
 	u8* in_data;
@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
 	
 	printf("%u mods installed successfully, %u mods failed to install.\n", success_count, fail_count);
 	
-	free(out_data);
+	RA_free(out_data);
 	RA_mod_list_free(mods, mod_count);
 	RA_toc_free(&toc, FREE_FILE_DATA);
 }

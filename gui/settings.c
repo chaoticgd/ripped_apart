@@ -68,10 +68,10 @@ RA_Result GUI_settings_read(Settings* settings, const char* path) {
 	
 	json_object* root = json_tokener_parse((char*) data);
 	if(root == NULL) {
-		free(data);
+		RA_free(data);
 		return RA_FAILURE("failed to parse settings file");
 	}
-	free(data);
+	RA_free(data);
 	
 	json_object* game_dir_json = json_object_object_get(root, "game_dir");
 	const char* game_dir = json_object_get_string(game_dir_json);

@@ -14,7 +14,7 @@ void renderer_init() {
 RenderModel renderer_upload_model(RA_Model* model) {
 	RenderModel render_model;
 	
-	render_model.subsets = malloc(model->subset_count * sizeof(RenderModelSubset));
+	render_model.subsets = RA_malloc(model->subset_count * sizeof(RenderModelSubset));
 	render_model.subset_count = model->subset_count;
 	
 	for(u32 i = 0; i < model->subset_count; i++) {
@@ -98,7 +98,7 @@ static GLuint build_shader(const char* vertex_source, const char* fragment_sourc
 	glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &result);
 	glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH, &log_size);
 	if(log_size > 0) {
-		char* log = malloc(log_size);
+		char* log = RA_malloc(log_size);
 		glGetShaderInfoLog(vertex_shader, log_size, NULL, log);
 		fprintf(stderr, "error: Failed to compile vertex shader!\n%s", log);
 		abort();
@@ -110,7 +110,7 @@ static GLuint build_shader(const char* vertex_source, const char* fragment_sourc
 	glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &result);
 	glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH, &log_size);
 	if(log_size > 0) {
-		char* log = malloc(log_size);
+		char* log = RA_malloc(log_size);
 		glGetShaderInfoLog(fragment_shader, log_size, NULL, log);
 		fprintf(stderr, "error: Failed to compile fragment shader!\n%s", log);
 		abort();
@@ -132,7 +132,7 @@ static GLuint build_shader(const char* vertex_source, const char* fragment_sourc
 	glGetProgramiv(program, GL_LINK_STATUS, &result);
 	glGetProgramiv(program, GL_INFO_LOG_LENGTH, &log_size);
 	if(log_size > 0) {
-		char* log = malloc(log_size);
+		char* log = RA_malloc(log_size);
 		glGetShaderInfoLog(program, log_size, NULL, log);
 		fprintf(stderr, "error: Failed to link shaders!\n%s", log);
 		abort();

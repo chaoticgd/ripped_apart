@@ -64,7 +64,7 @@ static void decompress(const char* input_path, const char* output_path) {
 		exit(1);
 	}
 	
-	u8* data = malloc(size);
+	u8* data = RA_malloc(size);
 	if(data == NULL) {
 		fprintf(stderr, "error: Failed to allocate memory for decompressed data.\n");
 		exit(1);
@@ -80,7 +80,7 @@ static void decompress(const char* input_path, const char* output_path) {
 		exit(1);
 	}
 	
-	free(data);
+	RA_free(data);
 	RA_archive_close(&archive);
 }
 

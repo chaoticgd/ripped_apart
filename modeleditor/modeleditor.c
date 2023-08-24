@@ -130,7 +130,7 @@ static void load_model(const char* path, const char* root_asset_dir) {
 		abort();
 	}
 	
-	materials = calloc(model.material_count, sizeof(RA_Material));
+	materials = RA_calloc(model.material_count, sizeof(RA_Material));
 	for(u32 i = 0; i < model.material_count; i++) {
 		RA_ModelMaterial* material = &model.materials[i];
 		printf("material %s: %s\n", material->name, material->path);

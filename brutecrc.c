@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
 }
 
 static void load_crcs(u32** crcs_dest, u32* crc_count_dest, const char* path) {
-	u32* crcs = malloc(1024 * 1024);
+	u32* crcs = RA_malloc(1024 * 1024);
 	u32 crc_count = 0;
 	
 	*crcs_dest = crcs;
@@ -99,7 +99,7 @@ static void load_crcs(u32** crcs_dest, u32* crc_count_dest, const char* path) {
 }
 
 static char** build_dictionary_index(u8* dictionary_data, u32 dictionary_size) {
-	char** index = calloc(dictionary_size, 8);
+	char** index = RA_calloc(dictionary_size, 8);
 	char* word = (char*) dictionary_data;
 	char* ptr = (char*) dictionary_data;
 	char* end = (char*) dictionary_data + dictionary_size;
