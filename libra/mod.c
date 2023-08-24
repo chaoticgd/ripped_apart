@@ -590,13 +590,6 @@ static RA_Result parse_rcmod(RA_Mod* mod, const char* game_dir, const char* mod_
 		return RA_FAILURE("fopen");
 	}
 	
-	s64 file_size = RA_file_size(file);
-	if(file_size == -1) {
-		fclose(file);
-		free_mod(mod);
-		return RA_FAILURE("cannot determine file size");
-	}
-	
 	mod->name = read_rcmod_string(file);
 	mod->version = read_rcmod_string(file);
 	mod->description = read_rcmod_string(file);
