@@ -95,7 +95,7 @@ RA_Result RA_file_write(const char* path, u8* data, s64 size) {
 	if(file == NULL) {
 		return RA_FAILURE("fopen");
 	}
-	if(size == 0 || fwrite(data, size, 1, file) != 1) {
+	if(size != 0 && fwrite(data, size, 1, file) != 1) {
 		fclose(file);
 		return RA_FAILURE("fwrite");
 	}
