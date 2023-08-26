@@ -29,14 +29,14 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 		return RA_FAILURE("asset hash lump not found");
 	}
 	
-	RA_DatLump* archive_file = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_FILE);
+	RA_DatLump* archive_file = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_FILE_METADATA);
 	if(archive_file == NULL) {
 		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
 		return RA_FAILURE("archive file lump not found");
 	}
 	
-	RA_DatLump* file_locations = RA_dat_lookup_lump(&dat, LUMP_FILE_LOCATION);
+	RA_DatLump* file_locations = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_ASSET_METADATA);
 	if(file_locations == NULL) {
 		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
@@ -59,7 +59,7 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 		toc->assets[i].path_hash = ((u64*) asset_hash->data)[i];
 	}
 	
-	RA_DatLump* asset_groups = RA_dat_lookup_lump(&dat, LUMP_ASSET_GROUPING);
+	RA_DatLump* asset_groups = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_HEADER);
 	if(file_locations == NULL) {
 		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
@@ -78,7 +78,7 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 		}
 	}
 	
-	RA_DatLump* unk_36 = RA_dat_lookup_lump(&dat, LUMP_TOC_UNKNOWN_36);
+	RA_DatLump* unk_36 = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_TEXTURE_ASSET_IDS);
 	if(unk_36 == NULL) {
 		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
@@ -87,7 +87,7 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 	toc->unknown_36 = unk_36->data;
 	toc->unknown_36_size = unk_36->size;
 	
-	RA_DatLump* unk_c9 = RA_dat_lookup_lump(&dat, LUMP_TOC_UNKNOWN_C9);
+	RA_DatLump* unk_c9 = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_TEXTURE_META);
 	if(unk_c9 == NULL) {
 		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
@@ -96,7 +96,7 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 	toc->unknown_c9 = unk_c9->data;
 	toc->unknown_c9_size = unk_c9->size;
 	
-	RA_DatLump* unk_62 = RA_dat_lookup_lump(&dat, LUMP_TOC_UNKNOWN_62);
+	RA_DatLump* unk_62 = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_TEXTURE_HEADER);
 	if(unk_62 == NULL) {
 		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
@@ -173,13 +173,13 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 		return RA_FAILURE("cannot allocate dat writer");
 	}
 	
-	RA_TocAssetGroup* asset_groups = RA_dat_writer_lump(writer, LUMP_ASSET_GROUPING, group_count * sizeof(RA_TocAssetGroup));
+	RA_TocAssetGroup* asset_groups = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_HEADER, group_count * sizeof(RA_TocAssetGroup));
 	u64* asset_hashes = RA_dat_writer_lump(writer, LUMP_ASSET_HASH, toc->asset_count * sizeof(u64));
-	RA_TocFileLocation* file_location = RA_dat_writer_lump(writer, LUMP_FILE_LOCATION, toc->asset_count * sizeof(RA_TocFileLocation));
-	RA_TocArchive* archives = RA_dat_writer_lump(writer, LUMP_ARCHIVE_FILE, toc->archive_count * sizeof(RA_TocArchive));
-	u8* unk_36 = RA_dat_writer_lump(writer, LUMP_TOC_UNKNOWN_36, toc->unknown_36_size);
-	u8* unk_c9 = RA_dat_writer_lump(writer, LUMP_TOC_UNKNOWN_C9, toc->unknown_c9_size);
-	u8* unk_62 = RA_dat_writer_lump(writer, LUMP_TOC_UNKNOWN_62, toc->unknown_62_size);
+	RA_TocFileLocation* file_location = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_ASSET_METADATA, toc->asset_count * sizeof(RA_TocFileLocation));
+	RA_TocArchive* archives = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_FILE_METADATA, toc->archive_count * sizeof(RA_TocArchive));
+	u8* unk_36 = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_TEXTURE_ASSET_IDS, toc->unknown_36_size);
+	u8* unk_c9 = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_TEXTURE_META, toc->unknown_c9_size);
+	u8* unk_62 = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_TEXTURE_HEADER, toc->unknown_62_size);
 	RA_TocAssetHeader* asset_headers = RA_dat_writer_lump(writer, LUMP_ASSET_HEADERS, header_count * sizeof(RA_TocAssetHeader));
 	u32 archive_toc_string_offset = RA_dat_writer_string(writer, "ArchiveTOC");
 	

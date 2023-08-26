@@ -35,13 +35,13 @@ RA_Result RA_dag_parse(RA_DependencyDag* dag, u8* data, u32 size) {
 		goto fail;
 	}
 	
-	RA_DatLump* dependency_index = RA_dat_lookup_lump(&dat, LUMP_DEPENDENCY_INDEX);
+	RA_DatLump* dependency_index = RA_dat_lookup_lump(&dat, LUMP_DEPENDENCY_LINKS_HEADS);
 	if(dependency_index == NULL) {
 		error = "no dependency index lump";
 		goto fail;
 	}
 	
-	RA_DatLump* dependency = RA_dat_lookup_lump(&dat, LUMP_DEPENDENCY);
+	RA_DatLump* dependency = RA_dat_lookup_lump(&dat, LUMP_DEPENDENCY_LINKS);
 	if(dependency == NULL) {
 		error = "no dependency lump";
 		goto fail;
@@ -120,8 +120,8 @@ RA_Result RA_dag_build(RA_DependencyDag* dag, u8** data_dest, s64* size_dest) {
 	u64* asset_ids = RA_dat_writer_lump(writer, LUMP_ASSET_IDS, dag->asset_count * 8);
 	u32* names = RA_dat_writer_lump(writer, LUMP_ASSET_NAMES, dag->asset_count * 4);
 	u8* asset_types = RA_dat_writer_lump(writer, LUMP_ASSET_TYPES, dag->asset_count);
-	u32* dependency_indices = RA_dat_writer_lump(writer, LUMP_DEPENDENCY_INDEX, dag->asset_count * 4);
-	s32* dependency = RA_dat_writer_lump(writer, LUMP_DEPENDENCY, dependency_count * 4);
+	u32* dependency_indices = RA_dat_writer_lump(writer, LUMP_DEPENDENCY_LINKS_HEADS, dag->asset_count * 4);
+	s32* dependency = RA_dat_writer_lump(writer, LUMP_DEPENDENCY_LINKS, dependency_count * 4);
 	u32* unk = RA_dat_writer_lump(writer, LUMP_DAG_UNKNOWN, 1);
 	u32 dependency_dag_string_offset = RA_dat_writer_string(writer, "DependencyDAG");
 	
