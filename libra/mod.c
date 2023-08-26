@@ -574,7 +574,8 @@ typedef struct {
 	u32 offset;
 	u32 size;
 	u64 hash;
-	u16 group;
+	u8 group;
+	u8 is_texture;
 } RCMOD_DirEntry;
 #define RCMOD_DIRENTRY_SIZE_ON_DISK 0x12
 
@@ -624,7 +625,7 @@ static RA_Result load_rcmod(RA_LoadedMod* dest, RA_Mod* src, const char* mod_pat
 	b8 version = skip_rcmod_string(file);
 	b8 description = skip_rcmod_string(file);
 	b8 author = skip_rcmod_string(file);
-	if(!name || !version || ! description || !author) {
+	if(!name || !version || !description || !author) {
 		fclose(file);
 		return RA_FAILURE("cannot read header");
 	}

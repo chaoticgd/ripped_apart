@@ -7,7 +7,7 @@ A collection of modding tools for Ratchet & Clank: Rift Apart including a GUI mo
 - [Documentation](docs/README.md)
 
 Features currently include:
-- Install mods from .rcmod and .stage files.
+- Install mods from .stage (recommended) and .rcmod files.
 - Support for Windows and Linux.
 - Extract the game's files.
 - Convert PS5 textures to .png or .exr files.
