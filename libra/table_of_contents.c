@@ -105,7 +105,7 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 	toc->unknown_62 = unk_62->data;
 	toc->unknown_62_size = unk_62->size;
 	
-	RA_DatLump* asset_headers = RA_dat_lookup_lump(&dat, LUMP_ASSET_HEADERS);
+	RA_DatLump* asset_headers = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_ASSET_HEADER_DATA);
 	if(asset_headers == NULL) {
 		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
@@ -180,7 +180,7 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 	u8* unk_36 = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_TEXTURE_ASSET_IDS, toc->unknown_36_size);
 	u8* unk_c9 = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_TEXTURE_META, toc->unknown_c9_size);
 	u8* unk_62 = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_TEXTURE_HEADER, toc->unknown_62_size);
-	RA_TocAssetHeader* asset_headers = RA_dat_writer_lump(writer, LUMP_ASSET_HEADERS, header_count * sizeof(RA_TocAssetHeader));
+	RA_TocAssetHeader* asset_headers = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_ASSET_HEADER_DATA, header_count * sizeof(RA_TocAssetHeader));
 	u32 archive_toc_string_offset = RA_dat_writer_string(writer, "ArchiveTOC");
 	
 	b8 allocation_failed =
