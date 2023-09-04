@@ -13,11 +13,12 @@ static enum {
 	SORT_OFFSET,
 	SORT_SIZE
 } sort_mode;
+static s32 header_offset = 0;
 
 int main(int argc, char** argv) {
 	if(argc < 2) {
 		fprintf(stderr, "igfile -- https://github.com/chaoticgd/ripped_apart\n");
-		fprintf(stderr, "usage: %s <input paths>\n", argv[0]);
+		fprintf(stderr, "usage: %s [-sc|-so|-ss] [-h <header offset>] <input paths>\n", argv[0]);
 		return 1;
 	}
 	
@@ -35,6 +36,14 @@ int main(int argc, char** argv) {
 		if(strcmp(argv[i], "-ss") == 0) {
 			sort_mode = SORT_SIZE;
 			continue;
+		}
+		
+		if(strcmp(argv[i], "-h") == 0) {
+			if(i + 1 >= argc) {
+				fprintf(stderr, "error: Missing offset argument.\n");
+				return 1;
+			}
+			header_offset = atoi(argv[++i]);
 		}
 		
 		if(fs::is_directory(argv[i])) {
@@ -57,12 +66,8 @@ static RA_Result process_file(const char* path, bool print_lumps) {
 	RA_Result result;
 	
 	RA_DatFile dat;
-	if((result = RA_dat_read(&dat, path, 0)) != RA_SUCCESS) {
-		if(RA_dat_read(&dat, path, 8) != RA_SUCCESS) {
-			if(RA_dat_read(&dat, path, 0xc) != RA_SUCCESS) {
-				return result;
-			}
-		}
+	if((result = RA_dat_read(&dat, path, header_offset)) != RA_SUCCESS) {
+		return result;
 	}
 	
 	printf("%s", path);
