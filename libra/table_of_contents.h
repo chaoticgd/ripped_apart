@@ -23,7 +23,7 @@ typedef struct {
 	u32 archive_index;
 	u32 offset;
 	u32 header_offset;
-} RA_TocFileLocation;
+} RA_TocAssetMetadata;
 
 typedef struct {
 	/* 0x00 */ u32 asset_type_hash;
@@ -38,7 +38,7 @@ typedef struct {
 } RA_TocAssetHeader;
 
 typedef struct {
-	RA_TocFileLocation location;
+	RA_TocAssetMetadata metadata;
 	u64 path_hash;
 	u32 group;
 	b8 has_header;

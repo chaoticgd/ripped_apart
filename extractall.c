@@ -6,9 +6,9 @@ static void parse_dag_and_toc(RA_DependencyDag* dag, RA_TableOfContents* toc, co
 static void print_help();
 
 static int compare_toc_assets(const void* lhs, const void* rhs) {
-	if(((RA_TocAsset*) lhs)->location.archive_index != ((RA_TocAsset*) rhs)->location.archive_index) {
-		u32 index_lhs = ((RA_TocAsset*) lhs)->location.archive_index;
-		u32 index_rhs = ((RA_TocAsset*) rhs)->location.archive_index;
+	if(((RA_TocAsset*) lhs)->metadata.archive_index != ((RA_TocAsset*) rhs)->metadata.archive_index) {
+		u32 index_lhs = ((RA_TocAsset*) lhs)->metadata.archive_index;
+		u32 index_rhs = ((RA_TocAsset*) rhs)->metadata.archive_index;
 		if(index_lhs < index_rhs) {
 			return -1;
 		} else if(index_lhs > index_rhs) {
@@ -17,8 +17,8 @@ static int compare_toc_assets(const void* lhs, const void* rhs) {
 			return 0;
 		}
 	} else {
-		u32 offset_lhs = ((RA_TocAsset*) lhs)->location.offset;
-		u32 offset_rhs = ((RA_TocAsset*) rhs)->location.offset;
+		u32 offset_lhs = ((RA_TocAsset*) lhs)->metadata.offset;
+		u32 offset_rhs = ((RA_TocAsset*) rhs)->metadata.offset;
 		if(offset_lhs < offset_rhs) {
 			return -1;
 		} else if(offset_lhs > offset_rhs) {
@@ -69,16 +69,16 @@ int main(int argc, char** argv) {
 		}
 		
 		// Open the next archive file if necessary.
-		if(toc_asset->location.archive_index != current_archive_index) {
+		if(toc_asset->metadata.archive_index != current_archive_index) {
 			if(current_archive_index != -1) {
 				RA_archive_close(&archive);
 				current_archive_index = -1;
 			}
-			if(toc_asset->location.archive_index >= toc.archive_count) {
+			if(toc_asset->metadata.archive_index >= toc.archive_count) {
 				fprintf(stderr, "error: Archive index out of range!\n");
 				return 1;
 			}
-			RA_TocArchive* toc_archive = &toc.archives[toc_asset->location.archive_index];
+			RA_TocArchive* toc_archive = &toc.archives[toc_asset->metadata.archive_index];
 			char archive_path[RA_MAX_PATH];
 			if(snprintf(archive_path, RA_MAX_PATH, "%s/%s", game_dir, toc_archive->data) < 0) {
 				fprintf(stderr, "error: Output path too long.\n");
@@ -89,17 +89,17 @@ int main(int argc, char** argv) {
 				fprintf(stderr, "Cannot to open archive '%s'. This is normal for localization files.\n", archive_path);
 				continue;
 			}
-			current_archive_index = toc_asset->location.archive_index;
+			current_archive_index = toc_asset->metadata.archive_index;
 		}
 		
 		// Read and decompress blocks as necessary, and assemble the asset.
-		u8* data = RA_calloc(1, toc_asset->location.size);
-		u32 size = toc_asset->location.size;
+		u8* data = RA_calloc(1, toc_asset->metadata.size);
+		u32 size = toc_asset->metadata.size;
 		if(data == NULL) {
 			fprintf(stderr, "error: Failed allocate memory for asset '%s'.\n", asset_path);
 			return 1;
 		}
-		if((result = RA_archive_read(&archive, toc_asset->location.offset, size, data)) != RA_SUCCESS) {
+		if((result = RA_archive_read(&archive, toc_asset->metadata.offset, size, data)) != RA_SUCCESS) {
 			fprintf(stderr, "error: Failed to read block for asset '%s' (%s).\n", asset_path, result->message);
 			return 1;
 		}

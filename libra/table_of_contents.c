@@ -22,8 +22,8 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 		return result;
 	}
 	
-	RA_DatLump* asset_hash = RA_dat_lookup_lump(&dat, LUMP_ASSET_HASH);
-	if(asset_hash == NULL) {
+	RA_DatLump* asset_ids = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_ASSET_IDS);
+	if(asset_ids == NULL) {
 		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
 		return RA_FAILURE("asset hash lump not found");
@@ -36,8 +36,8 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 		return RA_FAILURE("archive file lump not found");
 	}
 	
-	RA_DatLump* file_locations = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_ASSET_METADATA);
-	if(file_locations == NULL) {
+	RA_DatLump* asset_metadata = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_ASSET_METADATA);
+	if(asset_metadata == NULL) {
 		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
 		return RA_FAILURE("file locations lump not found");
@@ -46,7 +46,7 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 	toc->archive_count = archive_file->size / sizeof(RA_TocArchive);
 	toc->archives = (RA_TocArchive*) archive_file->data;
 	
-	toc->asset_count = file_locations->size / sizeof(RA_TocFileLocation);
+	toc->asset_count = asset_metadata->size / sizeof(RA_TocAssetMetadata);
 	toc->assets = RA_arena_alloc(&toc->arena, toc->asset_count * sizeof(RA_TocAsset));
 	if(toc->assets == NULL) {
 		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
@@ -55,12 +55,12 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 	}
 	
 	for(u32 i = 0; i < toc->asset_count; i++) {
-		toc->assets[i].location = ((RA_TocFileLocation*) file_locations->data)[i];
-		toc->assets[i].path_hash = ((u64*) asset_hash->data)[i];
+		toc->assets[i].metadata = ((RA_TocAssetMetadata*) asset_metadata->data)[i];
+		toc->assets[i].path_hash = ((u64*) asset_ids->data)[i];
 	}
 	
 	RA_DatLump* asset_groups = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_HEADER);
-	if(file_locations == NULL) {
+	if(asset_metadata == NULL) {
 		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
 		return RA_FAILURE("asset groups lump not found");
@@ -112,10 +112,10 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 		return RA_FAILURE("asset header lump not found");
 	}
 	for(u32 i = 0; i < toc->asset_count; i++) {
-		u32 header_ofs = toc->assets[i].location.header_offset;
+		u32 header_ofs = toc->assets[i].metadata.header_offset;
 		if(header_ofs != 0xffffffff) {
 			toc->assets[i].has_header = true;
-			memcpy(&toc->assets[i].header, asset_headers->data + toc->assets[i].location.header_offset, sizeof(RA_TocAssetHeader));
+			memcpy(&toc->assets[i].header, asset_headers->data + toc->assets[i].metadata.header_offset, sizeof(RA_TocAssetHeader));
 		}
 	}
 	
@@ -174,8 +174,8 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 	}
 	
 	RA_TocAssetGroup* asset_groups = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_HEADER, group_count * sizeof(RA_TocAssetGroup));
-	u64* asset_hashes = RA_dat_writer_lump(writer, LUMP_ASSET_HASH, toc->asset_count * sizeof(u64));
-	RA_TocFileLocation* file_location = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_ASSET_METADATA, toc->asset_count * sizeof(RA_TocFileLocation));
+	u64* asset_ids = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_ASSET_IDS, toc->asset_count * sizeof(u64));
+	RA_TocAssetMetadata* asset_metadata = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_ASSET_METADATA, toc->asset_count * sizeof(RA_TocAssetMetadata));
 	RA_TocArchive* archives = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_FILE_METADATA, toc->archive_count * sizeof(RA_TocArchive));
 	u8* unk_36 = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_TEXTURE_ASSET_IDS, toc->unknown_36_size);
 	u8* unk_c9 = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_TEXTURE_META, toc->unknown_c9_size);
@@ -185,8 +185,8 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 	
 	b8 allocation_failed =
 		asset_groups == NULL ||
-		asset_hashes == NULL ||
-		file_location == NULL ||
+		asset_ids == NULL ||
+		asset_metadata == NULL ||
 		archives == NULL ||
 		unk_36 == NULL ||
 		unk_c9 == NULL ||
@@ -230,14 +230,14 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 	}
 	
 	for(u32 i = 0; i < toc->asset_count; i++) {
-		asset_hashes[i] = toc->assets[i].path_hash;
+		asset_ids[i] = toc->assets[i].path_hash;
 	}
 	
 	u32 next_header_offset = 0;
 	for(u32 i = 0; i < toc->asset_count; i++) {
-		file_location[i] = toc->assets[i].location;
+		asset_metadata[i] = toc->assets[i].metadata;
 		if(toc->assets[i].has_header) {
-			file_location[i].header_offset = next_header_offset;
+			asset_metadata[i].header_offset = next_header_offset;
 			next_header_offset += sizeof(RA_TocAssetHeader);
 		}
 	}

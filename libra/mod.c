@@ -271,7 +271,7 @@ static RA_Result update_table_of_contents(RA_LoadedMod* mods, u32 mod_count, RA_
 				toc->asset_count++;
 			}
 			*toc_asset = mod_asset->toc;
-			toc_asset->location.archive_index = archive_index;
+			toc_asset->metadata.archive_index = archive_index;
 		}
 		archive_index++;
 	}
@@ -561,8 +561,8 @@ static RA_Result parse_stage_entry(RA_LoadedMod* mod, zip_t* in_archive, s64 ind
 	}
 	s64 end_offset = begin_offset + file_size;
 	
-	asset->toc.location.offset = (u32) begin_offset;
-	asset->toc.location.size = (u32) (end_offset - begin_offset);
+	asset->toc.metadata.offset = (u32) begin_offset;
+	asset->toc.metadata.size = (u32) (end_offset - begin_offset);
 	
 	RA_free(file_data);
 	zip_fclose(file);
@@ -680,8 +680,8 @@ static RA_Result load_rcmod(RA_LoadedMod* dest, RA_Mod* src, const char* mod_pat
 				return RA_FAILURE("can't read asset header");
 			}
 		}
-		dest->assets[i].toc.location.offset = entries[i].offset + header_size;
-		dest->assets[i].toc.location.size = entries[i].size - header_size;
+		dest->assets[i].toc.metadata.offset = entries[i].offset + header_size;
+		dest->assets[i].toc.metadata.size = entries[i].size - header_size;
 		dest->assets[i].toc.path_hash = entries[i].hash;
 		dest->assets[i].toc.group = entries[i].group;
 	}

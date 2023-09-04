@@ -69,10 +69,10 @@ static void list_assets(const char* input_file) {
 		RA_TocAsset* asset = &toc.assets[i];
 		printf("%16" PRIx64 " %8x %8x %8x %8x %8x\n",
 			asset->path_hash,
-			asset->location.offset,
-			asset->location.size,
-			asset->location.header_offset,
-			asset->location.archive_index,
+			asset->metadata.offset,
+			asset->metadata.size,
+			asset->metadata.header_offset,
+			asset->metadata.archive_index,
 			asset->group);
 	}
 	
@@ -103,10 +103,10 @@ static void lookup(const char* input_file, const char* asset_hash_str, u32 group
 		printf("========         ======   ====     =======  ======== =====\n");
 		printf("%16" PRIx64 " %8x %8x %8x %8x %8x\n",
 			asset->path_hash,
-			asset->location.offset,
-			asset->location.size,
-			asset->location.header_offset,
-			asset->location.archive_index,
+			asset->metadata.offset,
+			asset->metadata.size,
+			asset->metadata.header_offset,
+			asset->metadata.archive_index,
 			asset->group);
 	} else {
 		fprintf(stderr, "No asset with that hash.\n");
