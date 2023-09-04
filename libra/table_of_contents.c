@@ -78,32 +78,39 @@ RA_Result RA_toc_parse(RA_TableOfContents* toc, u8* data, u32 size) {
 		}
 	}
 	
-	RA_DatLump* unk_36 = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_TEXTURE_ASSET_IDS);
-	if(unk_36 == NULL) {
+	RA_DatLump* texture_asset_ids = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_TEXTURE_ASSET_IDS);
+	if(texture_asset_ids == NULL) {
 		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
-		return RA_FAILURE("unk 36 lump not found");
+		return RA_FAILURE("texture asset ids lump not found");
 	}
-	toc->unknown_36 = unk_36->data;
-	toc->unknown_36_size = unk_36->size;
 	
-	RA_DatLump* unk_c9 = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_TEXTURE_META);
-	if(unk_c9 == NULL) {
+	RA_DatLump* texture_meta = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_TEXTURE_META);
+	if(texture_meta == NULL) {
 		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
-		return RA_FAILURE("unk c9 lump not found");
+		return RA_FAILURE("texture meta lump not found");
 	}
-	toc->unknown_c9 = unk_c9->data;
-	toc->unknown_c9_size = unk_c9->size;
 	
-	RA_DatLump* unk_62 = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_TEXTURE_HEADER);
-	if(unk_62 == NULL) {
+	RA_DatLump* texture_header = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_TEXTURE_HEADER);
+	if(texture_header == NULL) {
 		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 		RA_arena_destroy(&toc->arena);
-		return RA_FAILURE("unk 62 lump not found");
+		return RA_FAILURE("texture header lump not found");
 	}
-	toc->unknown_62 = unk_62->data;
-	toc->unknown_62_size = unk_62->size;
+	
+	u32 texture_count = *(u32*) texture_header->data;
+	for(u32 i = 0; i < texture_count; i++) {
+		u64 hash = ((u64*) texture_asset_ids->data)[i];
+		RA_TocAsset* asset = RA_toc_lookup_asset(toc->assets, toc->asset_count, hash, 0);
+		if(asset == NULL) {
+			RA_dat_free(&dat, DONT_FREE_FILE_DATA);
+			RA_arena_destroy(&toc->arena);
+			return RA_FAILURE("failed to lookup texture id");
+		}
+		asset->has_texture_meta = true;
+		memcpy(&asset->texture_meta, &((RA_TocTextureMeta*) texture_meta->data)[i], sizeof(RA_TocTextureMeta));
+	}
 	
 	RA_DatLump* asset_headers = RA_dat_lookup_lump(&dat, LUMP_ARCHIVE_TOC_ASSET_HEADER_DATA);
 	if(asset_headers == NULL) {
@@ -168,6 +175,13 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 		}
 	}
 	
+	u32 texture_count = 0;
+	for(u32 i = 0; i < toc->asset_count; i++) {
+		if(toc->assets[i].has_texture_meta) {
+			texture_count++;
+		}
+	}
+	
 	RA_DatWriter* writer = RA_dat_writer_begin(RA_ASSET_TYPE_TOC, 0x8);
 	if(writer == NULL) {
 		return RA_FAILURE("cannot allocate dat writer");
@@ -177,9 +191,9 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 	u64* asset_ids = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_ASSET_IDS, toc->asset_count * sizeof(u64));
 	RA_TocAssetMetadata* asset_metadata = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_ASSET_METADATA, toc->asset_count * sizeof(RA_TocAssetMetadata));
 	RA_TocArchive* archives = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_FILE_METADATA, toc->archive_count * sizeof(RA_TocArchive));
-	u8* unk_36 = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_TEXTURE_ASSET_IDS, toc->unknown_36_size);
-	u8* unk_c9 = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_TEXTURE_META, toc->unknown_c9_size);
-	u8* unk_62 = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_TEXTURE_HEADER, toc->unknown_62_size);
+	u64* texture_asset_ids = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_TEXTURE_ASSET_IDS, texture_count * sizeof(u64));
+	RA_TocTextureMeta* texture_meta = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_TEXTURE_META, texture_count * sizeof(RA_TocTextureMeta));
+	u32* texture_header = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_TEXTURE_HEADER, 4);
 	RA_TocAssetHeader* asset_headers = RA_dat_writer_lump(writer, LUMP_ARCHIVE_TOC_ASSET_HEADER_DATA, header_count * sizeof(RA_TocAssetHeader));
 	u32 archive_toc_string_offset = RA_dat_writer_string(writer, "ArchiveTOC");
 	
@@ -188,9 +202,9 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 		asset_ids == NULL ||
 		asset_metadata == NULL ||
 		archives == NULL ||
-		unk_36 == NULL ||
-		unk_c9 == NULL ||
-		unk_62 == NULL ||
+		texture_asset_ids == NULL ||
+		texture_meta == NULL ||
+		texture_header == NULL ||
 		asset_headers == NULL ||
 		archive_toc_string_offset == 0;
 	if(allocation_failed) {
@@ -244,9 +258,15 @@ RA_Result RA_toc_build(RA_TableOfContents* toc, u8** data_dest, s64* size_dest) 
 	
 	memcpy(archives, toc->archives, toc->archive_count * sizeof(RA_TocArchive));
 	
-	memcpy(unk_36, toc->unknown_36, toc->unknown_36_size);
-	memcpy(unk_c9, toc->unknown_c9, toc->unknown_c9_size);
-	memcpy(unk_62, toc->unknown_62, toc->unknown_62_size);
+	u32 texture_index = 0;
+	for(u32 i = 0; i < toc->asset_count; i++) {
+		if(toc->assets[i].has_texture_meta) {
+			texture_asset_ids[texture_index] = toc->assets[i].path_hash;
+			memcpy(&texture_meta[texture_index], &toc->assets[i].texture_meta, sizeof(RA_TocTextureMeta));
+			texture_index++;
+		}
+	}
+	*texture_header = texture_count;
 	
 	for(u32 i = 0; i < toc->asset_count; i++) {
 		if(toc->assets[i].has_header) {
