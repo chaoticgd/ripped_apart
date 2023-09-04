@@ -93,13 +93,29 @@ int main(int argc, char** argv) {
 		}
 		
 		// Read and decompress blocks as necessary, and assemble the asset.
-		u8* data = RA_calloc(1, toc_asset->metadata.size);
-		u32 size = toc_asset->metadata.size;
+		u32 data_offset = 0;
+		if(toc_asset->has_header) {
+			data_offset += sizeof(RA_TocAssetHeader);
+		}
+		if(toc_asset->has_texture_meta) {
+			data_offset += sizeof(RA_TocTextureMeta);
+		}
+		u8* data = RA_calloc(1, data_offset + toc_asset->metadata.size);
+		u32 size = data_offset + toc_asset->metadata.size;
+		if(toc_asset->has_header) {
+			memcpy(data, &toc_asset->header, sizeof(RA_TocAssetHeader));
+			if(toc_asset->has_texture_meta) {
+				memcpy(data + sizeof(RA_TocAssetHeader), &toc_asset->texture_meta, sizeof(RA_TocTextureMeta));
+			}
+		} else if(toc_asset->has_texture_meta) {
+			fprintf(stderr, "error: Asset '%s' has texture metadata but no header.\n", asset_path);
+			return 1;
+		}
 		if(data == NULL) {
 			fprintf(stderr, "error: Failed allocate memory for asset '%s'.\n", asset_path);
 			return 1;
 		}
-		if((result = RA_archive_read(&archive, toc_asset->metadata.offset, size, data)) != RA_SUCCESS) {
+		if((result = RA_archive_read(&archive, toc_asset->metadata.offset, toc_asset->metadata.size, data + data_offset)) != RA_SUCCESS) {
 			fprintf(stderr, "error: Failed to read block for asset '%s' (%s).\n", asset_path, result->message);
 			return 1;
 		}
