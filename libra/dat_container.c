@@ -310,8 +310,6 @@ const char* RA_dat_lump_type_name(u32 type_crc) {
 
 // Testing
 
-static RA_Result diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rhs_size, const char* context, b8 print_hex_dump_on_failure);
-
 RA_Result RA_dat_test(const u8* original, u32 original_size, const u8* repacked, u32 repacked_size, b8 print_hex_dump_on_failure) {
 	RA_Result result;
 	
@@ -358,7 +356,7 @@ RA_Result RA_dat_test(const u8* original, u32 original_size, const u8* repacked,
 		} else {
 			snprintf(context, 256, "lump %x", original_lump->type_crc);
 		}
-		if((result = diff_buffers(original_data, original_lump->size, repacked_data, repacked_lump->size, context, print_hex_dump_on_failure)) != RA_SUCCESS) {
+		if((result = RA_diff_buffers(original_data, original_lump->size, repacked_data, repacked_lump->size, context, print_hex_dump_on_failure)) != RA_SUCCESS) {
 			return result;
 		}
 	}
@@ -369,76 +367,9 @@ RA_Result RA_dat_test(const u8* original, u32 original_size, const u8* repacked,
 	}
 	
 	const char* end_context = "sections match but file data doesn't; issue with strings, lump ordering, DAT header, or alignment";
-	if((result = diff_buffers(original, original_size, repacked, repacked_size, end_context, print_hex_dump_on_failure)) != RA_SUCCESS) {
+	if((result = RA_diff_buffers(original, original_size, repacked, repacked_size, end_context, print_hex_dump_on_failure)) != RA_SUCCESS) {
 		return result;
 	}
 	
 	return RA_SUCCESS;
-}
-
-static RA_Result diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rhs_size, const char* context, b8 print_hex_dump_on_failure) {
-	u32 min_size = MIN(lhs_size, rhs_size);
-	u32 max_size = MAX(lhs_size, rhs_size);
-	
-	u32 diff_offset = UINT32_MAX;
-	for(u32 i = 0; i < min_size; i++) {
-		if(lhs[i] != rhs[i]) {
-			diff_offset = i;
-			break;
-		}
-	}
-	
-	if(diff_offset == UINT32_MAX) {
-		if(lhs_size == rhs_size) {
-			return RA_SUCCESS;
-		} else {
-			diff_offset = min_size;
-		}
-	}
-	
-	RA_Result error = RA_FAILURE("%s differs at offset %x", context, diff_offset);
-	if(!print_hex_dump_on_failure) {
-		return error;
-	}
-	
-	printf("%s\n", error->message);
-	
-	s64 row_start = (diff_offset / 0x10) * 0x10;
-	s64 hexdump_begin = MAX(0, row_start - 0x50);
-	s64 hexdump_end = max_size;
-	for(s64 i = hexdump_begin; i < hexdump_end; i += 0x10) {
-		printf("%08x: ", (s32) i);
-		const u8* current = lhs;
-		u32 current_size = lhs_size;
-		for(u32 j = 0; j < 2; j++) {
-			for(s64 j = 0; j < 0x10; j++) {
-				s64 pos = i + j;
-				const char* colour = NULL;
-				if(pos < lhs_size && pos < rhs_size) {
-					if(lhs[pos] == rhs[pos]) {
-						colour = "32";
-					} else {
-						colour = "31";
-					}
-				} else if(pos < current_size) {
-					colour = "33";
-				} else {
-					printf("   ");
-				}
-				if(colour != NULL) {
-					printf("\033[%sm%02x\033[0m ", colour, current[pos]);
-				}
-				if(j % 4 == 3 && j != 0xf) {
-					printf(" ");
-				}
-			}
-			printf("| ");
-			current = rhs;
-			current_size = rhs_size;
-		}
-		printf("\n");
-	}
-	printf("\n");
-	
-	return error;
 }

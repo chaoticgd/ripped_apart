@@ -68,6 +68,8 @@ add_executable(diffdat diffdat.c)
 target_link_libraries(diffdat libra)
 add_executable(modmanager modmanager.c)
 target_link_libraries(modmanager libra gui versioninfo)
+add_executable(testtexturemeta testtexturemeta.c)
+target_link_libraries(testtexturemeta libra)
 
 if(WIN32)
 	# Set the windows codepage to UTF-8.

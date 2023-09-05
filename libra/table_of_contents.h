@@ -27,10 +27,7 @@ typedef struct {
 
 typedef struct {
 	/* 0x00 */ u32 asset_type_hash;
-	/* 0x04 */ u32 file_size;
-	/* 0x08 */ u32 unknown_8;
-	/* 0x0c */ u32 unknown_c;
-	/* 0x10 */ u32 unknown_10;
+	/* 0x04 */ u32 block_sizes[4];
 	/* 0x14 */ u32 unknown_14;
 	/* 0x18 */ u32 unknown_18;
 	/* 0x1c */ u32 unknown_1c;
@@ -38,23 +35,25 @@ typedef struct {
 } RA_TocAssetHeader;
 
 typedef struct {
-	/* 0x00 */ u32 unknown_0;
-	/* 0x04 */ u32 unknown_4;
-	/* 0x08 */ u32 unknown_8;
-	/* 0x0c */ u32 unknown_c;
-	/* 0x10 */ u32 unknown_10;
+	/* 0x00 */ u64 unknown_0;
+	/* 0x08 */ u64 unknown_8;
+	/* 0x10 */ u32 width_in_texture_file;
 	/* 0x14 */ u32 unknown_14;
-	/* 0x18 */ u32 unknown_18;
+	/* 0x18 */ u32 height_in_texture_file;
 	/* 0x1c */ u32 unknown_1c;
-	/* 0x20 */ u32 unknown_20;
-	/* 0x24 */ u32 unknown_24;
+	/* 0x20 */ u16 unknown_20;
+	/* 0x22 */ u16 unknown_22;
+	/* 0x24 */ u32 format;
 	/* 0x28 */ u32 unknown_28;
 	/* 0x2c */ u32 unknown_2c;
 	/* 0x30 */ u32 unknown_30;
 	/* 0x34 */ u32 unknown_34;
-	/* 0x38 */ u32 unknown_38;
-	/* 0x3c */ u32 unknown_3c;
-	/* 0x40 */ u32 unknown_40;
+	/* 0x38 */ u32 total_size;
+	/* 0x3c */ u32 streamed_size;
+	/* 0x40 */ u8 unknown_40;
+	/* 0x41 */ u8 unknown_41;
+	/* 0x42 */ u8 unknown_42;
+	/* 0x43 */ u8 unknown_43;
 	/* 0x44 */ u32 unknown_44;
 } RA_TocTextureMeta;
 RA_ASSERT_SIZE(RA_TocTextureMeta, 0x48);

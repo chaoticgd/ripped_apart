@@ -102,6 +102,8 @@ void RA_crc_string_parse(RA_CRCString* crc_string, u8* file_data, u32 file_size)
 #endif
 #define RA_ASSERT_SIZE(type, size) __maybe_unused static char assert_size_ ##type[(sizeof(type) == size) ? 1 : -1]
 
+RA_Result RA_diff_buffers(const u8* lhs, u32 lhs_size, const u8* rhs, u32 rhs_size, const char* context, b8 print_hex_dump_on_failure);
+
 #ifdef __cplusplus
 }
 #endif

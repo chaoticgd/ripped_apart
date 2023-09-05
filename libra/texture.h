@@ -8,15 +8,26 @@ extern "C" {
 #endif
 
 typedef struct {
-	u32 unknown_0;
-	u32 unknown_4;
-	s16 width;
-	s16 height;
-	u16 width_in_texture_file;
-	u16 height_in_texture_file;
-	u32 unknown_10;
-	u8 format;
+	/* 0x00 */ u32 texture_size;
+	/* 0x04 */ u32 streamed_size;
+	/* 0x08 */ s16 width;
+	/* 0x0a */ s16 height;
+	/* 0x0c */ u16 width_in_texture_file;
+	/* 0x0e */ u16 height_in_texture_file;
+	/* 0x10 */ u16 unknown_10;
+	/* 0x12 */ u16 unknown_12;
+	/* 0x14 */ u32 format;
+	/* 0x18 */ u32 unknown_18;
+	/* 0x1c */ u16 unknown_1c;
+	/* 0x1e */ u16 unknown_1e;
+	/* 0x20 */ u8 unknown_20;
+	/* 0x21 */ u8 unknown_21;
+	/* 0x22 */ u8 unknown_22;
+	/* 0x23 */ u8 unknown_23;
+	/* 0x24 */ u32 unknown_24;
+	/* 0x28 */ u32 unknown_28;
 } RA_TextureHeader;
+RA_ASSERT_SIZE(RA_TextureHeader, 0x2c);
 
 typedef enum {
 	DXGI_FORMAT_UNKNOWN = 0,
