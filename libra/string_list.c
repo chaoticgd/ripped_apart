@@ -29,6 +29,7 @@ RA_Result RA_string_list_finish(RA_StringList* string_list) {
 		offset++; // Skip null terminator.
 		if(offset >= block->top) {
 			block = block->next;
+			offset = 0;
 		}
 		if(block == NULL) {
 			return RA_FAILURE("too few blocks");
