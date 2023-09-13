@@ -135,24 +135,6 @@ int main(int argc, char** argv) {
 		}
 		
 		RA_free(data);
-		
-		// Write out the list of dependencies for the file.
-		if(dag_asset) {
-			char deps_out_path[RA_MAX_PATH];
-			if(snprintf(deps_out_path, RA_MAX_PATH, "%s/%s.deps", out_dir, asset_path) < 0) {
-				fprintf(stderr, "error: Output path too long.\n");
-				return 1;
-			}
-			RA_file_fix_path(deps_out_path + strlen(out_dir));
-			FILE* deps_file = fopen(deps_out_path, "w");
-			for(u32 j = 0; j < dag_asset->dependency_count; j++) {
-				RA_DependencyDagAsset* dependency = &dag.assets[dag_asset->dependencies[j]];
-				if(fprintf(deps_file, "%" PRIx64 " %s\n", dependency->name_crc, dependency->name) < 0) {
-					fprintf(stderr, "error: Failed to write to dependencies file for asset '%s'.\n", asset_path);
-				}
-			}
-			fclose(deps_file);
-		}
 	}
 }
 
