@@ -588,11 +588,16 @@ static RA_Result parse_stage_entry(RA_LoadedMod* mod, zip_t* in_archive, s64 ind
 		
 		RA_DatLump* texture_header = RA_dat_lookup_lump(&dat, LUMP_TEXTURE_HEADER);
 		if(texture_header == NULL) {
-			return RA_FAILURE("cannot parse asset %s: %s", name, result->message);
+			RA_dat_free(&dat, DONT_FREE_FILE_DATA);
+			RA_free(file_data);
+			zip_fclose(file);
+			return RA_FAILURE("missing texture header for asset %s", name);
 		}
 		
 		asset->toc.has_texture_meta = true;
 		build_texture_metadata(&asset->toc.texture_meta, (RA_TextureHeader*) texture_header->data);
+		
+		RA_dat_free(&dat, DONT_FREE_FILE_DATA);
 	}
 	
 	RA_free(file_data);
