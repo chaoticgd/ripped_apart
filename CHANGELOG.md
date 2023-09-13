@@ -3,6 +3,7 @@
 ## v2.0.3
 
 - The texture metadata stored in the table of contents is now regenerated for modified textures.
+- The extractall tool now extracts files in a format that includes the header from the table of contents.
 - Fixed a bug where too many mods loaded at once would cause mod loading to fail.
 - The mod list is now sorted case insensitively.
 
