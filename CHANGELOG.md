@@ -1,5 +1,11 @@
 # Changelog
 
+## v2.0.3
+
+- The texture metadata stored in the table of contents is now regenerated for modified textures.
+- Fixed a bug where too many mods loaded at once would cause mod loading to fail.
+- The mod list is now sorted case insensitively.
+
 ## v2.0.2
 
 - Fixed installation of certain headerless assets (e.g. high-resolution textures).
