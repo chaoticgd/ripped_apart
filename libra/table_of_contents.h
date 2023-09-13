@@ -35,19 +35,19 @@ typedef struct {
 } RA_TocAssetHeader;
 
 typedef struct {
-	/* 0x00 */ u64 unknown_0;
+	/* 0x00 */ u64 unknown_0; // 3 for almost all textures.
 	/* 0x08 */ u64 unknown_8;
 	/* 0x10 */ u32 width_in_texture_file;
 	/* 0x14 */ u32 unknown_14;
 	/* 0x18 */ u32 height_in_texture_file;
-	/* 0x1c */ u32 unknown_1c;
+	/* 0x1c */ u32 unknown_1c; // 1 for almost all textures.
 	/* 0x20 */ u16 unknown_20;
-	/* 0x22 */ u16 unknown_22;
+	/* 0x22 */ u16 unknown_22; // Same for every texture, seemingly changes between game versions. Uninitialised garbage?
 	/* 0x24 */ u32 format;
 	/* 0x28 */ u32 unknown_28;
 	/* 0x2c */ u32 unknown_2c;
 	/* 0x30 */ u32 unknown_30;
-	/* 0x34 */ u32 unknown_34;
+	/* 0x34 */ u32 unknown_34; // 0x4000 for almost all textures.
 	/* 0x38 */ u32 total_size;
 	/* 0x3c */ u32 streamed_size;
 	/* 0x40 */ u8 unknown_40;

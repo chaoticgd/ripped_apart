@@ -38,8 +38,8 @@ static void build_texture_metadata(RA_TocTextureMeta* dest, RA_TextureHeader* sr
 	dest->width_in_texture_file = src->width_in_texture_file;
 	dest->height_in_texture_file = src->height_in_texture_file;
 	dest->unknown_1c = original->unknown_1c; // TODO
-	dest->unknown_20 = original->unknown_20; // TODO
-	dest->unknown_22 = 0x2acf;
+	dest->unknown_20 = src->unknown_1e;
+	dest->unknown_22 = 0x2f0f;
 	dest->format = src->format;
 	dest->unknown_28 = 1;
 	dest->unknown_30 = 3;
@@ -47,7 +47,7 @@ static void build_texture_metadata(RA_TocTextureMeta* dest, RA_TextureHeader* sr
 	dest->total_size = src->texture_size + src->streamed_size;
 	dest->streamed_size = src->streamed_size;
 	dest->unknown_40 = src->unknown_20;
-	dest->unknown_41 = (u8) src->unknown_1e;
+	dest->unknown_41 = src->unknown_1e;
 }
 
 int main(int argc, char** argv) {
@@ -146,6 +146,8 @@ int main(int argc, char** argv) {
 			return 1;
 		}
 		
+		printf("texture %02hx format=%d size=%d %s\n", toc_asset->texture_meta.unknown_22, toc_asset->texture_meta.format, toc_asset->metadata.size, dag_asset->name);
+		continue;
 		RA_TocTextureMeta meta;
 		RA_TocAsset* streamed = RA_toc_lookup_asset(toc.assets, toc.asset_count, toc_asset->path_hash, toc_asset->group + 1);
 		build_texture_metadata(&meta, (RA_TextureHeader*) lump->data, &toc_asset->texture_meta);

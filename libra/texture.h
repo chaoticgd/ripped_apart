@@ -19,7 +19,8 @@ typedef struct {
 	/* 0x14 */ u32 format;
 	/* 0x18 */ u32 unknown_18;
 	/* 0x1c */ u16 unknown_1c;
-	/* 0x1e */ u16 unknown_1e;
+	/* 0x1e */ u8 unknown_1e;
+	/* 0x1f */ u8 unknown_1f;
 	/* 0x20 */ u8 unknown_20;
 	/* 0x21 */ u8 unknown_21;
 	/* 0x22 */ u8 unknown_22;

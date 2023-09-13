@@ -4,7 +4,9 @@
 #include <json_object.h>
 #include <json_tokener.h>
 
+#include "texture.h"
 #include "platform.h"
+#include "dat_container.h"
 
 typedef struct {
 	RA_TocAsset toc;
@@ -29,9 +31,10 @@ static RA_Result parse_rcmod(RA_Mod* mod, const char* game_dir, const char* mod_
 static RA_Result load_rcmod(RA_LoadedMod* dest, RA_Mod* src, const char* mod_path, const char* cache_path);
 static char* read_rcmod_string(FILE* file);
 static b8 skip_rcmod_string(FILE* file);
+static void build_texture_metadata(RA_TocTextureMeta* dest, RA_TextureHeader* src);
 
 static int compare_mods(const void* lhs, const void* rhs) {
-	return strcmp(((RA_Mod*) lhs)->file_name, ((RA_Mod*) rhs)->file_name);
+	return RA_string_compare_no_case(((RA_Mod*) lhs)->file_name, ((RA_Mod*) rhs)->file_name);
 }
 
 RA_Result RA_mod_list_load(RA_Mod** mods_dest, u32* mod_count_dest, const char* game_dir, ModLoadErrorFunc* error_func) {
@@ -57,10 +60,8 @@ RA_Result RA_mod_list_load(RA_Mod** mods_dest, u32* mod_count_dest, const char* 
 	for(u32 i = 0; i < file_names.count; i++) {
 		if((result = parse_mod(&mods[mod_count], game_dir, file_names.strings[i])) == RA_SUCCESS) {
 			mod_count++;
-		} else {
-			if(strcmp(result->message, "unsupported format") != 0) {
-				error_func(file_names.strings[i], result);
-			}
+		} else if(strcmp(result->message, "unsupported format") != 0) {
+			error_func(file_names.strings[i], result);
 		}
 	}
 	
@@ -83,11 +84,11 @@ void RA_mod_list_free(RA_Mod* mods, u32 mod_count) {
 RA_Result parse_mod(RA_Mod* mod, const char* game_dir, const char* mod_file_name) {
 	const char* extension = strrchr(mod_file_name, '.');
 	if(extension != NULL) {
-		if(strcmp(extension, ".stage") == 0) {
+		if(RA_string_compare_no_case(extension, ".stage") == 0) {
 			return parse_stage(mod, game_dir, mod_file_name);
 		}
 		
-		if(strcmp(extension, ".rcmod") == 0) {
+		if(RA_string_compare_no_case(extension, ".rcmod") == 0) {
 			return parse_rcmod(mod, game_dir, mod_file_name);
 		}
 	}
@@ -264,6 +265,16 @@ static RA_Result update_table_of_contents(RA_LoadedMod* mods, u32 mod_count, RA_
 		for(u32 j = 0; j < mods[i].asset_count; j++) {
 			RA_LoadedModAsset* mod_asset = &mods[i].assets[j];
 			RA_TocAsset* toc_asset = RA_toc_lookup_asset(toc->assets, old_asset_count, mod_asset->toc.path_hash, mod_asset->toc.group);
+			if(toc_asset == NULL) {
+				// Make sure we don't add the same asset twice, even if multiple
+				// mods contain the same asset.
+				for(u32 k = old_asset_count; k < toc->asset_count; k++) {
+					if(toc->assets[k].group == mod_asset->toc.group && toc->assets[k].path_hash == mod_asset->toc.path_hash) {
+						toc_asset = &toc->assets[k];
+						break;
+					}
+				}
+			}
 			if(toc_asset) {
 				*toc_asset = mod_asset->toc;
 			} else {
@@ -481,13 +492,16 @@ static RA_Result parse_stage_info(RA_Mod* mod, RA_StringList* headerless, zip_t*
 }
 
 static RA_Result parse_stage_entry(RA_LoadedMod* mod, zip_t* in_archive, s64 index, FILE* out_file, RA_StringList* headerless) {
+	RA_Result result;
+	
 	zip_stat_t stat;
 	if(zip_stat_index(in_archive, index, 0, &stat) != 0 || !(stat.valid & ZIP_STAT_NAME) || !(stat.valid & ZIP_STAT_SIZE)) {
 		return RA_FAILURE("cannot stat entry %d", index);
 	}
 	
 	const char* name = stat.name;
-	if(name[strlen(name) - 1] == '/') {
+	u64 name_size = strlen(name);
+	if(name_size == 0 || name[name_size - 1] == '/') {
 		// Not an asset.
 		return RA_SUCCESS;
 	}
@@ -521,7 +535,7 @@ static RA_Result parse_stage_entry(RA_LoadedMod* mod, zip_t* in_archive, s64 ind
 	b8 has_header = (asset->toc.group % 8) == 0;
 	if(has_header) {
 		for(u32 i = 0; i < headerless->count; i++) {
-			if(strcmp(headerless->strings[i], name) == 0) {
+			if(RA_string_compare_no_case(headerless->strings[i], name) == 0) {
 				has_header = false;
 				break;
 			}
@@ -563,6 +577,23 @@ static RA_Result parse_stage_entry(RA_LoadedMod* mod, zip_t* in_archive, s64 ind
 	
 	asset->toc.metadata.offset = (u32) begin_offset;
 	asset->toc.metadata.size = (u32) (end_offset - begin_offset);
+	
+	if(asset->toc.has_header && asset->toc.header.asset_type_hash == RA_ASSET_TYPE_TEXTURE) {
+		RA_DatFile dat;
+		if((result = RA_dat_parse(&dat, file_data, file_size, 0)) != RA_SUCCESS) {
+			RA_free(file_data);
+			zip_fclose(file);
+			return RA_FAILURE("cannot parse asset %s: %s", name, result->message);
+		}
+		
+		RA_DatLump* texture_header = RA_dat_lookup_lump(&dat, LUMP_TEXTURE_HEADER);
+		if(texture_header == NULL) {
+			return RA_FAILURE("cannot parse asset %s: %s", name, result->message);
+		}
+		
+		asset->toc.has_texture_meta = true;
+		build_texture_metadata(&asset->toc.texture_meta, (RA_TextureHeader*) texture_header->data);
+	}
 	
 	RA_free(file_data);
 	zip_fclose(file);
@@ -732,4 +763,23 @@ static b8 skip_rcmod_string(FILE* file) {
 		}
 	}
 	return false;
+}
+
+static void build_texture_metadata(RA_TocTextureMeta* dest, RA_TextureHeader* src) {
+	memset(dest, 0, sizeof(RA_TocTextureMeta));
+	dest->unknown_0 = 3; // TODO
+	dest->unknown_8 = 1;
+	dest->width_in_texture_file = src->width_in_texture_file;
+	dest->height_in_texture_file = src->height_in_texture_file;
+	dest->unknown_1c = 1; // TODO
+	dest->unknown_20 = src->unknown_1e;
+	dest->unknown_22 = 0;
+	dest->format = src->format;
+	dest->unknown_28 = 1;
+	dest->unknown_30 = 3;
+	dest->unknown_34 = 0x4000; // TODO
+	dest->total_size = src->texture_size + src->streamed_size;
+	dest->streamed_size = src->streamed_size;
+	dest->unknown_40 = src->unknown_20;
+	dest->unknown_41 = src->unknown_1e;
 }

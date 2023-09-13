@@ -84,6 +84,7 @@ typedef enum {
 
 void RA_string_copy(char* dest, const char* src, s64 buffer_size);
 const char* RA_string_find_substring_no_case(const char* haystack, const char* needle);
+s32 RA_string_compare_no_case(const char* lhs, const char* rhs);
 
 typedef union {
 	const char* string;
